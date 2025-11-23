@@ -1,0 +1,255 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const chalk = require('chalk');
+const { execSync } = require('child_process');
+
+const BackupSystem = require('./scripts/backup');
+const RestoreSystem = require('./scripts/restore');
+
+class SaanifyBackupCLI {
+  constructor() {
+    this.scriptDir = __dirname;
+    this.projectRoot = path.dirname(__dirname);
+  }
+
+  async run() {
+    const args = process.argv.slice(2);
+    const command = args[0];
+
+    console.log(chalk.blue.bold('🚀 Saanify Workspace Backup System'));
+    console.log(chalk.blue('=====================================\n'));
+
+    try {
+      switch (command) {
+        case 'backup':
+          await this.handleBackup(args.slice(1));
+          break;
+        case 'restore':
+          await this.handleRestore(args.slice(1));
+          break;
+        case 'list':
+          await this.handleList();
+          break;
+        case 'status':
+          await this.handleStatus();
+          break;
+        case 'setup':
+          await this.handleSetup();
+          break;
+        case 'help':
+        case '--help':
+        case '-h':
+          this.showHelp();
+          break;
+        default:
+          console.log(chalk.red('Unknown command. Use "help" for available commands.'));
+          process.exit(1);
+      }
+    } catch (error) {
+      console.error(chalk.red('Error:'), error.message);
+      process.exit(1);
+    }
+  }
+
+  async handleBackup(args) {
+    const backupSystem = new BackupSystem();
+    
+    if (args.includes('--quick') || args.includes('-q')) {
+      console.log(chalk.yellow('Creating quick backup...'));
+      await backupSystem.createBackup({ quick: true });
+    } else {
+      console.log(chalk.yellow('Creating full backup...'));
+      await backupSystem.createBackup();
+    }
+    
+    await backupSystem.cleanupOldBackups();
+    console.log(chalk.green('✅ Backup completed successfully!'));
+  }
+
+  async handleRestore(args) {
+    const restoreSystem = new RestoreSystem();
+    const backupId = args.find(arg => !arg.startsWith('--'));
+    
+    if (backupId) {
+      console.log(chalk.yellow(`Restoring backup: ${backupId}`));
+      await restoreSystem.restoreFromBackup(backupId);
+    } else {
+      console.log(chalk.yellow('Selecting backup to restore...'));
+      await restoreSystem.restoreFromBackup();
+    }
+    
+    console.log(chalk.green('✅ Restore completed successfully!'));
+  }
+
+  async handleList() {
+    const backupSystem = new BackupSystem();
+    const backups = await backupSystem.listBackups();
+    
+    if (backups.length === 0) {
+      console.log(chalk.yellow('No backups found.'));
+      return;
+    }
+    
+    console.log(chalk.blue('Available backups:'));
+    console.log('');
+    
+    backups.forEach((backup, index) => {
+      const size = this.formatFileSize(backup.size);
+      const date = new Date(backup.created).toLocaleString();
+      const type = backup.type === 'archive' ? '📦' : '📁';
+      
+      console.log(`${index + 1}. ${type} ${chalk.green(backup.id)}`);
+      console.log(`   Created: ${date}`);
+      console.log(`   Size: ${size}`);
+      console.log(`   Type: ${backup.type}`);
+      console.log('');
+    });
+  }
+
+  async handleStatus() {
+    const backupSystem = new BackupSystem();
+    const backups = await backupSystem.listBackups();
+    
+    console.log(chalk.blue('Backup System Status:'));
+    console.log('');
+    
+    // Project info
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    console.log(`📦 Project: ${packageJson.name} v${packageJson.version}`);
+    console.log(`📁 Location: ${process.cwd()}`);
+    console.log(`🔧 Node.js: ${process.version}`);
+    console.log(`💻 Platform: ${process.platform}`);
+    console.log('');
+    
+    // Backup info
+    console.log(`📊 Total Backups: ${backups.length}`);
+    if (backups.length > 0) {
+      const latest = backups[0];
+      const totalSize = backups.reduce((sum, b) => sum + b.size, 0);
+      console.log(`📅 Latest Backup: ${new Date(latest.created).toLocaleString()}`);
+      console.log(`💾 Total Size: ${this.formatFileSize(totalSize)}`);
+    }
+    console.log('');
+    
+    // System checks
+    console.log('🔍 System Checks:');
+    
+    // Check if backup directory exists
+    const backupDir = path.join(process.cwd(), 'backups');
+    if (fs.existsSync(backupDir)) {
+      console.log('✅ Backup directory exists');
+    } else {
+      console.log('❌ Backup directory missing');
+    }
+    
+    // Check if encryption key exists
+    const keyPath = path.join(__dirname, 'config/.backup_key');
+    if (fs.existsSync(keyPath)) {
+      console.log('✅ Encryption key exists');
+    } else {
+      console.log('❌ Encryption key missing');
+    }
+    
+    // Check if config exists
+    const configPath = path.join(__dirname, 'config/backup-config.json');
+    if (fs.existsSync(configPath)) {
+      console.log('✅ Configuration exists');
+    } else {
+      console.log('❌ Configuration missing');
+    }
+  }
+
+  async handleSetup() {
+    console.log(chalk.yellow('Setting up backup system...'));
+    
+    // Create directories
+    const dirs = ['backups', 'backup-system/temp'];
+    for (const dir of dirs) {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`✅ Created directory: ${dir}`);
+      }
+    }
+    
+    // Make scripts executable
+    const scripts = [
+      'backup-system/scripts/quick-backup.sh',
+      'backup-system/scripts/quick-restore.sh'
+    ];
+    
+    for (const script of scripts) {
+      if (fs.existsSync(script)) {
+        try {
+          fs.chmodSync(script, 0o755);
+          console.log(`✅ Made script executable: ${script}`);
+        } catch (error) {
+          console.warn(`⚠️  Could not make script executable: ${script}`);
+        }
+      }
+    }
+    
+    // Install dependencies if needed
+    const requiredPackages = ['tar', 'chalk', 'ora', 'inquirer'];
+    const missingPackages = [];
+    
+    for (const pkg of requiredPackages) {
+      try {
+        require.resolve(pkg);
+      } catch (error) {
+        missingPackages.push(pkg);
+      }
+    }
+    
+    if (missingPackages.length > 0) {
+      console.log(chalk.yellow('Installing missing dependencies...'));
+      execSync(`npm install ${missingPackages.join(' ')}`, { stdio: 'inherit' });
+      console.log('✅ Dependencies installed');
+    }
+    
+    console.log(chalk.green('✅ Backup system setup completed!'));
+  }
+
+  showHelp() {
+    console.log(chalk.blue('Usage: saanify-backup <command> [options]'));
+    console.log('');
+    console.log('Commands:');
+    console.log('  backup [--quick]     Create a backup of the project');
+    console.log('  restore [backup-id]   Restore from a backup');
+    console.log('  list                 List all available backups');
+    console.log('  status               Show backup system status');
+    console.log('  setup                Setup backup system');
+    console.log('  help                 Show this help message');
+    console.log('');
+    console.log('Options:');
+    console.log('  --quick, -q          Quick backup (minimal output)');
+    console.log('  --help, -h           Show help message');
+    console.log('');
+    console.log('Examples:');
+    console.log('  saanify-backup backup --quick');
+    console.log('  saanify-backup restore');
+    console.log('  saanify-backup list');
+    console.log('  saanify-backup status');
+    console.log('');
+    console.log('Quick Scripts:');
+    console.log('  ./backup-system/scripts/quick-backup.sh [--quick]');
+    console.log('  ./backup-system/scripts/quick-restore.sh [backup-id]');
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+}
+
+// Run CLI
+if (require.main === module) {
+  const cli = new SaanifyBackupCLI();
+  cli.run();
+}
+
+module.exports = SaanifyBackupCLI;

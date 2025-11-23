@@ -1,0 +1,25 @@
+{
+  "backupType": "fixed-complete-repository-backup",
+  "timestamp": "2025-11-23T06:38:53+00:00",
+  "sourceRepository": "https://github.com/Sspanwar31/Sspanwar31-saanify-workspace-testing-",
+  "targetRepository": "https://github.com/Sspanwar31/Sspanwar31-saanify-workspace-testing-",
+  "currentRepository": "/home/z/my-project",
+  "statistics": {
+    "totalCommits": 3,
+    "totalBranches": 4,
+    "totalFiles": 0,
+    "repositorySize": "2.8M",
+    "archiveSize": "12K",
+    "latestCommit": {
+      "hash": "d0b3027366c363440ed99616da233ccf7bc376f3",
+      "message": "Delete backups directory",
+      "author": "Sspanwar31"
+    }
+  },
+  "backupFiles": {
+    "archive": "fixed-complete-repo-backup-2025-11-23T06-38-52.tar.gz",
+    "metadata": "fixed-backup-metadata.json"
+  },
+  "backupScript": "fixed-github-backup.sh",
+  "status": "completed"
+}

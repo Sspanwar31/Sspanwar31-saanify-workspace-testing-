@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import bcrypt from 'bcryptjs'
 
 const createClientSchema = z.object({
-  societyName: z.string().min(2, 'Society name is required'),
-  adminName: z.string().min(2, 'Admin name is required'),
+  name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   address: z.string().optional(),
-  subscriptionType: z.enum(['TRIAL', 'BASIC', 'PRO', 'ENTERPRISE']).default('TRIAL'),
-  trialPeriod: z.string().optional(),
-  role: z.enum(['MEMBER', 'TREASURER', 'ADMIN']).default('ADMIN'),
+  role: z.enum(['MEMBER', 'TREASURER', 'ADMIN']).default('MEMBER'),
   status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).default('ACTIVE'),
+  societyAccountId: z.string().optional(),
   isActive: z.boolean().default(true)
 })
 
@@ -35,41 +32,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate default password (society name + 123)
-    const defaultPassword = validatedData.societyName.replace(/\s+/g, '').toLowerCase() + '123'
-    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
-
-    // Calculate trial end date if it's a trial
-    let trialEndsAt = null
-    if (validatedData.subscriptionType === 'TRIAL') {
-      const trialDays = parseInt(validatedData.trialPeriod || '15')
-      trialEndsAt = new Date()
-      trialEndsAt.setDate(trialEndsAt.getDate() + trialDays)
+    // Hash password if provided
+    let hashedPassword = null
+    if (validatedData.password) {
+      hashedPassword = await bcrypt.hash(validatedData.password, 12)
     }
 
-    // Create Society Account first
-    const societyAccount = await db.societyAccount.create({
-      data: {
-        name: validatedData.societyName,
-        adminName: validatedData.adminName,
-        email: validatedData.email,
-        phone: validatedData.phone,
-        address: validatedData.address,
-        subscriptionPlan: validatedData.subscriptionType,
-        status: validatedData.subscriptionType === 'TRIAL' ? 'TRIAL' : 'ACTIVE',
-        trialEndsAt: trialEndsAt,
-        isActive: validatedData.isActive
-      }
-    })
-
-    // Create User (Client Admin) linked to Society Account
+    // Create client
     const client = await db.user.create({
       data: {
-        name: validatedData.adminName,
+        name: validatedData.name,
         email: validatedData.email,
         password: hashedPassword,
         role: validatedData.role,
-        societyAccountId: societyAccount.id,
+        status: validatedData.status,
+        societyAccountId: validatedData.societyAccountId,
         isActive: validatedData.isActive
       }
     })
@@ -82,11 +59,8 @@ export async function POST(request: NextRequest) {
         name: client.name,
         email: client.email,
         role: client.role,
-        societyAccountId: societyAccount.id,
-        societyName: societyAccount.name,
-        defaultPassword: defaultPassword, // Send default password for initial login
-        subscriptionPlan: societyAccount.subscriptionPlan,
-        trialEndsAt: societyAccount.trialEndsAt
+        status: client.status,
+        isActive: client.isActive
       }
     })
 
@@ -118,31 +92,22 @@ export async function GET(request: NextRequest) {
       where: {
         role: { in: ['MEMBER', 'TREASURER', 'ADMIN'] }
       },
-      include: {
-        societyAccount: true
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
       },
       orderBy: { createdAt: 'desc' }
     })
 
-    // Transform the data to include society name
-    const transformedClients = clients.map(client => ({
-      id: client.id,
-      name: client.name,
-      email: client.email,
-      role: client.role,
-      status: client.status || 'ACTIVE',
-      isActive: client.isActive,
-      societyAccountId: client.societyAccountId,
-      societyName: client.societyAccount?.name || 'N/A',
-      subscriptionPlan: client.societyAccount?.subscriptionPlan || 'TRIAL',
-      trialEndsAt: client.societyAccount?.trialEndsAt,
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt
-    }))
-
     return NextResponse.json({
       success: true,
-      clients: transformedClients
+      clients: clients
     })
 
   } catch (error) {

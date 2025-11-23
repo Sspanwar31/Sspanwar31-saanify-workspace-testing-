@@ -16,12 +16,12 @@ import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [clientData, setClientData] = useState({
-    email: 'client@demo.com',
+    email: 'testclient1@gmail.com',
     password: 'client123',
     rememberMe: false
   })
   const [adminData, setAdminData] = useState({
-    email: 'superadmin@saanify.com',
+    email: 'testadmin1@gmail.com',
     password: 'admin123',
     rememberMe: false
   })
@@ -131,8 +131,6 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed')
       }
       
-      console.log('✅ Login successful! Response:', data)
-      
       toast.success('🎉 Welcome back!', {
         description: useSupabase 
           ? 'Successfully logged in with Supabase' 
@@ -140,28 +138,16 @@ export default function LoginPage() {
         duration: 3000,
       })
 
-      // Show additional success feedback
-      alert('✅ Login Successful! Redirecting to client dashboard...')
-
       // Redirect to client dashboard
       setTimeout(() => {
-        console.log('🔄 Redirecting to client dashboard...')
         window.location.href = '/client/dashboard'
       }, 1000)
 
     } catch (error: any) {
       console.error('Login error:', error)
-      
-      // Show detailed error information
-      const errorMessage = error.message || 'Invalid email or password. Please try again.'
-      console.log('❌ Login failed with error:', errorMessage)
-      
-      // Show alert for immediate feedback
-      alert(`❌ Login Failed: ${errorMessage}`)
-      
       toast.error('❌ Login failed', {
-        description: errorMessage,
-        duration: 5000,
+        description: error.message || 'Invalid email or password. Please try again.',
+        duration: 3000,
       })
     } finally {
       setIsLoading(false)
@@ -212,7 +198,7 @@ export default function LoginPage() {
 
       // Redirect to admin dashboard
       setTimeout(() => {
-        window.location.href = '/super-admin'
+        window.location.href = '/superadmin'
       }, 1000)
 
     } catch (error: any) {
@@ -243,7 +229,7 @@ export default function LoginPage() {
   // Quick demo login functions
   const handleQuickClientLogin = () => {
     setClientData({
-      email: 'client@demo.com',
+      email: useSupabase ? 'testclient1@gmail.com' : 'client@saanify.com',
       password: 'client123',
       rememberMe: false
     })
@@ -255,7 +241,7 @@ export default function LoginPage() {
 
   const handleQuickAdminLogin = () => {
     setAdminData({
-      email: 'superadmin@saanify.com',
+      email: useSupabase ? 'testadmin1@gmail.com' : 'superadmin@saanify.com',
       password: 'admin123',
       rememberMe: false
     })

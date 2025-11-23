@@ -226,37 +226,24 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
   // Create backup
   const createBackup = async (silent = false) => {
+    if (!isConfigured) {
+      if (!silent) setMessage({ type: 'error', text: '⚠️ Please configure GitHub settings first' })
+      return
+    }
+
     if (!silent) setIsLoading(true)
     try {
-      // For GitHub Integration, always use GitHub API for proper push
-      let response = await fetch('/api/github/backup', {
+      const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          action: 'github-push-backup', 
+          action: 'backup', 
           config,
-          pushToGitHub: true
+          message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
         })
       })
 
-      let data = await response.json()
-      
-      // If GitHub API fails, try new backup API as fallback
-      if (!data.success) {
-        response = await fetch('/api/backup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'github-push-backup',
-            config: isConfigured ? config : undefined,
-            useGit: true,
-            pushToGitHub: isConfigured,
-            syncFromGitHub: true,  // Always sync from GitHub
-            overrideLatest: true   // Always override with latest
-          })
-        })
-        data = await response.json()
-      }
+      const data = await response.json()
       
       if (data.success) {
         const now = new Date().toISOString()
@@ -264,33 +251,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         localStorage.setItem('github-last-backup', now)
         
         if (!silent) {
-          let message = `✅ Backup complete! ${data.filesCount || 0} files backed up`
-          
-          if (data.details?.syncedFromGitHub) {
-            message += ' (synced from GitHub)'
-          }
-          if (data.details?.overrodeLatest) {
-            message += ' (latest override)'
-          }
-          if (data.details?.initialSetup) {
-            message += ' 🎉 Initial setup - created first commit!'
-          }
-          if (data.details?.pushSuccess) {
-            message += ' and pushed to GitHub ✅'
-            if (data.details?.forcePush) {
-              message += ' (force push)'
-            }
-          } else if (data.details?.remoteConfigured) {
-            message += ' (GitHub push failed - check credentials)'
-          } else {
-            message += ' locally'
-          }
-          
-          if (data.details?.repository) {
-            message += ` to ${data.details.repository}`
-          }
-          
-          setMessage({ type: 'success', text: message })
+          setMessage({ 
+            type: 'success', 
+            text: `✅ Backup complete! ${data.filesCount || 0} files uploaded to GitHub` 
+          })
         }
         if (showHistory) {
           loadBackupHistory()
@@ -318,12 +282,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     setIsRestoring(true)
     try {
-      // Use new restore API for latest backup
-      const response = await fetch('/api/github/restore', {
+      const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          action: 'restore-latest', 
+          action: 'restore', 
           config 
         })
       })
@@ -333,7 +296,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       if (data.success) {
         setMessage({ 
           type: 'success', 
-          text: `🔄 Restored from latest backup! Commit: ${data.commitHash?.slice(0, 7) || 'unknown'}. Reloading page...` 
+          text: '🔄 Project restored successfully! Reloading page...' 
         })
         setTimeout(() => {
           window.location.reload()
@@ -368,35 +331,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       
       if (data.success) {
         setBackupHistory(data.commits)
-        if (data.commits.length === 0) {
-          setMessage({ 
-            type: 'info', 
-            text: '📝 No commits found in repository' 
-          })
-        } else if (data.message && data.message.includes('No backup commits found')) {
-          setMessage({ 
-            type: 'info', 
-            text: '📝 ' + data.message 
-          })
-        } else {
-          setMessage({ 
-            type: 'success', 
-            text: `📜 Loaded ${data.commits.length} commits from repository` 
-          })
-        }
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.error || 'Failed to load history' 
-        })
-        console.error('History API Error:', data)
+        setMessage({ type: 'error', text: data.error || 'Failed to load history' })
       }
     } catch (error) {
-      console.error('Load backup history error:', error)
-      setMessage({ 
-        type: 'error', 
-        text: '🌐 Network error - please check your internet connection' 
-      })
+      setMessage({ type: 'error', text: 'Failed to load backup history' })
     }
   }
 
@@ -592,33 +531,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                       )}
                     </Button>
 
-                    {/* Backup Options */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-                      <div className="text-sm font-medium text-blue-900">GitHub Backup Features:</div>
-                      <div className="text-xs text-blue-700 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>🔄 Sync from GitHub before backup</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>⚡ Override with latest changes</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>📤 Auto-push to GitHub</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                          <span>🔁 Force push if needed</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                          <span>🎉 Handle empty repositories</span>
-                        </div>
-                      </div>
-                    </div>
-
                     <Button
                       onClick={restoreFromBackup}
                       disabled={isRestoring}
@@ -633,7 +545,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                       ) : (
                         <>
                           <Download className="h-4 w-4 mr-2" />
-                          Restore Latest Backup
+                          Restore Project
                         </>
                       )}
                     </Button>

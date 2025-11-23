@@ -368,25 +368,11 @@ export default function GitHubToggle() {
       
       if (data.success) {
         setBackupHistory(data.commits)
-        if (data.commits.length === 0) {
-          setMessage({ 
-            type: 'info', 
-            text: '📝 No backup commits found. Create your first backup!' 
-          })
-        }
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.error || 'Failed to load history' 
-        })
-        console.error('History API Error:', data)
+        setMessage({ type: 'error', text: data.error || 'Failed to load history' })
       }
     } catch (error) {
-      console.error('Load backup history error:', error)
-      setMessage({ 
-        type: 'error', 
-        text: '🌐 Network error - please check your internet connection' 
-      })
+      setMessage({ type: 'error', text: 'Failed to load backup history' })
     }
   }
 

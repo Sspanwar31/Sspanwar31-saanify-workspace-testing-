@@ -55,64 +55,10 @@ class GitHubAPI {
   }
 
   async getBranchInfo() {
-    try {
-      const response = await this.makeRequest(
-        `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${this.config.branch}`
-      )
-      return response.json()
-    } catch (error: any) {
-      // If branch doesn't exist, check if repository exists and is empty
-      if (error.message?.includes('Not Found')) {
-        try {
-          const repoResponse = await this.getRepository()
-          if (repoResponse) {
-            // Repository exists but branch doesn't - might be empty repo
-            console.log('Repository exists but branch not found - checking if empty...')
-            return null // Indicates empty repository or no branch
-          }
-        } catch (repoError) {
-          console.error('Repository access failed:', repoError)
-        }
-      }
-      throw error
-    }
-  }
-
-  async getDefaultBranch() {
     const response = await this.makeRequest(
-      `https://api.github.com/repos/${this.config.owner}/${this.config.repo}`
+      `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${this.config.branch}`
     )
-    const repo = await response.json()
-    return repo.default_branch || 'main'
-  }
-
-  async createBranch(branchName: string, fromSha?: string) {
-    try {
-      // Get default branch if no SHA provided
-      if (!fromSha) {
-        const defaultBranch = await this.getDefaultBranch()
-        const defaultBranchInfo = await this.makeRequest(
-          `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/refs/heads/${defaultBranch}`
-        )
-        const defaultBranchData = await defaultBranchInfo.json()
-        fromSha = defaultBranchData.object.sha
-      }
-
-      const response = await this.makeRequest(
-        `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/refs`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            ref: `refs/heads/${branchName}`,
-            sha: fromSha
-          })
-        }
-      )
-      return response.json()
-    } catch (error: any) {
-      console.error('Failed to create branch:', error)
-      throw error
-    }
+    return response.json()
   }
 
   async getCommit(sha: string) {
@@ -133,42 +79,30 @@ class GitHubAPI {
     return response.json()
   }
 
-  async createTree(baseTreeSha?: string, files: any[]) {
-    const requestBody: any = {
-      tree: files
-    }
-    
-    // Only include base_tree if it exists
-    if (baseTreeSha) {
-      requestBody.base_tree = baseTreeSha
-    }
-    
+  async createTree(baseTreeSha: string, files: any[]) {
     const response = await this.makeRequest(
       `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/trees`,
       {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree: files
+        })
       }
     )
     return response.json()
   }
 
-  async createCommit(message: string, treeSha: string, parentSha?: string) {
-    const requestBody: any = {
-      message,
-      tree: treeSha
-    }
-    
-    // Only include parents if they exist
-    if (parentSha) {
-      requestBody.parents = [parentSha]
-    }
-    
+  async createCommit(message: string, treeSha: string, parentSha: string) {
     const response = await this.makeRequest(
       `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/commits`,
       {
         method: 'POST',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          message,
+          tree: treeSha,
+          parents: [parentSha]
+        })
       }
     )
     return response.json()
@@ -185,32 +119,8 @@ class GitHubAPI {
       )
       return response.json()
     } catch (error: any) {
-      // If reference doesn't exist (404), create it
-      if (error.message?.includes('Not Found')) {
-        console.log('Branch reference not found, creating new branch...')
-        try {
-          // Try to create the branch
-          await this.createBranch(this.config.branch, sha)
-          // Return success response
-          return { ref: `refs/heads/${this.config.branch}`, object: { sha } }
-        } catch (createError: any) {
-          // If branch creation fails, try to create reference directly
-          console.log('Creating reference directly...')
-          const createResponse = await this.makeRequest(
-            `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/git/refs`,
-            {
-              method: 'POST',
-              body: JSON.stringify({
-                ref: `refs/heads/${this.config.branch}`,
-                sha
-              })
-            }
-          )
-          return createResponse.json()
-        }
-      }
       // If fast-forward error and force is not enabled, try with force
-      else if (!force && error.message?.includes('Update is not a fast forward')) {
+      if (!force && error.message?.includes('Update is not a fast forward')) {
         console.log('Fast-forward update failed, attempting force push...')
         return this.updateReference(sha, true)
       }
@@ -332,29 +242,8 @@ async function createBackup(config: GitHubConfig): Promise<BackupResult> {
   try {
     // Step 1: Get current branch info
     console.log('Getting branch information...')
-    let latestCommitSha: string | null = null
-    let repositoryExists = true
-    
-    try {
-      const branchInfo = await github.getBranchInfo()
-      if (branchInfo) {
-        latestCommitSha = branchInfo.object.sha
-      } else {
-        // Branch doesn't exist, check if repository exists
-        await github.getRepository()
-        console.log('Repository exists but branch not found - will create new branch')
-        latestCommitSha = null
-      }
-    } catch (branchError: any) {
-      // If repository doesn't exist or access denied
-      if (branchError.message?.includes('Not Found') || branchError.message?.includes('Git Repository is empty')) {
-        console.log('Repository is empty or not accessible, creating initial commit...')
-        latestCommitSha = null
-        repositoryExists = false
-      } else {
-        throw branchError
-      }
-    }
+    const branchInfo = await github.getBranchInfo()
+    const latestCommitSha = branchInfo.object.sha
     
     // Step 2: Get all project files
     console.log('Scanning project files...')
@@ -394,23 +283,18 @@ async function createBackup(config: GitHubConfig): Promise<BackupResult> {
 
     // Step 5: Create tree
     console.log('Creating git tree...')
-    const tree = await github.createTree(latestCommitSha || undefined, fileObjects)
+    const tree = await github.createTree(latestCommitSha, fileObjects)
     
     // Step 6: Create commit
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const commitMessage = `🚀 Saanify Backup: ${timestamp}\n\n📊 Backup Summary:\n• Files: ${files.length}\n• Size: ${(manifest.totalSize / 1024 / 1024).toFixed(2)} MB\n• Timestamp: ${timestamp}`
     
     console.log('Creating commit...')
-    const commit = await github.createCommit(commitMessage, tree.sha, latestCommitSha || undefined)
+    const commit = await github.createCommit(commitMessage, tree.sha, latestCommitSha)
     
-    // Step 7: Update reference (create branch if needed)
+    // Step 7: Update reference
     console.log('Updating branch reference...')
-    try {
-      await github.updateReference(commit.sha, false)
-    } catch (updateError: any) {
-      console.warn('Failed to update reference, trying force update...')
-      await github.updateReference(commit.sha, true)
-    }
+    await github.updateReference(commit.sha)
     
     // Step 8: Create commit status
     await github.createCommitStatus(commit.sha, 'success', 'Backup completed successfully')
@@ -423,9 +307,7 @@ async function createBackup(config: GitHubConfig): Promise<BackupResult> {
       details: {
         manifest,
         commitUrl: `https://github.com/${config.owner}/${config.repo}/commit/${commit.sha}`,
-        totalSize: manifest.totalSize,
-        repositoryCreated: !repositoryExists,
-        branchCreated: latestCommitSha === null
+        totalSize: manifest.totalSize
       }
     }
     
@@ -613,50 +495,9 @@ async function handleGitHubPushBackup(config: GitHubConfig): Promise<NextRespons
     } catch (resetError) {
       // Ignore reset errors, it's just precautionary
     }
-
-    // Sync from GitHub first to get latest changes
-    console.log('🔄 Syncing from GitHub before backup...')
-    let remoteBranchExists = false
-    
-    try {
-      const remoteUrl = `https://${config.token}@github.com/${config.owner}/${config.repo}.git`
-      await execAsync(`git remote set-url origin ${remoteUrl}`, { timeout: 5000 })
-      
-      // Fetch latest changes
-      await execAsync('git fetch origin', { timeout: 30000 })
-      console.log('✅ Fetched latest changes from GitHub')
-      
-      // Check if remote branch exists
-      const branch = config.branch || 'main'
-      try {
-        const { stdout: branchCheck } = await execAsync(`git ls-remote --heads origin ${branch}`, { timeout: 5000 })
-        if (branchCheck.trim()) {
-          remoteBranchExists = true
-          console.log(`✅ Remote branch '${branch}' exists`)
-          
-          // Reset to match remote exactly (override local with latest)
-          try {
-            await execAsync(`git reset --hard origin/${branch}`, { timeout: 10000 })
-            console.log('🔄 Reset to latest GitHub changes')
-          } catch (resetError) {
-            console.warn('Could not reset to remote branch:', resetError)
-            // Continue with local state if reset fails
-          }
-        } else {
-          console.log(`ℹ️ Remote branch '${branch}' does not exist - will create on push`)
-          remoteBranchExists = false
-        }
-      } catch (branchCheckError) {
-        console.log('ℹ️ Could not check remote branch, assuming it does not exist')
-        remoteBranchExists = false
-      }
-    } catch (syncError) {
-      console.warn('Could not sync from GitHub, continuing with local state:', syncError)
-      remoteBranchExists = false
-    }
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const commitMessage = `🚀 Saanify Backup: ${timestamp}`
+    const commitMessage = `🚀 Quick Backup: ${timestamp}`
     
     // Execute git commands with shorter timeouts
     const { stdout: addOutput } = await execAsync('git add -A', { timeout: 5000 })
@@ -718,29 +559,12 @@ async function handleGitHubPushBackup(config: GitHubConfig): Promise<NextRespons
     const commitHash = logOutput.split(' ')[0]
     
     // Configure remote with token
-    let pushSuccess = false
-    let pushError = null
-    
     try {
       const remoteUrl = `https://${config.token}@github.com/${config.owner}/${config.repo}.git`
       await execAsync(`git remote set-url origin ${remoteUrl}`, { timeout: 3000 })
       
-      // Push to GitHub with proper branch
-      const branch = config.branch || 'main'
-      console.log(`📤 Pushing to GitHub (${branch})... Remote branch exists: ${remoteBranchExists}`)
-      
-      let pushCommand
-      if (remoteBranchExists) {
-        // Normal push if branch exists
-        pushCommand = `git push -u origin ${branch}`
-      } else {
-        // Force push with upstream if branch doesn't exist (first time setup)
-        pushCommand = `git push -u origin ${branch} --force`
-      }
-      
-      const { stdout: pushOutput } = await execAsync(pushCommand, { timeout: 30000 })
-      pushSuccess = true
-      console.log('✅ Push successful to GitHub')
+      // Push to GitHub with shorter timeout
+      const { stdout: pushOutput } = await execAsync('git push -u origin main', { timeout: 15000 })
       
       return NextResponse.json({
         success: true,
@@ -750,92 +574,349 @@ async function handleGitHubPushBackup(config: GitHubConfig): Promise<NextRespons
         details: {
           localBackup: true,
           pushToGitHub: true,
-          pushSuccess: true,
-          syncedFromGitHub: true,
-          overrodeLatest: true,
-          remoteBranchExisted: remoteBranchExists,
-          initialSetup: !remoteBranchExists,
           commitMessage,
           addOutput,
           commitOutput,
-          pushOutput,
-          repository: `${config.owner}/${config.repo}`,
-          branch: branch
+          pushOutput
         }
       })
-    } catch (pushError: any) {
-      pushError = pushError.message || 'Unknown push error'
+    } catch (pushError) {
       console.warn('Git push failed:', pushError)
-      
-      // Try force push as fallback
-      try {
-        const branch = config.branch || 'main'
-        console.log('🔄 Trying force push...')
-        
-        let forcePushCommand
-        if (remoteBranchExists) {
-          forcePushCommand = `git push -f origin ${branch}`
-        } else {
-          forcePushCommand = `git push -u origin ${branch} --force`
+      // Still return success for local backup
+      return NextResponse.json({
+        success: true,
+        commitHash,
+        timestamp,
+        message: `${commitMessage} (local only)`,
+        details: {
+          localBackup: true,
+          pushToGitHub: false,
+          note: 'Local backup successful, GitHub push failed - check your credentials',
+          commitMessage,
+          addOutput,
+          commitOutput
         }
+      })
+    }
+    
+  } catch (error) {
+    console.error('GitHub push backup failed:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+    
+    // Check for stuck commit message issues
+    if (error instanceof Error && error.message.includes('COMMIT_EDITMSG')) {
+      try {
+        // Try to fix the stuck commit
+        await execAsync('git reset', { timeout: 3000 })
+        await execAsync('rm -f .git/COMMIT_EDITMSG', { timeout: 3000 })
         
-        const { stdout: forcePushOutput } = await execAsync(forcePushCommand, { timeout: 30000 })
-        pushSuccess = true
-        console.log('✅ Force push successful')
+        // Retry the backup
+        return await handleGitHubPushBackup(config)
+      } catch (retryError) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Git state was corrupted and could not be auto-fixed. Please try again.' 
+          },
+          { status: 500 }
+        )
+      }
+    }
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'GitHub push backup failed' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// Auto Backup Function
+async function handleAutoBackup(config: GitHubConfig): Promise<NextResponse> {
+  try {
+    // Check if we have valid GitHub configuration (not demo values) - DO THIS FIRST
+    const isDemoConfig = !config.token || 
+                        config.token === 'demo-token' || 
+                        config.owner === 'demo-user' || 
+                        config.repo === 'demo-repo' ||
+                        config.token.includes('your-personal-access-token') ||
+                        config.owner.includes('your-username') ||
+                        config.repo.includes('your-repo-name')
+
+    // If demo mode, return immediately without any git operations
+    if (isDemoConfig) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      return NextResponse.json({
+        success: true,
+        commitHash: 'demo-mode',
+        timestamp,
+        message: 'Demo mode - auto backup simulated',
+        details: {
+          localBackup: false,
+          pushToGitHub: false,
+          autoBackup: true,
+          note: 'Demo mode: Auto backup simulated (no actual git operations performed)',
+          reason: 'GitHub credentials not configured or using demo values'
+        }
+      })
+    }
+
+    // Reset any stuck commit state first (only for real config)
+    try {
+      await execAsync('git reset', { timeout: 3000 })
+    } catch (resetError) {
+      // Ignore reset errors, it's just precautionary
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const commitMessage = `🧩 Auto Backup: ${timestamp}`
+    
+    // Execute git commands with shorter timeouts
+    const { stdout: addOutput } = await execAsync('git add -A', { timeout: 5000 })
+    
+    // Try to commit, but handle case where there are no changes
+    let commitOutput: string
+    try {
+      const result = await execAsync(`git commit -m "${commitMessage}"`, { timeout: 10000 })
+      commitOutput = result.stdout
+    } catch (commitError: any) {
+      // Check if it's because there are no changes
+      if (commitError.stdout?.includes('nothing to commit') || 
+          commitError.stdout?.includes('working tree clean') ||
+          commitError.message?.includes('nothing to commit')) {
         
         return NextResponse.json({
           success: true,
-          commitHash,
+          commitHash: 'no-changes',
           timestamp,
-          message: commitMessage,
+          message: 'No changes for auto backup',
           details: {
-            localBackup: true,
-            pushToGitHub: true,
-            pushSuccess: true,
-            syncedFromGitHub: true,
-            overrodeLatest: true,
-            forcePush: true,
-            remoteBranchExisted: remoteBranchExists,
-            initialSetup: !remoteBranchExists,
-            commitMessage,
-            addOutput,
-            commitOutput,
-            pushOutput: forcePushOutput,
-            repository: `${config.owner}/${config.repo}`,
-            branch: branch
-          }
-        })
-      } catch (forcePushError) {
-        console.error('Force push also failed:', forcePushError)
-        return NextResponse.json({
-          success: true,
-          commitHash,
-          timestamp,
-          message: commitMessage,
-          details: {
-            localBackup: true,
+            localBackup: false,
             pushToGitHub: false,
-            pushSuccess: false,
-            syncedFromGitHub: true,
-            overrodeLatest: true,
-            remoteBranchExisted: remoteBranchExists,
-            initialSetup: !remoteBranchExists,
-            commitMessage,
-            addOutput,
-            commitOutput,
-            pushError: pushError,
-            forcePushError: forcePushError.message || 'Unknown force push error',
-            repository: `${config.owner}/${config.repo}`,
-            branch: config.branch || 'main'
+            autoBackup: true,
+            note: 'Working tree clean, no backup needed'
           }
         })
       }
+      throw commitError
     }
+    
+    const { stdout: logOutput } = await execAsync('git log --oneline -1', { timeout: 3000 })
+    
+    // Extract commit hash
+    const commitHash = logOutput.split(' ')[0]
+    
+    // Configure remote with token
+    try {
+      const remoteUrl = `https://${config.token}@github.com/${config.owner}/${config.repo}.git`
+      await execAsync(`git remote set-url origin ${remoteUrl}`, { timeout: 3000 })
+      
+      // Push to GitHub with shorter timeout
+      const { stdout: pushOutput } = await execAsync('git push -u origin main', { timeout: 15000 })
+      
+      return NextResponse.json({
+        success: true,
+        commitHash,
+        timestamp,
+        message: commitMessage,
+        details: {
+          localBackup: true,
+          pushToGitHub: true,
+          autoBackup: true,
+          commitMessage,
+          addOutput,
+          commitOutput,
+          pushOutput
+        }
+      })
+    } catch (pushError) {
+      console.warn('Auto backup git push failed:', pushError)
+      // Still return success for local backup
+      return NextResponse.json({
+        success: true,
+        commitHash,
+        timestamp,
+        message: `${commitMessage} (local only)`,
+        details: {
+          localBackup: true,
+          pushToGitHub: false,
+          autoBackup: true,
+          note: 'Local auto backup successful, GitHub push failed - check your credentials',
+          commitMessage,
+          addOutput,
+          commitOutput
+        }
+      })
+    }
+    
   } catch (error) {
-    console.error('GitHub push backup error:', error)
+    console.error('Auto backup failed:', error)
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Auto backup failed' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// Restore Function
+async function handleRestore(config: GitHubConfig): Promise<NextResponse> {
+  try {
+    // Configure remote with token
+    const remoteUrl = `https://${config.token}@github.com/${config.owner}/${config.repo}.git`
+    await execAsync(`git remote set-url origin ${remoteUrl}`)
+    
+    // Pull latest changes
+    const { stdout: pullOutput } = await execAsync('git pull origin main')
+    
     return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred during GitHub backup'
-    }, { status: 500 })
+      success: true,
+      message: 'Project restored from latest commit',
+      details: {
+        pullOutput
+      }
+    })
+    
+  } catch (error) {
+    console.error('Restore failed:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Restore failed' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// Git Restore Function (Fetch and Reset)
+async function handleGitRestore(config: GitHubConfig): Promise<NextResponse> {
+  try {
+    // Configure remote with token
+    const remoteUrl = `https://${config.token}@github.com/${config.owner}/${config.repo}.git`
+    await execAsync(`git remote set-url origin ${remoteUrl}`, { timeout: 5000 })
+    
+    // Fetch latest changes from origin
+    const { stdout: fetchOutput } = await execAsync('git fetch origin main', { timeout: 30000 })
+    
+    // Reset to match origin/main (hard reset)
+    const { stdout: resetOutput } = await execAsync('git reset --hard origin/main', { timeout: 15000 })
+    
+    // Clean up untracked files
+    const { stdout: cleanOutput } = await execAsync('git clean -fd', { timeout: 10000 })
+    
+    return NextResponse.json({
+      success: true,
+      message: '🔄 Project restored from latest GitHub backup',
+      timestamp: new Date().toISOString(),
+      details: {
+        fetchOutput,
+        resetOutput,
+        cleanOutput,
+        restored: true
+      }
+    })
+    
+  } catch (error) {
+    console.error('Git restore failed:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Git restore failed' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// Quick git backup function
+async function handleQuickGitBackup(): Promise<NextResponse> {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const commitMessage = `🚀 Quick Backup: ${timestamp}`
+    
+    // Execute git commands with timeout and better error handling
+    const { stdout: addOutput } = await execAsync('git add .', { timeout: 5000 })
+    
+    // Try to commit, but handle case where there are no changes
+    let commitOutput: string
+    try {
+      const result = await execAsync(`git commit -m "${commitMessage}"`, { timeout: 10000 })
+      commitOutput = result.stdout
+    } catch (commitError: any) {
+      // Check if it's because there are no changes
+      if (commitError.stdout?.includes('nothing to commit') || 
+          commitError.stdout?.includes('working tree clean') ||
+          commitError.message?.includes('nothing to commit')) {
+        
+        return NextResponse.json({
+          success: true,
+          commitHash: 'no-changes',
+          timestamp,
+          message: 'No new changes to backup - project is up to date',
+          details: {
+            localBackup: true,
+            note: 'Working tree clean, no backup needed',
+            addOutput
+          }
+        })
+      }
+      throw commitError
+    }
+    
+    const { stdout: logOutput } = await execAsync('git log --oneline -1', { timeout: 3000 })
+    
+    // Extract commit hash
+    const commitHash = logOutput.split(' ')[0]
+    
+    return NextResponse.json({
+      success: true,
+      commitHash,
+      timestamp,
+      message: commitMessage,
+      details: {
+        localBackup: true,
+        commitMessage,
+        addOutput,
+        commitOutput
+      }
+    })
+    
+  } catch (error) {
+    console.error('Quick git backup failed:', error)
+    
+    // Check for stuck commit message issues
+    if (error instanceof Error && error.message.includes('COMMIT_EDITMSG')) {
+      try {
+        // Try to fix the stuck commit
+        await execAsync('git reset', { timeout: 3000 })
+        await execAsync('rm -f .git/COMMIT_EDITMSG', { timeout: 3000 })
+        
+        // Retry the backup
+        return await handleQuickGitBackup()
+      } catch (retryError) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Git state was corrupted and could not be auto-fixed. Please try again.' 
+          },
+          { status: 500 }
+        )
+      }
+    }
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Quick backup failed' 
+      },
+      { status: 500 }
+    )
   }
 }

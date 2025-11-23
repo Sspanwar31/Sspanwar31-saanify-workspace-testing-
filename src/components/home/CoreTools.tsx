@@ -6,7 +6,6 @@ import { Users, DollarSign, FileText, LayoutDashboard, ArrowRight, CheckCircle }
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import QuickBackup from '@/components/QuickBackup'
 
 interface CoreFeatureProps {
   icon: React.ReactNode
@@ -192,28 +191,6 @@ export default function CoreTools() {
             />
           ))}
         </div>
-
-        {/* Quick Backup Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          viewport={{ once: true }}
-          className="mt-16"
-        >
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-foreground mb-4">
-              Quick Backup Tool
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Create instant backups of your project without any configuration. 
-              Your data is automatically saved to Git history.
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <QuickBackup />
-          </div>
-        </motion.div>
       </div>
     </section>
   )

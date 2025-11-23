@@ -120,7 +120,7 @@ export default function Navbar() {
         setIsGitHubOpen(true)
         break
       case 'superadmin':
-        handleNavClick('/super-admin', 'SuperAdmin Panel')
+        handleNavClick('/superadmin', 'SuperAdmin Panel')
         break
       case 'analytics':
         handleNavClick('/analytics', 'Analytics')

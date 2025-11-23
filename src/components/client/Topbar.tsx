@@ -23,48 +23,11 @@ interface TopbarProps {
   sidebarOpen: boolean
 }
 
-interface UserInfo {
-  id: string
-  name: string
-  email: string
-  role: string
-  societyAccountId: string
-  societyAccount: {
-    id: string
-    name: string
-    adminName: string
-    email: string
-    subscriptionPlan: string
-    status: string
-  }
-}
-
 export default function Topbar({ onMenuToggle, onSignOut, sidebarOpen }: TopbarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [notifications, setNotifications] = useState(3)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setMounted(true)
-    fetchUserInfo()
-  }, [])
-
-  const fetchUserInfo = async () => {
-    try {
-      const response = await fetch('/api/client/user-info')
-      if (response.ok) {
-        const data = await response.json()
-        setUserInfo(data.user)
-      }
-    } catch (error) {
-      console.error('Failed to fetch user info:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
     setMounted(true)
@@ -99,10 +62,6 @@ export default function Topbar({ onMenuToggle, onSignOut, sidebarOpen }: TopbarP
     })
   }
 
-  const societyName = userInfo?.societyAccount?.name || 'Loading...'
-  const userName = userInfo?.name || 'Admin User'
-  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-
   return (
     <header className="h-16 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-emerald-100 dark:border-emerald-900/30 shadow-sm">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between">
@@ -123,7 +82,7 @@ export default function Topbar({ onMenuToggle, onSignOut, sidebarOpen }: TopbarP
             <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             <div>
               <h2 className="text-lg font-semibold text-foreground">
-                {societyName}
+                Sunrise Cooperative Society
               </h2>
               <p className="text-xs text-muted-foreground">
                 Society Management Portal
@@ -232,11 +191,11 @@ export default function Topbar({ onMenuToggle, onSignOut, sidebarOpen }: TopbarP
                 <Avatar className="w-8 h-8">
                   <AvatarImage src="/avatars/admin.jpg" alt="Admin" />
                   <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                    {userInitials}
+                    AK
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <div className="text-sm font-medium">{userName}</div>
+                  <div className="text-sm font-medium">Admin User</div>
                   <div className="text-xs text-muted-foreground">Society Admin</div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />

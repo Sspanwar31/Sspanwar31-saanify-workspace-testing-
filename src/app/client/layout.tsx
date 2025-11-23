@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/client/Sidebar'
 import Topbar from '@/components/client/Topbar'
 import LoadingSpinner from '@/components/ui/loading-spinner'
-import AuthGuard from '@/components/auth/AuthGuard'
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -75,60 +74,58 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-teal-950/20">
-        {/* Loading Overlay */}
-        <AnimatePresence>
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
-            >
-              <LoadingSpinner />
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-teal-950/20">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <LoadingSpinner />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="flex">
-          {/* Sidebar */}
-          <Sidebar 
-            onClose={() => setSidebarOpen(false)} 
-            pathname={pathname}
+      <div className="flex">
+        {/* Sidebar */}
+        <Sidebar 
+          onClose={() => setSidebarOpen(false)} 
+          pathname={pathname}
+        />
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Topbar */}
+          <Topbar
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+            onSignOut={handleSignOut}
+            sidebarOpen={sidebarOpen}
           />
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
-            {/* Topbar */}
-            <Topbar
-              onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-              onSignOut={handleSignOut}
-              sidebarOpen={sidebarOpen}
-            />
-
-            {/* Page Content */}
-            <main className="flex-1 p-6 overflow-auto">
-              <div className="max-w-7xl mx-auto">
-                {children}
-              </div>
-            </main>
-          </div>
+          {/* Page Content */}
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
         </div>
-
-        {/* Mobile Sidebar Overlay */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-        </AnimatePresence>
       </div>
-    </AuthGuard>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

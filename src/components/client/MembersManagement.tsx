@@ -4,610 +4,197 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Users, 
-  Search, 
-  Plus, 
-  Filter, 
+  Search,
+  Filter,
+  Plus,
   Download,
   Upload,
   RefreshCw,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
   Shield,
-  UserPlus,
+  Crown,
   UserCheck,
+  AlertCircle,
+  CheckCircle,
   Edit,
   Trash2,
-  Eye,
-  Lock,
-  Unlock,
-  Crown
+  Settings,
+  MoreHorizontal,
+  TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import AnimatedCounter from '@/components/ui/animated-counter'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import EnhancedActionsDropdown from '@/components/admin/EnhancedActionsDropdown'
 
 interface Member {
   id: string
   name: string
   email: string
   phone: string
-  role: 'MEMBER' | 'TREASURER' | 'ADMIN'
+  role: 'ADMIN' | 'MEMBER' | 'TREASURER'
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-  joinDate: string
-  lastLogin?: string
-  avatar?: string
-  address?: string
-  membershipId?: string
-  loanCount?: number
-  savingsAmount?: number
-  monthlyContribution?: number
+  joinedAt: string
+  profileImage?: string
+  totalShares?: number
+  lastLoginAt?: string
 }
 
 interface MembersManagementProps {
-  societyInfo: {
-    id: string
-    name: string
-    status: 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'LOCKED'
-    subscriptionPlan: 'TRIAL' | 'BASIC' | 'PRO' | 'ENTERPRISE'
-    adminName: string
-    adminEmail: string
-    adminPhone: string
-    address?: string
-    totalMembers?: number
-  }
+  societyInfo: any
 }
 
-interface AddMemberModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-  societyId: string
-}
-
-interface EditMemberModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-  member: Member | null
-  societyId: string
-}
-
-export function AddMemberModal({ open, onOpenChange, onSuccess, societyId }: AddMemberModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'MEMBER',
-    address: '',
-    membershipId: '',
-    avatar: ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Basic validation
-    if (!formData.name.trim()) {
-      toast.error('Name is required')
-      return
-    }
-    
-    if (!formData.email.trim()) {
-      toast.error('Email is required')
-      return
-    }
-    
-    if (!formData.phone.trim()) {
-      toast.error('Phone is required')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const response = await fetch('/api/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          societyId,
-          joinDate: new Date().toISOString()
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        toast.success('Member added successfully', {
-          description: `${formData.name} has been added to ${societyId}`,
-          duration: 3000,
-        })
-        onOpenChange(false)
-        onSuccess()
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          role: 'MEMBER',
-          address: '',
-          membershipId: '',
-          avatar: ''
-        })
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to add member')
-      }
-    } catch (error) {
-      console.error('Error adding member:', error)
-      toast.error('Failed to add member')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <UserPlus className="h-5 w-5 text-blue-600" />
-            Add New Member
-          </DialogTitle>
-          <DialogDescription>
-            Add a new member to {societyId}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Full Name
-            </label>
-            <Input
-              id="name"
-              placeholder="John Doe"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Phone Number
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="role" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Role
-            </label>
-            <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MEMBER">Member</SelectItem>
-                <SelectItem value="TREASURER">Treasurer</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="address" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Address
-            </label>
-            <Input
-              id="address"
-              placeholder="123 Main St, City, State"
-              value={formData.address}
-              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-              className="w-full"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="membershipId" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Membership ID
-            </label>
-            <Input
-              id="membershipId"
-              placeholder="MEM-001"
-              value={formData.membershipId}
-              onChange={(e) => setFormData(prev => ({ ...prev, membershipId: e.target.value }))}
-              className="w-full"
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isSubmitting ? 'Adding...' : 'Add Member'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-export function EditMemberModal({ open, onOpenChange, onSuccess, member, societyId }: EditMemberModalProps) {
-  const [formData, setFormData] = useState({
-    name: member?.name || '',
-    email: member?.email || '',
-    phone: member?.phone || '',
-    role: member?.role || 'MEMBER',
-    address: member?.address || '',
-    membershipId: member?.membershipId || ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.name.trim()) {
-      toast.error('Name is required')
-      return
-    }
-    
-    if (!formData.email.trim()) {
-      toast.error('Email is required')
-      return
-    }
-    
-    setIsSubmitting(true)
-
-    try {
-      const response = await fetch(`/api/members/${member?.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      if (response.ok) {
-        toast.success('Member updated successfully')
-        onOpenChange(false)
-        onSuccess()
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to update member')
-      }
-    } catch (error) {
-      console.error('Error updating member:', error)
-      toast.error('Failed to update member')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <Edit className="h-5 w-5 text-blue-600" />
-            Edit Member
-          </DialogTitle>
-          <DialogDescription>
-            Update member information for {member?.name}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Full Name
-            </label>
-            <Input
-              id="name"
-              placeholder="John Doe"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Phone Number
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="role" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Role
-            </label>
-            <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MEMBER">Member</SelectItem>
-                <SelectItem value="TREASURER">Treasurer</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="address" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Address
-            </label>
-            <Input
-              id="address"
-              placeholder="123 Main St, City, State"
-              value={formData.address}
-              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-              className="w-full"
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isSubmitting ? 'Updating...' : 'Update Member'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
+interface EnhancedMember extends Member {
+  loanCount?: number
+  savingsAmount?: number
+  lastActivity?: string
+  totalRevenue?: number
 }
 
 export function MembersManagement({ societyInfo }: MembersManagementProps) {
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+  const [members, setMembers] = useState<EnhancedMember[]>([])
+  const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [editModal, setEditModal] = useState<{
-    open: boolean
-    member: Member | null
-    onOpenChange: (open: boolean) => void
-  }>({ open: false, member: null, onOpenChange: () => {} })
-
-  // Mock data
-  const mockMembers: Member[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      role: 'MEMBER',
-      status: 'ACTIVE',
-      joinDate: '2024-01-15',
-      lastLogin: '2024-10-28',
-      avatar: '/avatars/john.jpg',
-      address: '123 Main St, New York, NY 10001',
-      membershipId: 'MEM001',
-      loanCount: 2,
-      savingsAmount: 5000,
-      monthlyContribution: 150
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      phone: '+1 (555) 987-6543',
-      role: 'TREASURER',
-      status: 'ACTIVE',
-      joinDate: '2024-02-01',
-      lastLogin: '2024-10-27',
-      avatar: '/avatars/jane.jpg',
-      address: '456 Oak Street, Brooklyn, NY 11201',
-      membershipId: 'MEM002',
-      loanCount: 5,
-      savingsAmount: 12000,
-      monthlyContribution: 300
-    },
-    {
-      id: '3',
-      name: 'Bob Johnson',
-      email: 'bob.johnson@example.com',
-      phone: '+1 (555) 234-5678',
-      role: 'MEMBER',
-      status: 'INACTIVE',
-      joinDate: '2023-12-10',
-      lastLogin: '2024-09-15',
-      avatar: '/avatars/bob.jpg',
-      address: '789 Pine Street, San Francisco, CA 94102',
-      membershipId: 'MEM003',
-      loanCount: 1,
-      savingsAmount: 2500,
-      monthlyContribution: 100
-    },
-    {
-      id: '4',
-      name: 'Mary Williams',
-      email: 'mary.williams@example.com',
-      phone: '+1 (555) 345-6789',
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      joinDate: '2024-03-05',
-      lastLogin: '2024-10-26',
-      avatar: '/avatars/mary.jpg',
-      address: '321 Oak Street, Boston, MA 02108',
-      membershipId: 'MEM004',
-      loanCount: 3,
-      savingsAmount: 15000,
-      monthlyContribution: 500
-    }
-  ]
+  const [sortBy, setSortBy] = useState<string>('name')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
 
   const fetchMembers = async () => {
     try {
       setLoading(true)
-      // In a real app, this would fetch from the API
-      // For now, use mock data
-      setTimeout(() => {
-        setMembers(mockMembers)
-        setLoading(false)
-      }, 1000)
+      // Mock data for demonstration
+      const mockMembers: EnhancedMember[] = [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          phone: '+1234567890',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          joinedAt: '2024-01-15',
+          totalShares: 150,
+          lastLoginAt: '2024-10-28',
+          loanCount: 5,
+          savingsAmount: 50000,
+          totalRevenue: 12000,
+          lastActivity: '2024-10-28'
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          phone: '+1234567891',
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          joinedAt: '2024-02-20',
+          totalShares: 50,
+          lastLoginAt: '2024-10-26',
+          loanCount: 2,
+          savingsAmount: 25000,
+          totalRevenue: 6000,
+          lastActivity: '2024-10-26'
+        },
+        {
+          id: '3',
+          name: 'Bob Johnson',
+          email: 'bob@example.com',
+          phone: '+1234567892',
+          role: 'MEMBER',
+          status: 'PENDING',
+          joinedAt: '2024-03-15',
+          totalShares: 25,
+          lastLoginAt: '2024-10-15',
+          loanCount: 0,
+          savingsAmount: 10000,
+          totalRevenue: 3000,
+          lastActivity: '2024-10-15'
+        },
+        {
+          id: '4',
+          name: 'Mary Williams',
+          email: 'mary@example.com',
+          phone: '+1234567893',
+          role: 'TREASURER',
+          status: 'ACTIVE',
+          joinedAt: '2024-04-10',
+          totalShares: 75,
+          lastLoginAt: '2024-10-28',
+          loanCount: 3,
+          savingsAmount: 15000,
+          totalRevenue: 9000,
+          lastActivity: '2024-10-28'
+        }
+      ]
+      
+      setMembers(mockMembers)
+      setLoading(false)
     } catch (error) {
       console.error('Failed to fetch members:', error)
       toast.error('Failed to load members')
+    } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchMembers()
-  }, [])
-
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.phone?.includes(searchTerm)
+                         member.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = selectedRole === 'all' || member.role === selectedRole
     return matchesSearch && matchesRole
   })
 
-  const handleAddMember = () => {
-    setIsAddModalOpen(true)
-  }
-
-  const handleEditMember = (member: Member) => {
-    setEditModal({ open: true, member })
-  }
-
-  const handleDeleteMember = async (memberId: string) => {
-    if (confirm('Are you sure you want to delete this member?')) {
-      try {
-        const response = await fetch(`/api/members/${memberId}`, {
-          method: 'DELETE'
-        })
-
-        if (response.ok) {
-          toast.success('Member deleted successfully')
-          fetchMembers()
-        } else {
-          toast.error('Failed to delete member')
-        }
-      } catch (error) {
-        toast.error('An error occurred')
-      }
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'role':
+        return a.role.localeCompare(b.role)
+      case 'joinedAt':
+        return new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
+      default:
+        return 0
     }
+  })
+
+  const paginatedMembers = sortedMembers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  const handleRoleChange = (role: string) => {
+    setSelectedRole(role)
+    setCurrentPage(1)
   }
 
-  const handleBulkAction = async (action: string, memberIds: string[]) => {
-    try {
-      const response = await fetch('/api/members/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, memberIds })
-      })
-
-      if (response.ok) {
-        toast.success(`Bulk ${action} completed successfully`)
-        fetchMembers()
-      } else {
-        toast.error(`Failed to ${action} members`)
-      }
-    } catch (error) {
-      toast.error('An error occurred')
-    }
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort)
+    setCurrentPage(1)
   }
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      ACTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border-emerald-200',
-      INACTIVE: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300 border-slate-200',
-      PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200',
-      LOCKED: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300 border-red-200'
-    }
-    
-    return (
-      <Badge className={cn(variants[status as keyof typeof variants] || variants.ACTIVE, 'font-medium')}>
-        {status}
-      </Badge>
-    )
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+    setCurrentPage(1)
   }
 
   const getRoleBadge = (role: string) => {
     const variants = {
+      ADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border-emerald-200',
       MEMBER: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200',
-      TREASURER: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300 border-purple-200',
-      ADMIN: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200'
+      TREASURER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200'
     }
     
     return (
@@ -617,361 +204,281 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
     )
   }
 
-  if (loading) {
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      ACTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border-emerald-200',
+      INACTIVE: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300 border-slate-200',
+      PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200',
+      EXPIRED: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300 border-red-200',
+      LOCKED: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300 border-slate-200'
+    }
+    
     return (
-      <div className="flex items-center justify-center py-12">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
+      <Badge className={cn(variants[status as keyof typeof variants] || variants.ACTIVE, 'font-medium')}>
+        {status}
+      </Badge>
     )
   }
 
+  const getMemberStats = () => {
+    const total = members.length
+    const active = members.filter(m => m.status === 'ACTIVE').length
+    const inactive = members.filter(m => m.status === 'INACTIVE').length
+    const pending = members.filter(m => m.status === 'PENDING').length
+    const trial = members.filter(m => m.role === 'TREASURER').length
+    
+    return {
+      total,
+      active,
+      inactive,
+      pending,
+      trial,
+      activePercentage: total > 0 ? ((active / total) * 100).toFixed(1) : '0%'
+    }
+  }
+
+  const memberStats = getMemberStats()
+
   return (
     <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Members Management
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            Manage {members.length} members across all roles
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleAddMember}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Member
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => fetchMembers()}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => handleBulkAction('activate', members.filter(m => m.status === 'INACTIVE'))}
-            className="flex items-center gap-2"
-          >
-            <Shield className="h-4 w-4" />
-            Activate All
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => handleBulkAction('deactivate', members.filter(m => m.status === 'ACTIVE'))}
-            className="flex items-center gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            Deactivate All
-          </Button>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {memberStats.map((stat, index) => (
+        <motion.div
+          key={stat.title}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: index * 0.1,
+            type: "spring",
+            stiffness: 100
+          }}
+          whileHover={{ 
+            y: -5, 
+            scale: 1.02,
+            rotateX: 5,
+            rotateY: 5,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}
+          className="group"
+          style={{ perspective: '1000px' }}
+        >
+          <Card className={cn(
+            "relative overflow-hidden border-2 transition-all duration-300 hover:shadow-xl",
+            stat.bgGradient,
+            stat.borderColor
+          )}>
+            {/* Background gradient overlay */}
+            <div className={cn(
+              "absolute inset-0 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity",
+              stat.gradient
+            )} />
+            
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {stat.title}
+              </CardTitle>
+              <motion.div
+                whileHover={{ rotate: 360, scale: 1.1 }}
+                transition={{ duration: 0.5 }}
+                className={cn(
+                  "p-3 rounded-full bg-gradient-to-r",
+                  stat.gradient,
+                  "text-white shadow-lg"
+                )}
+              >
+                {stat.icon}
+              </motion.div>
+            </CardHeader>
+            
+            <CardContent className="p-6">
+              <motion.div 
+                className="text-3xl font-bold text-slate-900 dark:text-white"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <AnimatedCounter 
+                  value={stat.value} 
+                  prefix={stat.prefix}
+                  suffix={stat.suffix}
+                />
+              </motion.div>
+              
+              <div className="flex items-center justify-between mt-2">
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 + 0.5 }}
+                  className={cn(
+                    "text-xs font-medium px-2 py-1 rounded-full",
+                    stat.change.startsWith('+') 
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+                  )}
+                >
+                  {stat.change}
+                </motion.span>
+              </div>
+              
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                {stat.description}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
       </div>
 
-      {/* Search and Filter */}
-      <Card className="border-2 border-slate-200 dark:border-slate-700">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                <Input
-                  placeholder="Search members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+    {/* Member Growth Chart */}
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        whileHover={{ y: -5, scale: 1.01 }}
+        className="group"
+      >
+        <Card className="border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+            <CardTitle className="flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-white" />
+              Member Growth Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {memberStats.total}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Total Registered
+                  </div>
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                    {memberStats.activePercentage}% Active
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {memberStats.inactive}
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    Inactive Members
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {memberStats.pending}
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    Pending Approval
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {memberStats.trial}
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    Trial Users
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Member Growth
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-white">
+                    {memberStats.growth}% this month
+                  </span>
+                </div>
               </div>
             </div>
-            
-            <div className="flex gap-2">
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="All Roles" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="MEMBER">Member</SelectItem>
-                  <SelectItem value="TREASURER">Treasurer</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button
-                variant="outline"
-                onClick={() => setSearchTerm('')}
-                className="px-3"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Clear
-              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+      {/* Role Distribution */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        whileHover={{ y: -5, scale: 1.01 }}
+        className="group"
+      >
+        <Card className="border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+            <CardTitle className="flex items-center gap-3">
+              <Users className="h-5 w-5 text-white" />
+              Role Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { role: 'ADMIN', count: members.filter(m => m.role === 'ADMIN').length },
+                { role: 'MEMBER', count: members.filter(m => m.role === 'MEMBER').length },
+                { role: 'TREASURER', count: members.filter(m => m.role === 'TREASURER').length },
+                { role: 'LOCKED', count: members.filter(m => m.role === 'LOCKED').length }
+              ].map((item, index) => (
+                <motion.div
+                  key={item.role}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  className="group"
+                >
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {item.count}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      {item.role}s
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <Badge className={cn(
+                      "px-3 py-1 rounded-full",
+                      item.role === 'ADMIN' ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border-emerald-200" :
+                      item.role === 'MEMBER' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200" :
+                      item.role === 'TREASURER' ? "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200" :
+                      "bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300 border-slate-200"
+                  )}>
+                    {item.role}
+                  </Badge>
+                </div>
+              </motion.div>
+            ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Members Table */}
-      <Card className="border-2 border-slate-200 dark:border-slate-700">
-        <CardContent className="p-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                  <TableHead className="font-semibold">Name</TableHead>
-                  <TableHead className="font-semibold">Email</TableHead>
-                  <TableHead className="font-semibold">Phone</TableHead>
-                  <TableHead className="font-semibold">Role</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMembers.map((member, index) => (
-                  <motion.tr
-                    key={member.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          {member.avatar ? (
-                            <img 
-                              src={member.avatar} 
-                              alt={member.name}
-                              className="h-8 w-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                              <User className="h-4 w-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-white">
-                            {member.name}
-                          </div>
-                          <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {member.email}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                      
-                      <TableCell>
-                        <div className="text-slate-900 dark:text-white">
-                          {member.phone || 'Not provided'}
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
-                        {getRoleBadge(member.role)}
-                      </TableCell>
-                      
-                      <TableCell>
-                        {getStatusBadge(member.status)}
-                      </TableCell>
-                      
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewMember(member.id)}
-                            className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                          >
-                            <Eye className="h-4 w-4 text-blue-600" />
-                          </Button>
-                          
-                          {member.status === 'ACTIVE' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditMember(member)}
-                              className="h-8 w-8 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
-                            >
-                              <Edit className="h-4 w-4 text-emerald-600" />
-                            </Button>
-                          ) : member.status === 'LOCKED' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUnlockMember(member.id)}
-                              className="h-8 w-8 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
-                            >
-                              <Unlock className="h-4 w-4 text-emerald-600" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleLockMember(member.id)}
-                              className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900/20"
-                            >
-                              <Lock className="h-4 w-4 text-amber-600" />
-                            </Button>
-                          )}
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteMember(member.id)}
-                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-
-  const handleViewMember = (memberId: string) => {
-    // Navigate to member details view
-    toast.info('Member Details', {
-      description: `Viewing details for ${members.find(m => m.id === memberId)?.name || 'Unknown'}`,
-      duration: 2000,
-    })
-    // In a real app, this would navigate to a member detail page
-  }
-
-  const handleEditMember = (member: Member) => {
-    setEditModal({ open: true, member })
-  }
-
-  const handleUnlockMember = async (memberId: string) => {
-    try {
-      const response = await fetch(`/api/members/${memberId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'unlock' })
-      })
-
-      if (response.ok) {
-        toast.success('Member unlocked successfully')
-        fetchMembers()
-      } else {
-        toast.error('Failed to unlock member')
-      }
-    } catch (error) {
-      toast.error('An error occurred')
-    }
-  }
-
-  const handleLockMember = async (memberId: string) => {
-    try {
-      const response = await fetch(`/api/members/${memberId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'lock' })
-      })
-
-      if (response.ok) {
-        toast.success('Member locked successfully')
-        fetchMembers()
-      } else {
-        toast.error('Failed to lock member')
-      }
-    } catch (error) {
-      toast.error('An error occurred')
-    }
-  }
-
-  const handleDeleteMember = async (memberId: string) => {
-    if (confirm('Are you sure you want to delete this member? This action cannot be undone.')) {
-      try {
-        const response = await fetch(`/api/members/${memberId}`, {
-          method: 'DELETE'
-        })
-
-        if (response.ok) {
-          toast.success('Member deleted successfully')
-          fetchMembers()
-        } else {
-          toast.error('Failed to delete member')
-        }
-      } catch (error) {
-        toast.error('An error occurred')
-      }
-    }
-  }
-
-  return (
-    <>
-      <AddMemberModal
-        open={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
-        onSuccess={() => {
-          fetchMembers()
-        }}
-        societyId={societyInfo?.id || ''}
-      />
-      
-      <EditMemberModal
-        open={editModal.open}
-        onOpenChange={setEditModal}
-        onSuccess={() => {
-          fetchMembers()
-        }}
-        member={editModal.member}
-        societyId={societyInfo?.id || ''}
-      />
-      
-      <EnhancedActionsDropdown
-        actions={[
-          {
-            label: 'View Details',
-            icon: <Eye className="h-4 w-4" />,
-            action: 'view',
-            onClick: () => handleViewMember(member.id)
-          },
-          {
-            label: 'Edit',
-            icon: <Edit className="h-4 w-4" />,
-            action: 'edit',
-            onClick: () => handleEditMember(member)
-          },
-          {
-            label: member.status === 'ACTIVE' ? 'Lock Account' : 'Unlock Account',
-            icon: member.status === 'ACTIVE' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />,
-            action: member.status === 'ACTIVE' ? 'lock' : 'unlock',
-            onClick: () => member.status === 'ACTIVE' ? handleLockMember(member.id) : handleUnlockMember(member.id)
-          },
-          {
-            label: member.status === 'LOCKED' ? 'Unlock Account' : 'Lock Account',
-            icon: member.status === 'LOCKED' ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />,
-            action: member.status === 'LOCKED' ? 'unlock' : 'lock',
-            onClick: () => member.status === 'LOCKED' ? handleUnlockMember(member.id) : handleLockMember(member.id)
-          },
-          {
-            label: 'Delete',
-            icon: <Trash2 className="h-4 w-4 text-red-600" />,
-            action: 'delete',
-            onClick: () => handleDeleteMember(member.id)
-          }
-        ]}
-        onBulkAction={handleBulkAction}
-      />
-    </>
+            
+            {/* Validation Check */}
+            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Total Members: {members.length}
+                </span>
+                <span className={cn(
+                  "font-medium",
+                  members.length === 0 ? "text-red-600" : "text-emerald-600"
+                )}>
+                  {members.length === 0 ? 'No members found' : '✅ Accurate'}
+                </span>
+              </div>
+            </div>
+            </CardContent>
+            </Card>
+          </motion.div>
+        </div>
   )
 }

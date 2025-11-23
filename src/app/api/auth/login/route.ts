@@ -21,7 +21,7 @@ const generateTokens = (user: any) => {
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
-  userType: z.enum(['client', 'admin']).default('client'),
+  userType: z.enum(['client', 'admin']).optional(),
   rememberMe: z.boolean().optional()
 })
 
@@ -57,28 +57,11 @@ export async function POST(request: NextRequest) {
     console.log("3. Password Matched ✅"); // LOG
 
     // 3. Check Role
-    const userType = validatedData.userType || 'client'
-    
-    if (userType === 'admin') {
+    if (validatedData.userType === 'admin') {
        if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
           console.log("❌ Error: Role Mismatch. Required Admin, Got:", user.role); // LOG
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
        }
-    } else if (userType === 'client') {
-       // Allow CLIENT, MEMBER, TREASURER, and ADMIN roles to login as client
-       // (ADMIN role users can access both admin and client panels)
-       if (user.role === 'SUPER_ADMIN' || user.role === 'SUPERADMIN') {
-          console.log("❌ Error: Role Mismatch. Required Client, Got:", user.role); // LOG
-          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-       }
-       
-       // Check if user has society account
-       if (!user.societyAccountId) {
-          console.log("❌ Error: User not associated with any society"); // LOG
-          return NextResponse.json({ error: 'User not associated with any society' }, { status: 403 })
-       }
-       
-       console.log("✅ Client user authenticated successfully:", { email: user.email, role: user.role, societyAccountId: user.societyAccountId });
     }
 
     // 4. Success
@@ -87,27 +70,11 @@ export async function POST(request: NextRequest) {
     // Update Last Login (Ignore error if any)
     try { await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }) } catch(e) {}
 
-    // Get society information for clients
-    let societyInfo = null
-    if (user.societyAccountId) {
-      const societyAccount = await db.societyAccount.findUnique({
-        where: { id: user.societyAccountId }
-      })
-      societyInfo = societyAccount
-    }
-
     const tokens = generateTokens(user)
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
-      user: { 
-        id: user.id, 
-        email: user.email, 
-        name: user.name, 
-        role: user.role,
-        societyAccountId: user.societyAccountId,
-        societyInfo: societyInfo
-      },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
     })

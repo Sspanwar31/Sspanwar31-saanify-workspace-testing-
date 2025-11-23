@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "🧪 Testing Supabase Connection..."
+echo "Please update .env with your real Supabase credentials first!"
+echo ""
+echo "Then run:"
+echo "npx prisma generate"
+echo "npx prisma db push"
+echo "npm run seed"
+echo ""
+echo "To verify tables, check your Supabase dashboard > Table Editor"

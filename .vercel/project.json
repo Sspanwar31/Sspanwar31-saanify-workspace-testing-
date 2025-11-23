@@ -1,0 +1,14 @@
+{
+  "projectId": "prj_nBnLHHT0OH4gyQMzklkbmhsgugJn",
+  "orgId": "team_nAbvRBMvu2xe9eBHbjlcCiIU",
+  "settings": {
+    "createdAt": 1763348642991,
+    "installCommand": null,
+    "buildCommand": "npx prisma generate && npx prisma db push --accept-data-loss && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "devCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "framework": "nextjs",
+    "nodeVersion": "22.x"
+  }
+}

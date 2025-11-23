@@ -4,29 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const tar = require('tar');
 const crypto = require('crypto');
+const chalk = require('chalk');
+const ora = require('ora');
 const inquirer = require('inquirer');
-const { execSync } = require('child_process');
-
-// Simple color functions instead of chalk
-const colors = {
-  red: (text) => `\x1b[31m${text}\x1b[0m`,
-  green: (text) => `\x1b[32m${text}\x1b[0m`,
-  yellow: (text) => `\x1b[33m${text}\x1b[0m`,
-  blue: (text) => `\x1b[34m${text}\x1b[0m`
-};
-
-// Simple spinner function
-const simpleSpinner = {
-  start: (text) => {
-    console.log(`⏳ ${text}`);
-    return {
-      text: text,
-      succeed: (msg) => console.log(`✅ ${msg}`),
-      fail: (msg) => console.log(`❌ ${msg}`),
-      text: ''
-    };
-  }
-};
 
 const EncryptionManager = require('../utils/encryption');
 const FileFilter = require('../utils/fileFilter');
@@ -53,7 +33,7 @@ class BackupSystem {
   }
 
   async createBackup(options = {}) {
-    const spinner = simpleSpinner.start('Creating backup...');
+    const spinner = ora('Creating backup...').start();
     
     try {
       // Generate backup ID
@@ -89,14 +69,11 @@ class BackupSystem {
         // Cleanup temp directory
         fs.rmSync(backupPath, { recursive: true, force: true });
         
-        // Store backup based on configuration
-        const finalPath = await this.storeBackup(archivePath, backupId, spinner);
-        
-        spinner.succeed(`Backup created: ${colors.green(finalPath)}`);
-        return finalPath;
+        spinner.succeed(`Backup created: ${chalk.green(archivePath)}`);
+        return archivePath;
       } else {
         const finalPath = await this.moveBackup(backupId, backupPath);
-        spinner.succeed(`Backup created: ${colors.green(finalPath)}`);
+        spinner.succeed(`Backup created: ${chalk.green(finalPath)}`);
         return finalPath;
       }
       
@@ -247,100 +224,6 @@ class BackupSystem {
       }
     }
   }
-
-  async storeBackup(archivePath, backupId, spinner) {
-    // Check if cloud storage is enabled and configured for GitHub
-    if (this.config.storage.cloud.enabled && this.config.storage.cloud.provider === 'github') {
-      return await this.storeToGitHub(archivePath, backupId, spinner);
-    } else if (this.config.storage.local.enabled) {
-      // Fallback to local storage
-      const finalPath = path.join(this.backupDir, path.basename(archivePath));
-      if (fs.existsSync(finalPath)) {
-        fs.rmSync(finalPath, { force: true });
-      }
-      fs.renameSync(archivePath, finalPath);
-      return finalPath;
-    } else {
-      throw new Error('No storage destination configured');
-    }
-  }
-
-  async storeToGitHub(archivePath, backupId, spinner) {
-    try {
-      spinner.text = 'Preparing GitHub backup...';
-      
-      const githubConfig = this.config.storage.cloud.config;
-      const repoUrl = githubConfig.repository;
-      const branch = githubConfig.branch || 'main';
-      
-      // Get GitHub token from environment or prompt user
-      let githubToken = githubConfig.token || process.env.GITHUB_TOKEN;
-      
-      if (!githubToken) {
-        const answers = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'token',
-            message: 'Enter your GitHub token:',
-            validate: (input) => input.length > 0 || 'GitHub token is required'
-          }
-        ]);
-        githubToken = answers.token;
-      }
-      
-      // Create a temporary directory for GitHub operations
-      const tempGitHubDir = path.join(this.tempDir, 'github-backup');
-      if (fs.existsSync(tempGitHubDir)) {
-        fs.rmSync(tempGitHubDir, { recursive: true, force: true });
-      }
-      fs.mkdirSync(tempGitHubDir, { recursive: true });
-      
-      spinner.text = 'Cloning GitHub repository...';
-      
-      // Clone the repository
-      const authRepoUrl = repoUrl.replace('https://', `https://${githubToken}@`);
-      execSync(`git clone "${authRepoUrl}" "${tempGitHubDir}"`, { stdio: 'pipe' });
-      
-      // Create backups directory in the repo if it doesn't exist
-      const repoBackupsDir = path.join(tempGitHubDir, 'backups');
-      if (!fs.existsSync(repoBackupsDir)) {
-        fs.mkdirSync(repoBackupsDir, { recursive: true });
-      }
-      
-      // Copy the backup file to the repository
-      const backupFileName = path.basename(archivePath);
-      const targetBackupPath = path.join(repoBackupsDir, backupFileName);
-      fs.copyFileSync(archivePath, targetBackupPath);
-      
-      // Configure git user
-      const author = githubConfig.commitAuthor;
-      execSync(`git config user.name "${author.name}"`, { cwd: tempGitHubDir, stdio: 'pipe' });
-      execSync(`git config user.email "${author.email}"`, { cwd: tempGitHubDir, stdio: 'pipe' });
-      
-      spinner.text = 'Committing backup to GitHub...';
-      
-      // Add, commit and push
-      execSync('git add .', { cwd: tempGitHubDir, stdio: 'pipe' });
-      const commitMessage = `🚀 Saanify Backup: ${new Date().toISOString()}`;
-      execSync(`git commit -m "${commitMessage}"`, { cwd: tempGitHubDir, stdio: 'pipe' });
-      execSync(`git push origin ${branch}`, { cwd: tempGitHubDir, stdio: 'pipe' });
-      
-      // Cleanup temporary directory
-      fs.rmSync(tempGitHubDir, { recursive: true, force: true });
-      
-      // Remove local archive file
-      fs.rmSync(archivePath, { force: true });
-      
-      const githubBackupUrl = `${repoUrl}/tree/${branch}/backups/${backupFileName}`;
-      spinner.succeed(`Backup pushed to GitHub: ${colors.green(githubBackupUrl)}`);
-      
-      return githubBackupUrl;
-      
-    } catch (error) {
-      spinner.fail(`GitHub backup failed: ${error.message}`);
-      throw error;
-    }
-  }
 }
 
 // CLI Interface
@@ -364,21 +247,21 @@ async function main() {
       case 'list':
         const backups = await backupSystem.listBackups();
         if (backups.length === 0) {
-          console.log(colors.yellow('No backups found.'));
+          console.log(chalk.yellow('No backups found.'));
         } else {
-          console.log(colors.blue('Available backups:'));
+          console.log(chalk.blue('Available backups:'));
           backups.forEach(backup => {
-            console.log(`  ${colors.green(backup.id)} - ${new Date(backup.created).toLocaleString()} (${backup.type})`);
+            console.log(`  ${chalk.green(backup.id)} - ${new Date(backup.created).toLocaleString()} (${backup.type})`);
           });
         }
         break;
 
       default:
-        console.log(colors.red('Usage: node backup.js [create|list] [--quick]'));
+        console.log(chalk.red('Usage: node backup.js [create|list] [--quick]'));
         process.exit(1);
     }
   } catch (error) {
-    console.error(colors.red('Error:'), error.message);
+    console.error(chalk.red('Error:'), error.message);
     process.exit(1);
   }
 }

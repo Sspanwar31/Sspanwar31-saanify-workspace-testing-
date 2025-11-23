@@ -68,21 +68,18 @@
   },
   "storage": {
     "local": {
-      "enabled": false,
+      "enabled": true,
       "path": "./backups",
       "maxBackups": 10
     },
     "cloud": {
-      "enabled": true,
-      "provider": "github",
+      "enabled": false,
+      "provider": "aws-s3",
       "config": {
-        "repository": "https://github.com/Sspanwar31/Sspanwar31-saanify-workspace-testing-",
-        "branch": "master",
-        "token": "",
-        "commitAuthor": {
-          "name": "Saanify Backup Bot",
-          "email": "backup@saanify.com"
-        }
+        "bucket": "",
+        "region": "",
+        "accessKey": "",
+        "secretKey": ""
       }
     }
   }

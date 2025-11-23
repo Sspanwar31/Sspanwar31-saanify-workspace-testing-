@@ -3,14 +3,12 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 
 const createClientSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
+  societyName: z.string().min(2, 'Society name is required'),
+  adminName: z.string().min(2, 'Admin name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
-  address: z.string().optional(),
-  role: z.enum(['MEMBER', 'TREASURER', 'ADMIN']).default('MEMBER'),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING']).default('ACTIVE'),
-  societyAccountId: z.string().optional(),
-  isActive: z.boolean().default(true)
+  subscriptionType: z.enum(['TRIAL', 'BASIC', 'PRO', 'ENTERPRISE']).default('TRIAL'),
+  trialPeriod: z.string().optional()
 })
 
 export async function POST(request: NextRequest) {
@@ -20,8 +18,8 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = createClientSchema.parse(body)
 
-    // Check if email already exists
-    const existingClient = await db.user.findFirst({
+    // Check if email already exists in SocietyAccount
+    const existingClient = await db.societyAccount.findFirst({
       where: { email: validatedData.email }
     })
 
@@ -32,22 +30,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash password if provided
-    let hashedPassword = null
-    if (validatedData.password) {
-      hashedPassword = await bcrypt.hash(validatedData.password, 12)
+    // Calculate trial end date if it's a trial
+    let trialEndsAt = null
+    if (validatedData.subscriptionType === 'TRIAL' && validatedData.trialPeriod) {
+      const trialDays = parseInt(validatedData.trialPeriod)
+      trialEndsAt = new Date()
+      trialEndsAt.setDate(trialEndsAt.getDate() + trialDays)
     }
 
-    // Create client
-    const client = await db.user.create({
+    // Create society account (client)
+    const client = await db.societyAccount.create({
       data: {
-        name: validatedData.name,
+        name: validatedData.societyName,
+        adminName: validatedData.adminName,
         email: validatedData.email,
-        password: hashedPassword,
-        role: validatedData.role,
-        status: validatedData.status,
-        societyAccountId: validatedData.societyAccountId,
-        isActive: validatedData.isActive
+        phone: validatedData.phone,
+        subscriptionPlan: validatedData.subscriptionType,
+        status: validatedData.subscriptionType === 'TRIAL' ? 'TRIAL' : 'ACTIVE',
+        trialEndsAt: trialEndsAt,
+        subscriptionEndsAt: validatedData.subscriptionType !== 'TRIAL' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) : null, // 1 year for paid plans
+        isActive: true
       }
     })
 
@@ -57,10 +59,15 @@ export async function POST(request: NextRequest) {
       client: {
         id: client.id,
         name: client.name,
+        adminName: client.adminName,
         email: client.email,
-        role: client.role,
+        phone: client.phone,
+        subscriptionPlan: client.subscriptionPlan,
         status: client.status,
-        isActive: client.isActive
+        trialEndsAt: client.trialEndsAt,
+        subscriptionEndsAt: client.subscriptionEndsAt,
+        isActive: client.isActive,
+        createdAt: client.createdAt
       }
     })
 
@@ -88,16 +95,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const clients = await db.user.findMany({
-      where: {
-        role: { in: ['MEMBER', 'TREASURER', 'ADMIN'] }
-      },
+    const clients = await db.societyAccount.findMany({
       select: {
         id: true,
         name: true,
+        adminName: true,
         email: true,
-        role: true,
+        phone: true,
+        subscriptionPlan: true,
         status: true,
+        trialEndsAt: true,
+        subscriptionEndsAt: true,
         isActive: true,
         createdAt: true,
         updatedAt: true
@@ -105,9 +113,28 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
+    // Transform data to match expected format
+    const transformedClients = clients.map(client => ({
+      id: client.id,
+      name: client.name,
+      adminName: client.adminName,
+      email: client.email,
+      phone: client.phone,
+      plan: client.subscriptionPlan,
+      status: client.status.toLowerCase(),
+      renewDate: client.subscriptionEndsAt || client.trialEndsAt ? 
+        new Date(client.subscriptionEndsAt || client.trialEndsAt).toLocaleDateString() : 
+        'Not set',
+      users: Math.floor(Math.random() * 100) + 10, // Mock user count
+      trialEndsAt: client.trialEndsAt,
+      subscriptionEndsAt: client.subscriptionEndsAt,
+      isActive: client.isActive,
+      createdAt: client.createdAt
+    }))
+
     return NextResponse.json({
       success: true,
-      clients: clients
+      clients: transformedClients
     })
 
   } catch (error) {

@@ -1,39 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
     const { action, clientId, name, email, plan } = await request.json()
 
-    // Simulate database operations
+    // Use the same database operations as the main clients API
     switch (action) {
       case 'create':
-        // Simulate creating a new client
-        console.log('Creating new client:', { name, email, plan })
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Client created successfully',
-          clientId: Math.floor(Math.random() * 1000) + 100
+        // For now, redirect to the main clients API for creation
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clients`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            societyName: name || 'New Client',
+            adminName: 'Admin',
+            email: email || 'client@example.com',
+            subscriptionType: plan || 'TRIAL'
+          })
         })
+        
+        const result = await response.json()
+        return NextResponse.json(result)
 
       case 'lock':
-        // Simulate locking a client
-        console.log('Locking client:', clientId)
+        // Lock a client account
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: { status: 'LOCKED' }
+        })
         return NextResponse.json({ 
           success: true, 
           message: 'Client locked successfully' 
         })
 
       case 'unlock':
-        // Simulate unlocking a client
-        console.log('Unlocking client:', clientId)
+        // Unlock a client account
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: { status: 'ACTIVE' }
+        })
         return NextResponse.json({ 
           success: true, 
           message: 'Client unlocked successfully' 
         })
 
       case 'renew_subscription':
-        // Simulate renewing subscription
-        console.log('Renewing subscription for client:', clientId)
+        // Renew subscription for 1 year
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: { 
+            subscriptionEndsAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            status: 'ACTIVE'
+          }
+        })
         return NextResponse.json({ 
           success: true, 
           message: 'Subscription renewed successfully' 
@@ -58,8 +80,17 @@ export async function DELETE(request: NextRequest) {
   try {
     const { clientId } = await request.json()
 
-    // Simulate deleting a client
-    console.log('Deleting client:', clientId)
+    if (!clientId) {
+      return NextResponse.json(
+        { success: false, message: 'Client ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Delete client from society accounts
+    await db.societyAccount.delete({
+      where: { id: clientId }
+    })
     
     return NextResponse.json({ 
       success: true, 
@@ -76,18 +107,47 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Simulate fetching clients list
-    const mockClients = [
-      { id: 1, name: 'Acme Corporation', email: 'admin@acme.com', plan: 'Pro', status: 'active', renewDate: '2024-12-15', users: 45 },
-      { id: 2, name: 'TechStart Inc', email: 'contact@techstart.com', plan: 'Basic', status: 'trial', renewDate: '2024-11-20', users: 12 },
-      { id: 3, name: 'Global Enterprises', email: 'it@global.com', plan: 'Enterprise', status: 'active', renewDate: '2025-01-10', users: 120 },
-      { id: 4, name: 'StartupHub', email: 'hello@startuphub.com', plan: 'Trial', status: 'expired', renewDate: '2024-10-30', users: 8 },
-      { id: 5, name: 'MegaCorp', email: 'systems@megacorp.com', plan: 'Pro', status: 'locked', renewDate: '2024-11-05', users: 67 }
-    ]
+    // Fetch from society accounts
+    const clients = await db.societyAccount.findMany({
+      select: {
+        id: true,
+        name: true,
+        adminName: true,
+        email: true,
+        phone: true,
+        subscriptionPlan: true,
+        status: true,
+        trialEndsAt: true,
+        subscriptionEndsAt: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Transform data to match expected format
+    const transformedClients = clients.map(client => ({
+      id: client.id,
+      name: client.name,
+      adminName: client.adminName,
+      email: client.email,
+      phone: client.phone,
+      plan: client.subscriptionPlan,
+      status: client.status.toLowerCase(),
+      renewDate: client.subscriptionEndsAt || client.trialEndsAt ? 
+        new Date(client.subscriptionEndsAt || client.trialEndsAt).toLocaleDateString() : 
+        'Not set',
+      users: Math.floor(Math.random() * 100) + 10, // Mock user count
+      trialEndsAt: client.trialEndsAt,
+      subscriptionEndsAt: client.subscriptionEndsAt,
+      isActive: client.isActive,
+      createdAt: client.createdAt
+    }))
 
     return NextResponse.json({ 
       success: true, 
-      clients: mockClients 
+      clients: transformedClients 
     })
   } catch (error) {
     console.error('Get clients API error:', error)

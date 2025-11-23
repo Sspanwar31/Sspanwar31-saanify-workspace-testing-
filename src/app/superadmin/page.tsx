@@ -27,6 +27,9 @@ import { DataCharts } from '@/components/data-charts'
 import { RealTimeNotifications } from '@/components/real-time-notifications'
 import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { AdminSettings } from '@/components/superadmin/admin-settings'
+import { AddClientModal } from '@/components/client/AddClientModal'
+import { EditClientModal } from '@/components/client/EditClientModal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // --- CONSTANT DATA FOR AUTOMATION (ADDED) ---
 const DB_TASKS_DATA = [
@@ -44,6 +47,11 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showAddClientModal, setShowAddClientModal] = useState(false)
+  const [showViewClientModal, setShowViewClientModal] = useState(false)
+  const [showEditClientModal, setShowEditClientModal] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [clients, setClients] = useState<any[]>([])
 
   // Check window size on mount and resize
   useEffect(() => {
@@ -91,32 +99,35 @@ export default function AdminDashboard() {
   }
 
   // Quick Action Handlers
-  const handleAddNewClient = async () => {
+  const handleAddNewClient = () => {
+    setShowAddClientModal(true)
+  }
+
+  const handleClientAdded = () => {
+    setShowAddClientModal(false)
+    // Refresh clients list
+    fetchClients()
+    setActiveModule('clients') // Switch to clients tab
+  }
+
+  const fetchClients = async () => {
     try {
-      const response = await fetch('/api/superadmin/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'create',
-          name: 'New Client',
-          email: 'client@example.com',
-          plan: 'Trial'
-        })
-      })
-      
+      const response = await fetch('/api/superadmin/clients')
       if (response.ok) {
-        alert('✅ New client added successfully!')
-        setActiveModule('clients') // Switch to clients tab
-      } else {
-        alert('❌ Failed to add client')
+        const data = await response.json()
+        setClients(data.clients || [])
       }
     } catch (error) {
-      console.error('Add client error:', error)
-      alert('⚠️ Error adding client')
+      console.error('Failed to fetch clients:', error)
     }
   }
+
+  // Fetch clients on component mount
+  useEffect(() => {
+    if (!isLoading) {
+      fetchClients()
+    }
+  }, [isLoading])
 
   const handleRenewSubscriptions = async () => {
     try {
@@ -166,20 +177,19 @@ export default function AdminDashboard() {
   }
 
   // Client Management Handlers
-  const handleViewClient = async (clientId: number) => {
-    try {
-      alert(`👁️ Viewing client ID: ${clientId}\n\nClient details will open in a modal soon!`)
-    } catch (error) {
-      console.error('View client error:', error)
-    }
+  const handleViewClient = (client: any) => {
+    setSelectedClient(client)
+    setShowViewClientModal(true)
   }
 
-  const handleEditClient = async (clientId: number) => {
-    try {
-      alert(`✏️ Editing client ID: ${clientId}\n\nEdit form will open in a modal soon!`)
-    } catch (error) {
-      console.error('Edit client error:', error)
-    }
+  const handleEditClient = (client: any) => {
+    setSelectedClient(client)
+    setShowEditClientModal(true)
+  }
+
+  const handleClientUpdated = () => {
+    setShowEditClientModal(false)
+    fetchClients()
   }
 
   const handleLockClient = async (clientId: number) => {
@@ -566,6 +576,95 @@ export default function AdminDashboard() {
           </motion.div>
         </main>
       </div>
+
+      {/* Modals */}
+      <Dialog open={showAddClientModal} onOpenChange={setShowAddClientModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-cyan-400" />
+              Add New Client
+            </DialogTitle>
+          </DialogHeader>
+          <AddClientModal 
+            onClose={() => setShowAddClientModal(false)}
+            onSuccess={handleClientAdded}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* View Client Modal */}
+      <Dialog open={showViewClientModal} onOpenChange={setShowViewClientModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-cyan-400" />
+              Client Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-400">Society Name</label>
+                  <p className="text-white font-medium">{selectedClient.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400">Admin Email</label>
+                  <p className="text-white font-medium">{selectedClient.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400">Subscription Plan</label>
+                  <Badge className={getPlanColor(selectedClient.plan)}>
+                    {selectedClient.plan}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400">Status</label>
+                  <Badge className={getStatusColor(selectedClient.status)}>
+                    {selectedClient.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowViewClientModal(false)}
+                  className="border-slate-600 text-white hover:bg-slate-700"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowViewClientModal(false)
+                    handleEditClient(selectedClient)
+                  }}
+                  className="bg-cyan-500 hover:bg-cyan-600"
+                >
+                  Edit Client
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Modal */}
+      <Dialog open={showEditClientModal} onOpenChange={setShowEditClientModal}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-cyan-400" />
+              Edit Client
+            </DialogTitle>
+          </DialogHeader>
+          <EditClientModal 
+            client={selectedClient}
+            onClose={() => setShowEditClientModal(false)}
+            onSuccess={handleClientUpdated}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 
@@ -692,14 +791,6 @@ export default function AdminDashboard() {
 
   // Client Management Component
   function ClientManagement() {
-    const [clients] = useState([
-      { id: 1, name: 'Acme Corporation', email: 'admin@acme.com', plan: 'Pro', status: 'active', renewDate: '2024-12-15', users: 45 },
-      { id: 2, name: 'TechStart Inc', email: 'contact@techstart.com', plan: 'Basic', status: 'trial', renewDate: '2024-11-20', users: 12 },
-      { id: 3, name: 'Global Enterprises', email: 'it@global.com', plan: 'Enterprise', status: 'active', renewDate: '2025-01-10', users: 120 },
-      { id: 4, name: 'StartupHub', email: 'hello@startuphub.com', plan: 'Trial', status: 'expired', renewDate: '2024-10-30', users: 8 },
-      { id: 5, name: 'MegaCorp', email: 'systems@megacorp.com', plan: 'Pro', status: 'locked', renewDate: '2024-11-05', users: 67 }
-    ])
-
     const getStatusColor = (status: string) => {
       switch (status) {
         case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -728,7 +819,10 @@ export default function AdminDashboard() {
             <h2 className="text-3xl font-bold text-white mb-2">Client Management</h2>
             <p className="text-white/60">Manage all society clients and their subscriptions</p>
           </div>
-          <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600">
+          <Button 
+            className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+            onClick={handleAddNewClient}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add New Client
           </Button>
@@ -834,7 +928,7 @@ export default function AdminDashboard() {
                             size="sm" 
                             variant="ghost" 
                             className="text-white hover:bg-white/10"
-                            onClick={() => handleViewClient(client.id)}
+                            onClick={() => handleViewClient(client)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -842,7 +936,7 @@ export default function AdminDashboard() {
                             size="sm" 
                             variant="ghost" 
                             className="text-white hover:bg-white/10"
-                            onClick={() => handleEditClient(client.id)}
+                            onClick={() => handleEditClient(client)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>

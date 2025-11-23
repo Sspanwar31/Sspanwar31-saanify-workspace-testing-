@@ -309,10 +309,16 @@ class SimpleBackupSystem {
     }
   }
 
-  async pushToGitHub(branch = 'master') {
+  async pushToGitHub(branch = null) {
     console.log('\n🚀 Pushing to GitHub...');
     
     try {
+      // Get current branch if not specified
+      if (!branch) {
+        branch = execSync('git branch --show-current', { encoding: 'utf8' }).trim();
+        console.log(`   🌿 Using current branch: ${branch}`);
+      }
+      
       // Check git status
       console.log('   📋 Checking git status...');
       const status = execSync('git status --porcelain', { encoding: 'utf8' });
@@ -371,7 +377,7 @@ class SimpleBackupSystem {
       await this.createBackup();
       
       // Push to GitHub
-      await this.pushToGitHub('master');
+      await this.pushToGitHub(); // Use current branch automatically
       
       console.log('\n🎉 Simple backup completed successfully!');
       console.log(`📁 Backup location: ${this.backupDir}`);

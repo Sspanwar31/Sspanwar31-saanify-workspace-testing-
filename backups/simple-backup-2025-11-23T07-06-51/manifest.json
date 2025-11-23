@@ -1,0 +1,14 @@
+{
+  "backupInfo": {
+    "timestamp": "2025-11-23T07:06:51.596Z",
+    "workspaceRoot": "/home/z/my-project",
+    "backupDir": "/home/z/my-project/backups/simple-backup-2025-11-23T07-06-51",
+    "totalFiles": 3901,
+    "totalSize": 134590815
+  },
+  "metadata": {
+    "nodeVersion": "v22.21.0",
+    "platform": "linux",
+    "arch": "x64"
+  }
+}

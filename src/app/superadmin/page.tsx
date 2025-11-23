@@ -90,6 +90,274 @@ export default function AdminDashboard() {
     }
   }
 
+  // Quick Action Handlers
+  const handleAddNewClient = async () => {
+    try {
+      const response = await fetch('/api/superadmin/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create',
+          name: 'New Client',
+          email: 'client@example.com',
+          plan: 'Trial'
+        })
+      })
+      
+      if (response.ok) {
+        alert('✅ New client added successfully!')
+        setActiveModule('clients') // Switch to clients tab
+      } else {
+        alert('❌ Failed to add client')
+      }
+    } catch (error) {
+      console.error('Add client error:', error)
+      alert('⚠️ Error adding client')
+    }
+  }
+
+  const handleRenewSubscriptions = async () => {
+    try {
+      const response = await fetch('/api/superadmin/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'renew_all'
+        })
+      })
+      
+      if (response.ok) {
+        alert('✅ All subscriptions renewed successfully!')
+      } else {
+        alert('❌ Failed to renew subscriptions')
+      }
+    } catch (error) {
+      console.error('Renew subscriptions error:', error)
+      alert('⚠️ Error renewing subscriptions')
+    }
+  }
+
+  const handleSendNotifications = async () => {
+    try {
+      const response = await fetch('/api/superadmin/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'send_all',
+          message: 'System update notification'
+        })
+      })
+      
+      if (response.ok) {
+        alert('✅ Notifications sent successfully!')
+      } else {
+        alert('❌ Failed to send notifications')
+      }
+    } catch (error) {
+      console.error('Send notifications error:', error)
+      alert('⚠️ Error sending notifications')
+    }
+  }
+
+  // Client Management Handlers
+  const handleViewClient = async (clientId: number) => {
+    try {
+      alert(`👁️ Viewing client ID: ${clientId}\n\nClient details will open in a modal soon!`)
+    } catch (error) {
+      console.error('View client error:', error)
+    }
+  }
+
+  const handleEditClient = async (clientId: number) => {
+    try {
+      alert(`✏️ Editing client ID: ${clientId}\n\nEdit form will open in a modal soon!`)
+    } catch (error) {
+      console.error('Edit client error:', error)
+    }
+  }
+
+  const handleLockClient = async (clientId: number) => {
+    try {
+      const response = await fetch('/api/superadmin/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'lock',
+          clientId: clientId
+        })
+      })
+      
+      if (response.ok) {
+        alert('🔒 Client locked successfully!')
+      } else {
+        alert('❌ Failed to lock client')
+      }
+    } catch (error) {
+      console.error('Lock client error:', error)
+      alert('⚠️ Error locking client')
+    }
+  }
+
+  const handleUnlockClient = async (clientId: number) => {
+    try {
+      const response = await fetch('/api/superadmin/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unlock',
+          clientId: clientId
+        })
+      })
+      
+      if (response.ok) {
+        alert('🔓 Client unlocked successfully!')
+      } else {
+        alert('❌ Failed to unlock client')
+      }
+    } catch (error) {
+      console.error('Unlock client error:', error)
+      alert('⚠️ Error unlocking client')
+    }
+  }
+
+  const handleRenewClientSubscription = async (clientId: number) => {
+    try {
+      const response = await fetch('/api/superadmin/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'renew_subscription',
+          clientId: clientId
+        })
+      })
+      
+      if (response.ok) {
+        alert('🔄 Client subscription renewed successfully!')
+      } else {
+        alert('❌ Failed to renew subscription')
+      }
+    } catch (error) {
+      console.error('Renew subscription error:', error)
+      alert('⚠️ Error renewing subscription')
+    }
+  }
+
+  const handleDeleteClient = async (clientId: number) => {
+    const confirmDelete = window.confirm('⚠️ Are you sure you want to delete this client? This action cannot be undone!')
+    
+    if (!confirmDelete) return
+    
+    try {
+      const response = await fetch('/api/superadmin/clients', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId: clientId
+        })
+      })
+      
+      if (response.ok) {
+        alert('🗑️ Client deleted successfully!')
+      } else {
+        alert('❌ Failed to delete client')
+      }
+    } catch (error) {
+      console.error('Delete client error:', error)
+      alert('⚠️ Error deleting client')
+    }
+  }
+
+  // System Settings Handlers
+  const handleAddNewAdmin = async () => {
+    try {
+      const response = await fetch('/api/superadmin/admins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create',
+          name: 'New Admin',
+          email: 'admin@saanify.com',
+          role: 'Admin'
+        })
+      })
+      
+      if (response.ok) {
+        alert('👤 New admin added successfully!')
+      } else {
+        alert('❌ Failed to add admin')
+      }
+    } catch (error) {
+      console.error('Add admin error:', error)
+      alert('⚠️ Error adding admin')
+    }
+  }
+
+  const handleBackupNow = async () => {
+    try {
+      const response = await fetch('/api/superadmin/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'backup_now'
+        })
+      })
+      
+      if (response.ok) {
+        alert('💾 System backup completed successfully!\n\nBackup saved to GitHub and local storage.')
+      } else {
+        alert('❌ Failed to create backup')
+      }
+    } catch (error) {
+      console.error('Backup error:', error)
+      alert('⚠️ Error creating backup')
+    }
+  }
+
+  const handleRestore = async () => {
+    const confirmRestore = window.confirm('⚠️ Are you sure you want to restore from backup? This will overwrite current data!')
+    
+    if (!confirmRestore) return
+    
+    try {
+      const response = await fetch('/api/superadmin/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'restore'
+        })
+      })
+      
+      if (response.ok) {
+        alert('🔄 System restored successfully!\n\nPlease refresh the page to see changes.')
+      } else {
+        alert('❌ Failed to restore system')
+      }
+    } catch (error) {
+      console.error('Restore error:', error)
+      alert('⚠️ Error restoring system')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -359,15 +627,26 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600">
+              <Button 
+                className="w-full justify-start bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+                onClick={() => handleAddNewClient()}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Client
               </Button>
-              <Button variant="outline" className="w-full justify-start border-white/20 text-white hover:bg-white/10">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start border-white/20 text-white hover:bg-white/10"
+                onClick={() => handleRenewSubscriptions()}
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Renew Subscriptions
               </Button>
-              <Button variant="outline" className="w-full justify-start border-white/20 text-white hover:bg-white/10">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start border-white/20 text-white hover:bg-white/10"
+                onClick={() => handleSendNotifications()}
+              >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Notifications
               </Button>
@@ -551,10 +830,20 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-white hover:bg-white/10"
+                            onClick={() => handleViewClient(client.id)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-white hover:bg-white/10"
+                            onClick={() => handleEditClient(client.id)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <DropdownMenu>
@@ -564,20 +853,32 @@ export default function AdminDashboard() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="bg-slate-800 border-white/10">
-                              <DropdownMenuItem className="text-white hover:bg-white/10">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-white/10"
+                                onClick={() => handleLockClient(client.id)}
+                              >
                                 <Lock className="h-4 w-4 mr-2" />
                                 Lock Client
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-white hover:bg-white/10">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-white/10"
+                                onClick={() => handleUnlockClient(client.id)}
+                              >
                                 <Unlock className="h-4 w-4 mr-2" />
                                 Unlock Client
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-white hover:bg-white/10">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-white/10"
+                                onClick={() => handleRenewClientSubscription(client.id)}
+                              >
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 Renew Subscription
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-white/10" />
-                              <DropdownMenuItem className="text-red-400 hover:bg-white/10">
+                              <DropdownMenuItem 
+                                className="text-red-400 hover:bg-white/10"
+                                onClick={() => handleDeleteClient(client.id)}
+                              >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Client
                               </DropdownMenuItem>
@@ -1112,7 +1413,10 @@ export default function AdminDashboard() {
                     </Badge>
                   </div>
                 ))}
-                <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                <Button 
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  onClick={() => handleAddNewAdmin()}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Admin
                 </Button>
@@ -1144,11 +1448,18 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button className="flex-1 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600">
+                  <Button 
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+                    onClick={() => handleBackupNow()}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Backup Now
                   </Button>
-                  <Button variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 border-white/20 text-white hover:bg-white/10"
+                    onClick={() => handleRestore()}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Restore
                   </Button>

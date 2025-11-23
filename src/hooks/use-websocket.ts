@@ -35,15 +35,25 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     setConnectionStatus('connecting')
     
     try {
+      // For now, disable WebSocket to prevent connection errors
+      // TODO: Implement proper WebSocket server setup
+      console.log('WebSocket connection disabled - server not configured')
+      setConnectionStatus('error')
+      return
+      
+      // Original WebSocket connection code (commented out)
+      /*
       socketRef.current = io(process.env.NODE_ENV === 'production' 
         ? window.location.origin 
         : 'http://127.0.0.1:3000', {
+        path: '/api/socket',
         transports: ['websocket', 'polling'],
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: reconnectAttempts,
         reconnectionDelay: reconnectDelay
       })
+      */
 
       socketRef.current.on('connect', () => {
         setIsConnected(true)
@@ -88,15 +98,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setMessages(prev => [...prev.slice(-49), message])
       })
 
-      socketRef.current.on('system_alert', (data) => {
-        const message: WebSocketMessage = {
-          type: 'system_alert',
-          data,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev.slice(-49), message])
-      })
-
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       setConnectionStatus('error')
@@ -118,11 +119,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }
 
   const sendMessage = (type: string, data: any) => {
+    // WebSocket disabled - return false for now
+    console.log('WebSocket message disabled:', type, data)
+    return false
+    
+    // Original code (commented out)
+    /*
     if (socketRef.current?.connected) {
       socketRef.current.emit(type, data)
       return true
     }
     return false
+    */
   }
 
   const clearMessages = () => {

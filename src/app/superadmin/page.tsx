@@ -43,6 +43,19 @@ export default function AdminDashboard() {
   const [activeModule, setActiveModule] = useState('overview')
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check window size on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const [selectedFilter, setSelectedFilter] = useState('all')
 
   useEffect(() => {
@@ -220,7 +233,7 @@ export default function AdminDashboard() {
         <motion.aside
           initial={false}
           animate={{ 
-            x: isMobileMenuOpen ? 0 : -300,
+            x: isMobileMenuOpen ? 0 : (isMobile ? -300 : 0),
             transition: { type: "spring", stiffness: 300, damping: 30 }
           }}
           className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-72 backdrop-blur-xl bg-white/5 border-r border-white/10 z-40 lg:translate-x-0 lg:static lg:block"
@@ -730,17 +743,133 @@ export default function AdminDashboard() {
   function AutomationNotifications() {
     const [dbTasks, setDbTasks] = useState(DB_TASKS_DATA);
     const [activeTab, setActiveTab] = useState("system"); // 'system' or 'communication'
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiStatus, setApiStatus] = useState<'connected' | 'error' | 'loading'>('loading');
+
+    // Load real data from API on component mount
+    useEffect(() => {
+      loadAutomationData();
+    }, []);
+
+    const loadAutomationData = async () => {
+      try {
+        setApiStatus('loading');
+        
+        // Get token from cookies or localStorage
+        let token = null;
+        
+        // Try to get from cookie
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+        if (authCookie) {
+          token = authCookie.split('=')[1];
+        }
+        
+        // Fallback to localStorage
+        if (!token) {
+          token = localStorage.getItem('refresh-token');
+        }
+        
+        const response = await fetch('/api/superadmin/automation/data', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.tasks && data.tasks.length > 0) {
+            // Transform API data to match our component structure
+            const transformedTasks = data.tasks.map((task: any) => ({
+              id: task.id,
+              task_name: task.task_name,
+              description: task.description || `${task.task_name} automation task`,
+              schedule: task.schedule || 'manual',
+              enabled: task.enabled,
+              last_run_status: task.last_run_status || 'PENDING'
+            }));
+            setDbTasks(transformedTasks);
+            setApiStatus('connected');
+            console.log('✅ Loaded automation data from API:', transformedTasks);
+          } else {
+            // Fallback to static data if API returns empty
+            setApiStatus('connected');
+            console.log('⚠️ API returned empty data, using static fallback');
+          }
+        } else {
+          setApiStatus('error');
+          console.log('❌ API error, using static data');
+        }
+      } catch (error) {
+        setApiStatus('error');
+        console.error('❌ Failed to load automation data:', error);
+      }
+    };
 
     // Handler: Toggle Enable/Disable
-    const toggleTask = (id: string) => {
+    const toggleTask = async (id: string) => {
+      // Update local state immediately for better UX
       setDbTasks(dbTasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t));
-      // Here you would add your API call: await supabase.from('tasks').update(...)
+      
+      try {
+        // Get token for authentication
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+        let token = authCookie ? authCookie.split('=')[1] : localStorage.getItem('refresh-token');
+        
+        const response = await fetch(`/api/superadmin/automation/toggle`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          },
+          body: JSON.stringify({ taskId: id })
+        });
+        
+        if (!response.ok) {
+          // Revert change if API call fails
+          setDbTasks(dbTasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t));
+          console.error('❌ Failed to toggle task:', id);
+        }
+      } catch (error) {
+        // Revert change if API call fails
+        setDbTasks(dbTasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t));
+        console.error('❌ Error toggling task:', error);
+      }
     };
 
     // Handler: Run Now
-    const runTask = (taskName: string) => {
-      // Simulate API Call
-      alert(`Triggering Edge Function for: ${taskName}`);
+    const runTask = async (taskName: string) => {
+      setIsLoading(true);
+      try {
+        // Get token for authentication
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+        let token = authCookie ? authCookie.split('=')[1] : localStorage.getItem('refresh-token');
+        
+        const response = await fetch('/api/superadmin/automation/run', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          },
+          body: JSON.stringify({ taskName })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Task triggered successfully:', result);
+          // Reload data to get updated status
+          await loadAutomationData();
+        } else {
+          console.error('❌ Failed to trigger task:', taskName);
+        }
+      } catch (error) {
+        console.error('❌ Error running task:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     return (
@@ -748,7 +877,30 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Automation Center</h2>
-            <p className="text-white/60">Manage system tasks, crons, and communication workflows</p>
+            <div className="flex items-center gap-3">
+              <p className="text-white/60">Manage system tasks, crons, and communication workflows</p>
+              {/* API Status Indicator */}
+              <div className="flex items-center gap-2">
+                {apiStatus === 'loading' && (
+                  <div className="flex items-center gap-1">
+                    <RefreshCw className="h-3 w-3 text-yellow-400 animate-spin" />
+                    <span className="text-xs text-yellow-400">Loading...</span>
+                  </div>
+                )}
+                {apiStatus === 'connected' && (
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-green-400" />
+                    <span className="text-xs text-green-400">Connected</span>
+                  </div>
+                )}
+                {apiStatus === 'error' && (
+                  <div className="flex items-center gap-1">
+                    <XCircle className="h-3 w-3 text-red-400" />
+                    <span className="text-xs text-red-400">Using Demo Data</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Sub-Tabs for Automation */}
@@ -832,10 +984,20 @@ export default function AdminDashboard() {
                         <Button 
                           onClick={() => runTask(task.task_name)}
                           size="sm" 
-                          className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg shadow-cyan-900/20 border-0"
+                          disabled={isLoading}
+                          className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg shadow-cyan-900/20 border-0 disabled:opacity-50"
                         >
-                          <Play className="h-3 w-3 mr-2 fill-current" />
-                          Run Now
+                          {isLoading ? (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                              Running...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-3 w-3 mr-2 fill-current" />
+                              Run Now
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>

@@ -6,8 +6,17 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-it";
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Auth Check (Token verify)
-    const token = req.cookies.get("auth-token")?.value;
+    // 1. Auth Check (Token verify) - Support both cookies and Authorization header
+    let token = req.cookies.get("auth-token")?.value;
+    
+    // Fallback to Authorization header (for preview environments)
+    if (!token) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
+    }
+    
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

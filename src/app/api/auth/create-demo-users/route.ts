@@ -1,93 +1,166 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseService } from '@/lib/supabase-service'
+import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, userType } = await request.json()
-    
-    // Create user with Supabase Auth
-    const { data: authData, error: authError } = await supabaseService.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        name,
-        role: userType === 'admin' ? 'SUPER_ADMIN' : 'CLIENT'
+    console.log('🔧 Creating demo users for unified authentication...')
+
+    // Demo users data
+    const demoUsers = [
+      {
+        email: 'superadmin@saanify.com',
+        name: 'Super Admin',
+        password: 'admin123',
+        role: 'SUPER_ADMIN',
+        isActive: true
+      },
+      {
+        email: 'admin@saanify.com',
+        name: 'Admin User',
+        password: 'admin123',
+        role: 'ADMIN',
+        isActive: true
+      },
+      {
+        email: 'client@saanify.com',
+        name: 'Client User',
+        password: 'client123',
+        role: 'CLIENT',
+        isActive: true
+      },
+      {
+        email: 'testclient1@gmail.com',
+        name: 'Test Client One',
+        password: 'client123',
+        role: 'CLIENT',
+        isActive: true
+      },
+      {
+        email: 'testadmin1@gmail.com',
+        name: 'Test Admin One',
+        password: 'admin123',
+        role: 'ADMIN',
+        isActive: true
       }
-    })
+    ]
 
-    if (authError) {
-      console.log('Supabase auth error:', authError)
-      return NextResponse.json(
-        { error: 'Failed to create user: ' + authError.message },
-        { status: 400 }
-      )
-    }
+    const createdUsers = []
+    const updatedUsers = []
 
-    if (!authData.user) {
-      return NextResponse.json(
-        { error: 'Failed to create user' },
-        { status: 500 }
-      )
-    }
+    for (const userData of demoUsers) {
+      try {
+        // Check if user already exists
+        const existingUser = await db.user.findUnique({
+          where: { email: userData.email }
+        })
 
-    // Profile will be created automatically by the trigger
-    // Wait a moment for the trigger to execute
-    await new Promise(resolve => setTimeout(resolve, 1000))
+        const hashedPassword = await bcrypt.hash(userData.password, 12)
 
-    // Verify profile was created
-    const { data: profile, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
-
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'User created but profile setup failed' },
-        { status: 500 }
-      )
-    }
-
-    // If it's a client, create a demo society account
-    if (userType === 'client') {
-      const { data: societyAccount, error: societyError } = await supabaseService
-        .from('society_accounts')
-        .insert([{
-          name: `${name}'s Society`,
-          admin_name: name,
-          email,
-          subscription_plan: 'TRIAL',
-          status: 'TRIAL'
-        }])
-        .select()
-        .single()
-
-      if (!societyError && societyAccount) {
-        // Link the society account to the user profile
-        await supabaseService
-          .from('profiles')
-          .update({ society_account_id: societyAccount.id })
-          .eq('id', authData.user.id)
+        if (existingUser) {
+          // Update existing user
+          const updatedUser = await db.user.update({
+            where: { email: userData.email },
+            data: {
+              password: hashedPassword,
+              role: userData.role,
+              isActive: userData.isActive,
+              name: userData.name
+            }
+          })
+          updatedUsers.push(updatedUser)
+          console.log(`✅ Updated existing user: ${userData.email} (${userData.role})`)
+        } else {
+          // Create new user
+          const newUser = await db.user.create({
+            data: {
+              email: userData.email,
+              name: userData.name,
+              password: hashedPassword,
+              role: userData.role,
+              isActive: userData.isActive
+            }
+          })
+          createdUsers.push(newUser)
+          console.log(`✅ Created new user: ${userData.email} (${userData.role})`)
+        }
+      } catch (error) {
+        console.error(`❌ Error processing user ${userData.email}:`, error)
       }
     }
+
+    console.log(`🎉 Demo users setup completed!`)
+    console.log(`   Created: ${createdUsers.length} new users`)
+    console.log(`   Updated: ${updatedUsers.length} existing users`)
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully',
-      user: {
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        role: profile.role
+      message: 'Demo users created/updated successfully',
+      data: {
+        created: createdUsers.map(u => ({ email: u.email, role: u.role, name: u.name })),
+        updated: updatedUsers.map(u => ({ email: u.email, role: u.role, name: u.name })),
+        totalDemoUsers: demoUsers.length,
+        credentials: {
+          admin: {
+            email: 'superadmin@saanify.com',
+            password: 'admin123',
+            redirectUrl: '/superadmin'
+          },
+          client: {
+            email: 'client@saanify.com',
+            password: 'client123',
+            redirectUrl: '/client/dashboard'
+          }
+        }
       }
     })
 
   } catch (error) {
-    console.error('Create demo user error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('🔥 Error creating demo users:', error)
+    return NextResponse.json({
+      error: 'Failed to create demo users',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
+// GET endpoint to check demo users
+export async function GET(request: NextRequest) {
+  try {
+    const demoEmails = [
+      'superadmin@saanify.com',
+      'admin@saanify.com', 
+      'client@saanify.com',
+      'testclient1@gmail.com',
+      'testadmin1@gmail.com'
+    ]
+
+    const users = await db.user.findMany({
+      where: {
+        email: {
+          in: demoEmails
+        }
+      },
+      select: {
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      demoUsers: users,
+      count: users.length
+    })
+
+  } catch (error) {
+    console.error('Error checking demo users:', error)
+    return NextResponse.json({
+      error: 'Failed to check demo users'
+    }, { status: 500 })
   }
 }

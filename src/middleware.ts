@@ -47,6 +47,28 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // 3. Protect Client Routes
+  if (pathname.startsWith("/client")) {
+    
+    // Agar token nahi hai -> Login pe bhejo
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    // Token Decode karo
+    const user = decodeJwtPayload(token.value);
+    
+    // Agar token invalid hai -> Login pe bhejo
+    if (!user) {
+      const response = NextResponse.redirect(new URL("/login", req.url));
+      response.cookies.delete("auth-token");
+      return response;
+    }
+
+    // Client routes ke liye basic authentication check (koi role restriction nahi)
+    // Kunki client dashboard sabhi logged-in users ke liye accessible ho sakta hai
+  }
+
   return NextResponse.next();
 }
 

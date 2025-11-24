@@ -92,7 +92,7 @@ interface SubscriptionPlan {
 
 interface Subscription {
   id: number;
-  clientId: number;
+  clientId: string;
   clientName: string;
   plan: string;
   status: string;
@@ -135,6 +135,14 @@ export default function SuperAdminDashboard() {
     totalTrial: 0,
     totalExpired: 0,
     totalRevenue: '$0/month'
+  })
+  
+  // Subscription Modal States
+  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false)
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null)
+  const [renewData, setRenewData] = useState({
+    planId: '',
+    duration: '1'
   })
   
   // Modal States
@@ -199,9 +207,83 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const response = await fetch('/api/superadmin/subscription-plans');
+      const result = await response.json();
+      if (result.success) {
+        setSubscriptionPlans(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscription plans:', error);
+      // Fallback to sample data
+      setSubscriptionPlans([
+        {
+          name: "Basic Plan",
+          price: 999,
+          duration: "monthly",
+          features: ["Up to 50 members", "Basic transactions", "Email support"],
+          color: "bg-blue-500",
+          description: "Perfect for small societies"
+        },
+        {
+          name: "Standard Plan", 
+          price: 1999,
+          duration: "monthly",
+          features: ["Up to 200 members", "Advanced transactions", "Priority support"],
+          color: "bg-cyan-500",
+          description: "Great for medium societies"
+        },
+        {
+          name: "Premium Plan",
+          price: 4999,
+          duration: "monthly", 
+          features: ["Unlimited members", "Advanced analytics", "24/7 support"],
+          color: "bg-purple-500",
+          description: "Best for large societies"
+        }
+      ]);
+    }
+  };
+
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await fetch('/api/superadmin/subscriptions');
+      const result = await response.json();
+      if (result.success) {
+        setSubscriptions(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscriptions:', error);
+      // Fallback to sample data
+      setSubscriptions([
+        {
+          id: 1,
+          clientId: "client1",
+          clientName: "Shanti Niketan Society",
+          plan: "Standard Plan",
+          status: "active",
+          expiryDate: "2024-12-31",
+          revenue: "₹1,999"
+        },
+        {
+          id: 2,
+          clientId: "client2", 
+          clientName: "Green Valley Apartments",
+          plan: "Basic Plan",
+          status: "expired",
+          expiryDate: "2024-11-15",
+          revenue: "₹999"
+        }
+      ]);
+    }
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     fetchClients()
+    fetchSubscriptionPlans()
+    fetchSubscriptions()
   }, [])
 
   // Filter clients based on search and status
@@ -371,6 +453,51 @@ export default function SuperAdminDashboard() {
 
   const handleLogout = async () => {
     await logout()
+  }
+
+  const handleRenewSubscription = async () => {
+    if (!selectedSubscription || !renewData.planId) {
+      toast.error('Please select a plan for renewal')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/superadmin/renew-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: selectedSubscription.clientId,
+          newPlan: renewData.planId,
+          duration: renewData.duration,
+          autoRenew: false
+        })
+      })
+      
+      if (res.ok) {
+        toast.success('✅ Subscription renewed successfully')
+        setIsRenewModalOpen(false)
+        setSelectedSubscription(null)
+        setRenewData({ planId: '', duration: '1' })
+        fetchSubscriptions()
+        fetchClients() // Refresh client data to update subscription status
+      } else {
+        throw new Error('Failed to renew subscription')
+      }
+    } catch (e) {
+      toast.error('❌ Failed to renew subscription')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const openRenewModal = (subscription: Subscription) => {
+    setSelectedSubscription(subscription)
+    setRenewData({
+      planId: subscription.plan,
+      duration: '1'
+    })
+    setIsRenewModalOpen(true)
   }
 
   // --- HELPER FUNCTIONS ---
@@ -1161,9 +1288,18 @@ export default function SuperAdminDashboard() {
             {/* ================= BILLING TAB ================= */}
             {activeTab === 'billing' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Subscription & Billing</h2>
-                  <p className="text-white/60">Manage plans, revenue, and client subscriptions</p>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Subscription & Billing</h2>
+                    <p className="text-white/60">Manage plans, revenue, and client subscriptions</p>
+                  </div>
+                  <Button 
+                    onClick={() => router.push('/superadmin/subscription-plans')}
+                    className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Plans
+                  </Button>
                 </div>
 
                 {/* Revenue Overview */}
@@ -1185,20 +1321,17 @@ export default function SuperAdminDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {[
-                          { plan: 'Enterprise', count: 3, revenue: '$15,000', color: 'bg-purple-500' },
-                          { plan: 'Pro', count: 12, revenue: '$24,000', color: 'bg-cyan-500' },
-                          { plan: 'Basic', count: 6, revenue: '$6,000', color: 'bg-blue-500' },
-                          { plan: 'Trial', count: 3, revenue: '$0', color: 'bg-gray-500' }
-                        ].map((item) => (
-                          <div key={item.plan} className="flex items-center justify-between">
+                        {subscriptionPlans?.map((plan) => (
+                          <div key={plan.name} className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                              <span className="text-white">{item.plan}</span>
+                              <div className={`w-3 h-3 rounded-full ${plan?.color || 'bg-gray-500'}`}></div>
+                              <span className="text-white">{plan.name}</span>
                             </div>
                             <div className="text-right">
-                              <p className="text-white font-medium">{item.count} clients</p>
-                              <p className="text-white/60 text-sm">{item.revenue}</p>
+                              <p className="text-white font-medium">
+                                {subscriptions?.filter(s => s?.plan === plan?.name).length || 0} clients
+                              </p>
+                              <p className="text-white/60 text-sm">₹{plan?.price || 0}</p>
                             </div>
                           </div>
                         ))}
@@ -1206,6 +1339,101 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Subscription Plans */}
+                <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white">Available Subscription Plans</CardTitle>
+                    <CardDescription className="text-white/60">
+                      Current subscription plans offered to clients
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {subscriptionPlans?.map((plan, index) => (
+                        <Card key={index} className="bg-white/5 border-white/10">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <h3 className="text-lg font-semibold text-white">{plan?.name || 'Unknown Plan'}</h3>
+                              <Badge className="bg-green-500/20 text-green-400">Active</Badge>
+                            </div>
+                            <p className="text-white/60 text-sm mb-3">{plan?.description || 'No description available'}</p>
+                            <div className="text-2xl font-bold text-white mb-3">₹{plan?.price || 0}</div>
+                            <div className="text-white/60 text-sm mb-3">{plan?.duration || 'monthly'}</div>
+                            <div className="space-y-1">
+                              {plan.features?.map((feature, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <Check className="h-3 w-3 text-green-400" />
+                                  <span className="text-white/80 text-sm">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Client Subscriptions */}
+                <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white">Client Subscriptions</CardTitle>
+                    <CardDescription className="text-white/60">
+                      Manage and renew client subscriptions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-white/10">
+                            <TableHead className="text-white/60">Client</TableHead>
+                            <TableHead className="text-white/60">Plan</TableHead>
+                            <TableHead className="text-white/60">Status</TableHead>
+                            <TableHead className="text-white/60">Expiry Date</TableHead>
+                            <TableHead className="text-white/60">Revenue</TableHead>
+                            <TableHead className="text-white/60">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {subscriptions?.map((subscription) => (
+                            <TableRow key={subscription?.id || Math.random()} className="border-white/5">
+                              <TableCell className="text-white">{subscription?.clientName || 'Unknown Client'}</TableCell>
+                              <TableCell>
+                                <Badge className="bg-blue-500/20 text-blue-400">
+                                  {subscription?.plan || 'Unknown Plan'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(subscription?.status || 'unknown')}>
+                                  {subscription?.status || 'Unknown'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-white">{subscription?.expiryDate || 'N/A'}</TableCell>
+                              <TableCell className="text-white font-medium">{subscription?.revenue || '₹0'}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    className="text-white hover:bg-white/10"
+                                    onClick={() => openRenewModal(subscription)}
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Recent Transactions */}
                 <Card className="backdrop-blur-xl bg-white/5 border-white/10">
@@ -1215,10 +1443,10 @@ export default function SuperAdminDashboard() {
                   <CardContent>
                     <div className="space-y-3">
                       {[
-                        { client: 'Acme Corporation', amount: '$299', plan: 'Pro', date: '2024-11-01', status: 'completed' },
-                        { client: 'TechStart Inc', amount: '$99', plan: 'Basic', date: '2024-11-01', status: 'completed' },
-                        { client: 'Global Enterprises', amount: '$599', plan: 'Enterprise', date: '2024-10-31', status: 'completed' },
-                        { client: 'StartupHub', amount: '$0', plan: 'Trial', date: '2024-10-30', status: 'pending' }
+                        { client: 'Acme Corporation', amount: '₹1,999', plan: 'Standard Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'TechStart Inc', amount: '₹999', plan: 'Basic Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'Global Enterprises', amount: '₹4,999', plan: 'Premium Plan', date: '2024-10-31', status: 'completed' },
+                        { client: 'StartupHub', amount: '₹0', plan: 'Trial', date: '2024-10-30', status: 'pending' }
                       ].map((transaction, index) => (
                         <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                           <div>
@@ -1398,6 +1626,71 @@ export default function SuperAdminDashboard() {
             >
               {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Renew Subscription Modal */}
+      <Dialog open={isRenewModalOpen} onOpenChange={setIsRenewModalOpen}>
+        <DialogContent className="bg-slate-800 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white">Renew Subscription</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Renew subscription for {selectedSubscription?.clientName || 'Selected Client'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-white">Current Plan</Label>
+              <Input
+                value={selectedSubscription?.plan || ''}
+                disabled
+                className="bg-white/10 border-white/20 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-white">Select New Plan</Label>
+              <Select value={renewData.planId} onValueChange={(value) => setRenewData({...renewData, planId: value})}>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Select a plan" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-white/10">
+                  {subscriptionPlans?.map((plan) => (
+                    <SelectItem key={plan?.name || Math.random()} value={plan?.name || ''} className="text-white hover:bg-white/10">
+                      {plan?.name || 'Unknown'} - ₹{plan?.price || 0}/{plan?.duration || 'monthly'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-white">Duration (months)</Label>
+              <Input
+                type="number"
+                value={renewData.duration}
+                onChange={(e) => setRenewData({...renewData, duration: e.target.value})}
+                className="bg-white/10 border-white/20 text-white"
+                placeholder="1"
+                min="1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsRenewModalOpen(false)}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRenewSubscription}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Renew Subscription
             </Button>
           </DialogFooter>
         </DialogContent>

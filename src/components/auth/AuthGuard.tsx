@@ -21,8 +21,13 @@ export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallb
   const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
+    console.log('🔐 AuthGuard: useEffect triggered', { isLoading, user, requiredRole, pathname })
+    
     // If still loading, don't do anything
-    if (isLoading) return
+    if (isLoading) {
+      console.log('🔐 AuthGuard: Still loading...')
+      return
+    }
 
     // If no user, redirect to login
     if (!user) {
@@ -34,6 +39,7 @@ export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallb
 
     // Check role requirements
     const userRole = user.role?.toUpperCase()
+    console.log('🔐 AuthGuard: User role check', { userRole, requiredRole })
     
     if (requiredRole === 'SUPERADMIN' && userRole !== 'SUPERADMIN') {
       console.log('🚫 AuthGuard: User role', userRole, 'does not match required role SUPERADMIN')
@@ -54,6 +60,7 @@ export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallb
     }
 
     // User is authenticated and has correct role
+    console.log('✅ AuthGuard: User authenticated and authorized')
     setIsRedirecting(false)
   }, [user, isLoading, requiredRole, router, pathname])
 

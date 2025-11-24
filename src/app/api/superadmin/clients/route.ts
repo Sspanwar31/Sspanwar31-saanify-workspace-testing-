@@ -48,17 +48,34 @@ export async function POST(request: NextRequest) {
         })
 
       case 'renew_subscription':
-        // Renew subscription for 1 year
+        // Renew subscription with new plan
+        const { newPlan } = await request.json()
+        
+        // Calculate new end date based on plan
+        let subscriptionDuration = 30 // Default 30 days for paid plans
+        if (newPlan === 'Trial') {
+          subscriptionDuration = 14 // 14 days for trial
+        } else if (newPlan === 'Enterprise' || newPlan === 'Pro' || newPlan === 'Basic') {
+          subscriptionDuration = 30 // 30 days for paid plans
+        }
+        
+        const newEndDate = new Date(Date.now() + subscriptionDuration * 24 * 60 * 60 * 1000)
+        
         await db.societyAccount.update({
           where: { id: clientId },
           data: { 
-            subscriptionEndsAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-            status: 'ACTIVE'
+            subscriptionPlan: newPlan.toUpperCase(),
+            subscriptionEndsAt: newEndDate,
+            status: 'ACTIVE',
+            isActive: true
           }
         })
+        
         return NextResponse.json({ 
           success: true, 
-          message: 'Subscription renewed successfully' 
+          message: `Subscription renewed successfully with ${newPlan} plan`,
+          newPlan: newPlan,
+          endDate: newEndDate
         })
 
       default:

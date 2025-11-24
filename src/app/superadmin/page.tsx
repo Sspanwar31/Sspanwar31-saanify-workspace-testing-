@@ -579,7 +579,7 @@ export default function AdminDashboard() {
 
       {/* Modals */}
       <Dialog open={showAddClientModal} onOpenChange={setShowAddClientModal}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-cyan-400" />
@@ -595,7 +595,7 @@ export default function AdminDashboard() {
 
       {/* View Client Modal */}
       <Dialog open={showViewClientModal} onOpenChange={setShowViewClientModal}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-cyan-400" />
@@ -651,7 +651,7 @@ export default function AdminDashboard() {
 
       {/* Edit Client Modal */}
       <Dialog open={showEditClientModal} onOpenChange={setShowEditClientModal}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5 text-cyan-400" />
@@ -791,6 +791,42 @@ export default function AdminDashboard() {
 
   // Client Management Component
   function ClientManagement() {
+    const [showRenewModal, setShowRenewModal] = useState(false)
+    const [selectedClientForRenew, setSelectedClientForRenew] = useState<any>(null)
+    const [selectedPlan, setSelectedPlan] = useState('')
+
+    // Subscription plans
+    const subscriptionPlans = [
+      { 
+        name: 'Trial', 
+        price: 0, 
+        duration: '14 days', 
+        features: ['Up to 50 members', 'Basic support', 'Limited storage'],
+        color: 'bg-gray-500'
+      },
+      { 
+        name: 'Basic', 
+        price: 99, 
+        duration: 'monthly', 
+        features: ['Up to 200 members', 'Email support', '10GB storage', 'Basic analytics'],
+        color: 'bg-blue-500'
+      },
+      { 
+        name: 'Pro', 
+        price: 299, 
+        duration: 'monthly', 
+        features: ['Unlimited members', 'Priority support', '100GB storage', 'Advanced analytics', 'API access'],
+        color: 'bg-cyan-500'
+      },
+      { 
+        name: 'Enterprise', 
+        price: 599, 
+        duration: 'monthly', 
+        features: ['Unlimited everything', '24/7 phone support', 'Unlimited storage', 'Custom features', 'Dedicated account manager'],
+        color: 'bg-purple-500'
+      }
+    ]
+
     const getStatusColor = (status: string) => {
       switch (status) {
         case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -808,6 +844,44 @@ export default function AdminDashboard() {
         case 'Basic': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
         case 'Trial': return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
         default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+      }
+    }
+
+    const handleRenewSubscription = (client: any) => {
+      setSelectedClientForRenew(client)
+      setSelectedPlan(client.plan || 'Trial')
+      setShowRenewModal(true)
+    }
+
+    const confirmRenewal = async () => {
+      if (!selectedClientForRenew || !selectedPlan) return
+
+      try {
+        const response = await fetch('/api/superadmin/renew-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId: selectedClientForRenew.id,
+            newPlan: selectedPlan,
+            autoRenew: autoRenewEnabled
+          })
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const plan = subscriptionPlans.find(p => p.name === selectedPlan)
+          alert(`✅ Subscription renewed successfully!\n\nClient: ${selectedClientForRenew.name}\nNew Plan: ${selectedPlan}\nPrice: ₹${plan?.priceInr}/${plan?.duration}\nAuto-Renew: ${autoRenewEnabled ? 'ON' : 'OFF'}`)
+          setShowRenewModal(false)
+          setSelectedPlan('')
+          setAutoRenewEnabled(false)
+          loadClients() // Refresh data
+        } else {
+          const errorData = await response.json().catch(() => ({}))
+          alert(`❌ Failed to renew subscription: ${errorData.message || 'Unknown error'}`)
+        }
+      } catch (error) {
+        console.error('Renewal error:', error)
+        alert('⚠️ Error renewing subscription. Please try again.')
       }
     }
 
@@ -962,8 +1036,8 @@ export default function AdminDashboard() {
                                 Unlock Client
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                className="text-white hover:bg-white/10"
-                                onClick={() => handleRenewClientSubscription(client.id)}
+                                className="text-cyan-400 hover:bg-white/10"
+                                onClick={() => handleRenewSubscription(client)}
                               >
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 Renew Subscription
@@ -987,17 +1061,240 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Renew Subscription Modal */}
+        <Dialog open={showRenewModal} onOpenChange={setShowRenewModal}>
+          <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-cyan-400" />
+                Renew Subscription - {selectedClientForRenew?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Select New Plan</label>
+                <div className="grid grid-cols-1 gap-3">
+                  {subscriptionPlans.map((plan) => (
+                    <div
+                      key={plan.name}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        selectedPlan === plan.name
+                          ? 'bg-cyan-500/20 border-cyan-400'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                      onClick={() => setSelectedPlan(plan.name)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-white font-medium">{plan.name}</h3>
+                          <p className="text-white/60 text-sm">${plan.price}/{plan.duration}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          selectedPlan === plan.name
+                            ? 'bg-cyan-400 border-cyan-400'
+                            : 'border-white/30'
+                        }`}></div>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {plan.features.map((feature, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-400" />
+                            <span className="text-white/70 text-xs">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRenewModal(false)}
+                  className="border-slate-600 text-white hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmRenewal}
+                  disabled={!selectedPlan}
+                  className="bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50"
+                >
+                  Confirm Renewal
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
 
   // Subscription & Billing Component
   function SubscriptionBilling() {
+    const [allClients, setAllClients] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+    const [selectedPlan, setSelectedPlan] = useState('')
+    const [showRenewModal, setShowRenewModal] = useState(false)
+    const [selectedClientForRenew, setSelectedClientForRenew] = useState<any>(null)
+    const [autoRenewEnabled, setAutoRenewEnabled] = useState(false)
+
+    // Subscription plans with prices in INR
+    const subscriptionPlans = [
+      { 
+        name: 'Trial', 
+        price: 0, 
+        priceInr: 0,
+        duration: '14 days', 
+        features: ['Up to 50 members', 'Basic support', 'Limited storage'],
+        color: 'bg-gray-500'
+      },
+      { 
+        name: 'Basic', 
+        price: 99, 
+        priceInr: 7999,
+        duration: 'monthly', 
+        features: ['Up to 200 members', 'Email support', '10GB storage', 'Basic analytics'],
+        color: 'bg-blue-500'
+      },
+      { 
+        name: 'Pro', 
+        price: 299, 
+        priceInr: 23999,
+        duration: 'monthly', 
+        features: ['Unlimited members', 'Priority support', '100GB storage', 'Advanced analytics', 'API access'],
+        color: 'bg-cyan-500'
+      },
+      { 
+        name: 'Enterprise', 
+        price: 599, 
+        priceInr: 47999,
+        duration: 'monthly', 
+        features: ['Unlimited everything', '24/7 phone support', 'Unlimited storage', 'Custom features', 'Dedicated account manager'],
+        color: 'bg-purple-500'
+      }
+    ]
+
+    // Load all clients with subscription info
+    const loadClients = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/superadmin/clients')
+        if (response.ok) {
+          const data = await response.json()
+          // Add mock subscription data for demo
+          const clientsWithSubscriptions = (data.clients || []).map((client: any) => ({
+            ...client,
+            subscription: {
+              plan: client.plan || 'Trial',
+              price: subscriptionPlans.find(p => p.name === (client.plan || 'Trial'))?.price || 0,
+              startDate: client.subscriptionStartDate || '2024-10-01',
+              endDate: client.subscriptionEndDate || '2024-11-15',
+              status: client.subscriptionStatus || 'active',
+              autoRenew: client.autoRenew || false,
+              daysLeft: calculateDaysLeft(client.subscriptionEndDate || '2024-11-15')
+            }
+          }))
+          setAllClients(clientsWithSubscriptions)
+        }
+      } catch (error) {
+        console.error('Failed to load clients:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const calculateDaysLeft = (endDate: string) => {
+      const end = new Date(endDate)
+      const today = new Date()
+      const diffTime = end.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays > 0 ? diffDays : 0
+    }
+
+    const getStatusColor = (status: string, daysLeft: number) => {
+      if (status === 'expired') return 'bg-red-500/20 text-red-400 border-red-500/30'
+      if (daysLeft <= 7) return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+      if (status === 'active') return 'bg-green-500/20 text-green-400 border-green-500/30'
+      return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+    }
+
+    const handleRenewSubscription = (client: any) => {
+      setSelectedClientForRenew(client)
+      setShowRenewModal(true)
+    }
+
+    const confirmRenewal = async () => {
+      if (!selectedClientForRenew || !selectedPlan) return
+
+      try {
+        const response = await fetch('/api/superadmin/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'renew_subscription',
+            clientId: selectedClientForRenew.id,
+            newPlan: selectedPlan
+          })
+        })
+
+        if (response.ok) {
+          alert(`✅ Subscription renewed successfully for ${selectedClientForRenew.name}!`)
+          setShowRenewModal(false)
+          setSelectedPlan('')
+          loadClients() // Refresh data
+        } else {
+          alert('❌ Failed to renew subscription')
+        }
+      } catch (error) {
+        console.error('Renewal error:', error)
+        alert('⚠️ Error renewing subscription')
+      }
+    }
+
+    useEffect(() => {
+      loadClients()
+    }, [])
+
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">Subscription & Billing</h2>
           <p className="text-white/60">Manage plans, revenue, and client subscriptions</p>
+        </div>
+
+        {/* Subscription Plans Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {subscriptionPlans.map((plan) => (
+            <Card key={plan.name} className="backdrop-blur-xl bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white">{plan.name}</CardTitle>
+                  <div className={`w-3 h-3 rounded-full ${plan.color}`}></div>
+                </div>
+                <div className="text-2xl font-bold text-white">
+                  ₹{plan.priceInr.toLocaleString('en-IN')}
+                  <span className="text-sm text-white/60 font-normal">/{plan.duration}</span>
+                </div>
+                {plan.price > 0 && (
+                  <div className="text-sm text-white/60">
+                    (${plan.price}/{plan.duration})
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {plan.features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                      <span className="text-white/80 text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Revenue Overview */}
@@ -1019,27 +1316,116 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { plan: 'Enterprise', count: 3, revenue: '$15,000', color: 'bg-purple-500' },
-                  { plan: 'Pro', count: 12, revenue: '$24,000', color: 'bg-cyan-500' },
-                  { plan: 'Basic', count: 6, revenue: '$6,000', color: 'bg-blue-500' },
-                  { plan: 'Trial', count: 3, revenue: '$0', color: 'bg-gray-500' }
-                ].map((item) => (
-                  <div key={item.plan} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                      <span className="text-white">{item.plan}</span>
+                {subscriptionPlans.map((plan) => {
+                  const count = allClients.filter(c => c.subscription?.plan === plan.name).length
+                  const revenue = count * plan.priceInr
+                  return (
+                    <div key={plan.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${plan.color}`}></div>
+                        <span className="text-white">{plan.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-medium">{count} clients</p>
+                        <p className="text-white/60 text-sm">₹{revenue.toLocaleString('en-IN')}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-white font-medium">{item.count} clients</p>
-                      <p className="text-white/60 text-sm">{item.revenue}</p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* All Clients with Subscription Details */}
+        <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Users className="h-5 w-5 text-cyan-400" />
+              All Clients Subscription Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left p-3 text-white/80">Client</th>
+                      <th className="text-left p-3 text-white/80">Current Plan</th>
+                      <th className="text-left p-3 text-white/80">Price</th>
+                      <th className="text-left p-3 text-white/80">Start Date</th>
+                      <th className="text-left p-3 text-white/80">End Date</th>
+                      <th className="text-left p-3 text-white/80">Days Left</th>
+                      <th className="text-left p-3 text-white/80">Status</th>
+                      <th className="text-left p-3 text-white/80">Auto Renew</th>
+                      <th className="text-left p-3 text-white/80">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allClients.map((client) => (
+                      <tr key={client.id} className="border-b border-white/5 hover:bg-white/5">
+                        <td className="p-3">
+                          <div>
+                            <p className="text-white font-medium">{client.name}</p>
+                            <p className="text-white/60 text-sm">{client.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge className="bg-white/10 text-white border-white/20">
+                            {client.subscription?.plan}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-white">
+                          ₹{subscriptionPlans.find(p => p.name === client.subscription?.plan)?.priceInr?.toLocaleString('en-IN') || 0}
+                          <span className="text-white/60 text-sm">/month</span>
+                        </td>
+                        <td className="p-3 text-white/80">
+                          {new Date(client.subscription?.startDate).toLocaleDateString()}
+                        </td>
+                        <td className="p-3 text-white/80">
+                          {new Date(client.subscription?.endDate).toLocaleDateString()}
+                        </td>
+                        <td className="p-3">
+                          <span className={`font-medium ${
+                            client.subscription?.daysLeft <= 7 ? 'text-orange-400' : 'text-white'
+                          }`}>
+                            {client.subscription?.daysLeft} days
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={getStatusColor(client.subscription?.status, client.subscription?.daysLeft)}>
+                            {client.subscription?.status}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <Badge className={client.subscription?.autoRenew ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}>
+                            {client.subscription?.autoRenew ? 'ON' : 'OFF'}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-cyan-500 hover:bg-cyan-600"
+                              onClick={() => handleRenewSubscription(client)}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Transactions */}
         <Card className="backdrop-blur-xl bg-white/5 border-white/10">
@@ -1070,6 +1456,72 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Renew Subscription Modal */}
+        <Dialog open={showRenewModal} onOpenChange={setShowRenewModal}>
+          <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-cyan-400" />
+                Renew Subscription - {selectedClientForRenew?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Select New Plan</label>
+                <div className="grid grid-cols-1 gap-3">
+                  {subscriptionPlans.map((plan) => (
+                    <div
+                      key={plan.name}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        selectedPlan === plan.name
+                          ? 'bg-cyan-500/20 border-cyan-400'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                      onClick={() => setSelectedPlan(plan.name)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-white font-medium">{plan.name}</h3>
+                          <p className="text-white/60 text-sm">${plan.price}/{plan.duration}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          selectedPlan === plan.name
+                            ? 'bg-cyan-400 border-cyan-400'
+                            : 'border-white/30'
+                        }`}></div>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {plan.features.map((feature, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-400" />
+                            <span className="text-white/70 text-xs">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRenewModal(false)}
+                  className="border-slate-600 text-white hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmRenewal}
+                  disabled={!selectedPlan}
+                  className="bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50"
+                >
+                  Confirm Renewal
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-it'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 const generateTokens = (user: any) => {
   const payload = { 

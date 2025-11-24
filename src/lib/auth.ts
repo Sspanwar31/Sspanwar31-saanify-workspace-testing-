@@ -135,13 +135,14 @@ export const makeAuthenticatedRequest = async (
 
 export const checkSession = async (): Promise<{ authenticated: boolean; user?: UserInfo }> => {
   try {
-    // Get access token and send it with the request
-    const accessToken = getAccessToken()
-    
+    // Make request to check-session - the server will read httpOnly cookies
     const response = await fetch('/api/auth/check-session', {
-      headers: accessToken ? {
-        'Authorization': `Bearer ${accessToken}`
-      } : {}
+      method: 'GET',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      credentials: 'include' // Important for httpOnly cookies
     })
     
     const data = await response.json()
@@ -152,7 +153,7 @@ export const checkSession = async (): Promise<{ authenticated: boolean; user?: U
         user: data.user
       }
     } else {
-      // Clear invalid tokens
+      // Clear invalid tokens (if any)
       removeAuthTokens()
       return { authenticated: false }
     }

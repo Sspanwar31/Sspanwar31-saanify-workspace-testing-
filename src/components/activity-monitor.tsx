@@ -42,8 +42,8 @@ export function ActivityMonitor() {
   const [activities, setActivities] = useState<any[]>([])
   const [stats, setStats] = useState<any>(null)
   const [filters, setFilters] = useState({
-    action: '',
-    resource: '',
+    action: 'all',
+    resource: 'all',
     success: 'all',
     timeRange: '24h'
   })
@@ -324,7 +324,7 @@ export function ActivityMonitor() {
                 <SelectValue placeholder="All Actions" />
               </SelectTrigger>
               <SelectContent className="bg-slate-700 border-slate-600">
-                <SelectItem value="">All Actions</SelectItem>
+                <SelectItem value="all">All Actions</SelectItem>
                 <SelectItem value={ACTIVITY_TYPES.LOGIN}>Login</SelectItem>
                 <SelectItem value={ACTIVITY_TYPES.CLIENT_VIEW}>View Client</SelectItem>
                 <SelectItem value={ACTIVITY_TYPES.CLIENT_UPDATE}>Update Client</SelectItem>
@@ -337,7 +337,7 @@ export function ActivityMonitor() {
                 <SelectValue placeholder="All Resources" />
               </SelectTrigger>
               <SelectContent className="bg-slate-700 border-slate-600">
-                <SelectItem value="">All Resources</SelectItem>
+                <SelectItem value="all">All Resources</SelectItem>
                 <SelectItem value={RESOURCE_TYPES.CLIENT}>Client</SelectItem>
                 <SelectItem value={RESOURCE_TYPES.SYSTEM}>System</SelectItem>
                 <SelectItem value={RESOURCE_TYPES.BACKUP}>Backup</SelectItem>

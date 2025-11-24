@@ -3,14 +3,18 @@ import jwt from "jsonwebtoken";
 import { db } from "@/lib/db";
 
 // Ensure this matches the secret used in your Login API
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-it";
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Get token from Cookie (auth-token)
-    // Header check is optional fallback
+    // Debug: Log all cookies received
+    console.log("🔍 Check-session: All cookies received:", request.cookies.getAll()); // LOG
+    
+    // 1. Get token from Cookie (auth-token) - this will read httpOnly cookies
     const token = request.cookies.get("auth-token")?.value || 
                   request.headers.get("authorization")?.replace("Bearer ", "");
+
+    console.log("🔍 Check-session: Token extracted:", token ? token.substring(0, 20) + '...' : 'NULL'); // LOG
 
     if (!token) {
       return NextResponse.json(
@@ -19,11 +23,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log("🔍 Check-session: Token found, attempting verification..."); // LOG
+
     // 2. Verify JWT Token (Real Verification)
     let decoded: any;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
+      console.log("🔍 Check-session: Token verified successfully", { userId: decoded.userId, role: decoded.role }); // LOG
     } catch (err) {
+      console.log("❌ Check-session: Token verification failed", err); // LOG
       return NextResponse.json(
         { authenticated: false, error: "Invalid or expired token" },
         { status: 401 }
@@ -38,6 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Fetch Real User from Database (To get latest Role)
+    console.log("🔍 Check-session: Fetching user from DB for userId:", decoded.userId); // LOG
     const user = await db.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -51,11 +60,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
+      console.log("❌ Check-session: User not found in DB"); // LOG
       return NextResponse.json(
         { authenticated: false, error: "User no longer exists" },
         { status: 401 }
       );
     }
+
+    console.log("✅ Check-session: User found in DB", { id: user.id, email: user.email, role: user.role }); // LOG
 
     // 4. Return Real User Data
     return NextResponse.json({

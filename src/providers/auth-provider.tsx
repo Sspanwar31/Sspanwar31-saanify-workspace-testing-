@@ -38,6 +38,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       const res = await fetch('/api/auth/check-session', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important for httpOnly cookies
         cache: 'no-store' 
       })
       

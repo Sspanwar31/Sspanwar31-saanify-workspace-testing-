@@ -1,3 +1,9 @@
+"use client"
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { RefreshCw, CheckCircle } from 'lucide-react'
+
 // Enhanced Renewal Modal Component
 function EnhancedRenewalModal({ 
   showRenewModal, 
@@ -18,6 +24,9 @@ function EnhancedRenewalModal({
             <RefreshCw className="h-5 w-5 text-cyan-400" />
             Renew Subscription - {selectedClientForRenew?.name}
           </DialogTitle>
+          <DialogDescription>
+            Choose a new subscription plan for this client
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           <div>

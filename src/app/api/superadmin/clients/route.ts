@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, clientId, name, email, plan } = await request.json()
+    const { action, clientId, name, email, plan, newPlan } = await request.json()
 
     // Use the same database operations as the main clients API
     switch (action) {
@@ -49,8 +49,6 @@ export async function POST(request: NextRequest) {
 
       case 'renew_subscription':
         // Renew subscription with new plan
-        const { newPlan } = await request.json()
-        
         // Calculate new end date based on plan
         let subscriptionDuration = 30 // Default 30 days for paid plans
         if (newPlan === 'Trial') {

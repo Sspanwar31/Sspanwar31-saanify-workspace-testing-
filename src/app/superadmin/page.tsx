@@ -29,7 +29,7 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard'
 import { AdminSettings } from '@/components/superadmin/admin-settings'
 import { AddClientModal } from '@/components/client/AddClientModal'
 import { EditClientModal } from '@/components/client/EditClientModal'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 // --- CONSTANT DATA FOR AUTOMATION (ADDED) ---
 const DB_TASKS_DATA = [
@@ -585,6 +585,9 @@ export default function AdminDashboard() {
               <Plus className="h-5 w-5 text-cyan-400" />
               Add New Client
             </DialogTitle>
+            <DialogDescription>
+              Create a new client account with subscription details
+            </DialogDescription>
           </DialogHeader>
           <AddClientModal 
             onClose={() => setShowAddClientModal(false)}
@@ -601,6 +604,9 @@ export default function AdminDashboard() {
               <Eye className="h-5 w-5 text-cyan-400" />
               Client Details
             </DialogTitle>
+            <DialogDescription>
+              View detailed information about the selected client
+            </DialogDescription>
           </DialogHeader>
           {selectedClient && (
             <div className="space-y-4">
@@ -657,6 +663,9 @@ export default function AdminDashboard() {
               <Edit className="h-5 w-5 text-cyan-400" />
               Edit Client
             </DialogTitle>
+            <DialogDescription>
+              Update client information and settings
+            </DialogDescription>
           </DialogHeader>
           <EditClientModal 
             client={selectedClient}
@@ -1070,6 +1079,9 @@ export default function AdminDashboard() {
                 <RefreshCw className="h-5 w-5 text-cyan-400" />
                 Renew Subscription - {selectedClientForRenew?.name}
               </DialogTitle>
+              <DialogDescription>
+                Choose a new subscription plan for this client
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>
@@ -1465,6 +1477,9 @@ export default function AdminDashboard() {
                 <RefreshCw className="h-5 w-5 text-cyan-400" />
                 Renew Subscription - {selectedClientForRenew?.name}
               </DialogTitle>
+              <DialogDescription>
+                Choose a new subscription plan for this client
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>

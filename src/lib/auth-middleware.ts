@@ -7,7 +7,7 @@ export interface AuthenticatedRequest extends NextRequest {
   user?: {
     userId: string
     email: string
-    role: 'SUPER_ADMIN' | 'CLIENT'
+    role: 'SUPERADMIN' | 'CLIENT'
     societyAccountId?: string
   }
 }
@@ -26,7 +26,7 @@ export function withDevBypass(handler: (req: AuthenticatedRequest) => Promise<Ne
       const mockUser = {
         userId: 'dev-admin-user',
         email: 'admin@saanify.com',
-        role: 'SUPER_ADMIN' as const,
+        role: 'SUPERADMIN' as const,
         societyAccountId: 'dev-society-123'
       }
       
@@ -78,7 +78,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
   }
 }
 
-export function withRole(allowedRoles: ('SUPER_ADMIN' | 'CLIENT')[]) {
+export function withRole(allowedRoles: ('SUPERADMIN' | 'CLIENT')[]) {
   return function(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
     return async (req: AuthenticatedRequest) => {
       console.log('Role check:', { user: req.user, allowedRoles })
@@ -96,7 +96,7 @@ export function withRole(allowedRoles: ('SUPER_ADMIN' | 'CLIENT')[]) {
 }
 
 export function withAdmin(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withDevBypass(withRole(['SUPER_ADMIN'])(handler))
+  return withDevBypass(withRole(['SUPERADMIN'])(handler))
 }
 
 export function withClient(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
@@ -104,5 +104,5 @@ export function withClient(handler: (req: AuthenticatedRequest) => Promise<NextR
 }
 
 export function withAnyRole(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withDevBypass(withRole(['SUPER_ADMIN', 'CLIENT'])(handler))
+  return withDevBypass(withRole(['SUPERADMIN', 'CLIENT'])(handler))
 }

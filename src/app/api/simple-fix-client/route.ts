@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
 
 export async function POST() {
   try {
@@ -36,7 +37,6 @@ export async function POST() {
     
     // Hash password
     const password = 'client123'
-    const bcrypt = require('bcryptjs')
     const hashedPassword = await bcrypt.hash(password, 12)
     
     // Create user with ADMIN role

@@ -1,77 +1,96 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Define which routes require authentication
-const protectedRoutes = ['/admin', '/client']
-const publicRoutes = ['/login', '/signup', '/', '/api/auth']
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Allow public routes
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.next()
+  // Public routes that don't require authentication
+  const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
+  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
   }
 
-  // Check if route requires authentication
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
-    const token = request.cookies.get('auth-token')?.value
+  // Static files and assets
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/public")) {
+    return NextResponse.next();
+  }
 
-    if (!token) {
-      // Redirect to login if no token
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
+  // Get token from cookie
+  const token = req.cookies.get("auth-token")?.value;
+  
+  if (!token) {
+    // Redirect to login if no token
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-    try {
-      // Verify JWT token
-      const decoded = jwt.verify(token, JWT_SECRET) as any
+  let decoded: any = null;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    // Token is invalid or expired, clear it and redirect to login
+    const res = NextResponse.redirect(new URL("/login", req.url));
+    res.cookies.delete("auth-token");
+    return res;
+  }
 
-      // Role-based access control
-      if (pathname.startsWith('/admin') && decoded.role !== 'SUPER_ADMIN') {
-        // If client tries to access admin routes, redirect to client dashboard
-        const clientUrl = new URL('/client/dashboard', request.url)
-        return NextResponse.redirect(clientUrl)
+  const role = decoded.role?.toUpperCase() || "";
+
+  // Protect Superadmin routes
+  if (pathname.startsWith("/superadmin")) {
+    if (role !== "SUPERADMIN") {
+      // If user is not Superadmin, redirect to appropriate dashboard
+      if (role === "CLIENT") {
+        return NextResponse.redirect(new URL("/dashboard/client", req.url));
+      } else if (role === "ADMIN") {
+        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+      } else {
+        // Fallback to login for unknown roles
+        return NextResponse.redirect(new URL("/login", req.url));
       }
-
-      if (pathname.startsWith('/client') && decoded.role !== 'CLIENT') {
-        // If admin tries to access client routes, redirect to admin dashboard
-        const adminUrl = new URL('/admin/dashboard', request.url)
-        return NextResponse.redirect(adminUrl)
-      }
-
-      // Add user info to headers for server-side usage
-      const response = NextResponse.next()
-      response.headers.set('x-user-id', decoded.userId)
-      response.headers.set('x-user-role', decoded.role)
-      response.headers.set('x-user-email', decoded.email)
-
-      return response
-
-    } catch (error) {
-      // Invalid token - redirect to login
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
     }
   }
 
-  return NextResponse.next()
+  // Protect Superadmin API routes
+  if (pathname.startsWith("/api/superadmin")) {
+    if (role !== "SUPERADMIN") {
+      return new NextResponse(
+        JSON.stringify({ error: 'Access denied - Superadmin privileges required' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Protect Admin routes
+  if (pathname.startsWith("/admin")) {
+    if (role !== "SUPERADMIN" && role !== "ADMIN") {
+      if (role === "CLIENT") {
+        return NextResponse.redirect(new URL("/dashboard/client", req.url));
+      } else {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+  }
+
+  // Protect Client dashboard routes
+  if (pathname.startsWith("/dashboard/client")) {
+    if (role !== "CLIENT" && role !== "SUPERADMIN") {
+      if (role === "ADMIN") {
+        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+      } else {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+  }
+
+  // Allow access to other routes
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    "/((?!_next/static|_next/image|favicon.ico|public).*)",
   ],
-}
+};

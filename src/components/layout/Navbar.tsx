@@ -120,7 +120,7 @@ export default function Navbar() {
         setIsGitHubOpen(true)
         break
       case 'superadmin':
-        handleNavClick('/superadmin', 'SuperAdmin Panel')
+        handleNavClick('/superadmin', 'Superadmin Panel')
         break
       case 'analytics':
         handleNavClick('/analytics', 'Analytics')
@@ -144,9 +144,9 @@ export default function Navbar() {
       action: 'github',
       gradient: 'from-gray-600 to-gray-800'
     },
-    ...(isAuthenticated && (userRole === 'SUPER_ADMIN' || userRole === 'SUPERADMIN') ? [{
+    ...(isAuthenticated && userRole === 'SUPERADMIN' ? [{
       icon: <Shield className="h-4 w-4" />,
-      label: 'SuperAdmin Panel',
+      label: 'Superadmin Panel',
       description: 'Access admin controls',
       action: 'superadmin',
       gradient: 'from-red-600 to-pink-700'

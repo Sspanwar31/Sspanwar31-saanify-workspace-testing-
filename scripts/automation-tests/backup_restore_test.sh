@@ -8,7 +8,7 @@ set -e
 echo "💾 Starting Backup and Restore Test..."
 
 # Configuration
-API_BASE="http://localhost:3000/api/super-admin/automation"
+API_BASE="http://localhost:3000/api/superadmin/automation"
 TEMP_DIR="/tmp/automation_test_$$"
 TEST_BACKUP_FILE="$TEMP_DIR/test_backup.json"
 

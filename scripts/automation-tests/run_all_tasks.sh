@@ -8,7 +8,7 @@ set -e
 echo "🔧 Starting Run All Tasks Test..."
 
 # Configuration
-API_BASE="http://localhost:3000/api/super-admin/automation"
+API_BASE="http://localhost:3000/api/superadmin/automation"
 
 # Colors for output
 RED='\033[0;31m'

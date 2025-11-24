@@ -1,88 +1,129 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@/providers/auth-provider'
+import { Loader2, ShieldX, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface AuthGuardProps {
   children: React.ReactNode
-  requiredRole?: 'SUPER_ADMIN' | 'CLIENT' | 'SUPERADMIN'
-  redirectTo?: string
+  requiredRole?: 'SUPERADMIN' | 'ADMIN' | 'CLIENT'
+  fallback?: React.ReactNode
 }
 
-export default function AuthGuard({ children, requiredRole, redirectTo = '/login' }: AuthGuardProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallback }: AuthGuardProps) {
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // 1. Check Session via API
-        const response = await fetch('/api/auth/check-session', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store'
-        })
+    // If still loading, don't do anything
+    if (isLoading) return
 
-        if (!response.ok) {
-          console.log("AuthGuard: Session check failed")
-          router.push(redirectTo)
-          return
-        }
-
-        const data = await response.json()
-
-        if (!data.authenticated || !data.user) {
-          console.log("AuthGuard: Not authenticated")
-          router.push(redirectTo)
-          return
-        }
-
-        // 2. Role Checking Logic (Flexible & Safe)
-        if (requiredRole) {
-          // Role ko string banakar uppercase karein taaki crash na ho
-          const userRole = String(data.user.role || '').toUpperCase()
-          
-          // Super Admin Check
-          if (requiredRole === 'SUPER_ADMIN' || requiredRole === 'SUPERADMIN') {
-            if (!userRole.includes('SUPER') && !userRole.includes('ADMIN')) {
-              console.error("AuthGuard: Role Mismatch. User:", userRole)
-              router.push('/not-authorized')
-              return
-            }
-          } 
-          // Client Check
-          else if (userRole !== requiredRole) {
-            router.push('/not-authorized')
-            return
-          }
-        }
-
-        setIsAuthenticated(true)
-      } catch (error) {
-        console.error('AuthGuard Error:', error)
-        router.push(redirectTo)
-      } finally {
-        setIsLoading(false)
-      }
+    // If no user, redirect to login
+    if (!user) {
+      console.log('🔐 AuthGuard: No user found, redirecting to login')
+      setIsRedirecting(true)
+      router.push('/login')
+      return
     }
 
-    checkAuth()
-  }, [router, requiredRole, redirectTo])
+    // Check role requirements
+    const userRole = user.role?.toUpperCase()
+    
+    if (requiredRole === 'SUPERADMIN' && userRole !== 'SUPERADMIN') {
+      console.log('🚫 AuthGuard: User role', userRole, 'does not match required role SUPERADMIN')
+      
+      // If user is not SUPERADMIN, redirect to appropriate dashboard
+      if (userRole === 'CLIENT') {
+        setIsRedirecting(true)
+        router.push('/dashboard/client')
+      } else if (userRole === 'ADMIN') {
+        setIsRedirecting(true)
+        router.push('/dashboard/admin')
+      } else {
+        // Fallback to login if role is unknown
+        setIsRedirecting(true)
+        router.push('/login')
+      }
+      return
+    }
 
-  // --- SAFE LOADING UI (No External Component) ---
-  if (isLoading) {
+    // User is authenticated and has correct role
+    setIsRedirecting(false)
+  }, [user, isLoading, requiredRole, router, pathname])
+
+  // Show loading state
+  if (isLoading || isRedirecting) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-500 font-medium">Verifying Access...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center space-y-4 p-6">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="text-center">
+              <h3 className="font-semibold">Verifying Authentication</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Please wait while we verify your access...
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
-    return null // Redirecting...
+  // Show access denied if user doesn't have required role
+  if (!user || (requiredRole && user.role?.toUpperCase() !== requiredRole)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <ShieldX className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+            <CardDescription>
+              You don't have permission to access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                This page requires {requiredRole} privileges. Your current role: {user?.role || 'Unknown'}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={() => router.back()} 
+                variant="outline"
+                className="w-full"
+              >
+                Go Back
+              </Button>
+              <Button 
+                onClick={() => router.push('/dashboard')} 
+                className="w-full"
+              >
+                Go to Dashboard
+              </Button>
+              <Button 
+                onClick={logout} 
+                variant="destructive"
+                className="w-full"
+              >
+                Logout
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
+  // User is authenticated and authorized
   return <>{children}</>
 }

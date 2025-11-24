@@ -82,7 +82,7 @@ export function UnifiedAnalytics({ clients, showRevenue, isAdmin }: UnifiedAnaly
   const enterpriseClients = clients.filter(c => c.subscriptionPlan === 'ENTERPRISE').length
   const trialPlanClients = clients.filter(c => c.subscriptionPlan === 'TRIAL').length
   
-  // Revenue calculations (only for Super Admin)
+  // Revenue calculations (only for Superadmin)
   const calculateRevenue = () => {
     const planPrices = {
       TRIAL: 0,

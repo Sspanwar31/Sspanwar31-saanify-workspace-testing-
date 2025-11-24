@@ -138,19 +138,19 @@ All endpoints require either:
 
 #### System Status
 ```
-GET /api/super-admin/automation/status
+GET /api/superadmin/automation/status
 ```
 Returns current system status, tasks, and recent logs.
 
 #### Health Check
 ```
-GET /api/super-admin/automation/health
+GET /api/superadmin/automation/health
 ```
 Comprehensive system health check including database, storage, tables, and automation.
 
 #### Task Execution
 ```
-POST /api/super-admin/automation/run
+POST /api/superadmin/automation/run
 {
   "task": "task_name"
 }
@@ -159,25 +159,25 @@ Manually execute a specific automation task.
 
 #### Schema Synchronization
 ```
-POST /api/super-admin/automation/schema-sync
+POST /api/superadmin/automation/schema-sync
 ```
 Trigger database schema synchronization and validation.
 
 #### Auto Data Sync
 ```
-POST /api/super-admin/automation/auto-sync
+POST /api/superadmin/automation/auto-sync
 ```
 Trigger automatic data synchronization.
 
 #### Backup Operations
 ```
-POST /api/super-admin/automation/backup-now
+POST /api/superadmin/automation/backup-now
 ```
 Create an immediate backup of all data.
 
 #### Restore Operations
 ```
-POST /api/super-admin/automation/restore
+POST /api/superadmin/automation/restore
 Content-Type: multipart/form-data
 - file: backup file (.json, .sql, .tar.gz)
 - preview: true|false
@@ -186,7 +186,7 @@ Content-Type: multipart/form-data
 
 #### System Initialization
 ```
-POST /api/super-admin/automation/initialize
+POST /api/superadmin/automation/initialize
 {
   "setup_key": "setup_key"
 }
@@ -195,13 +195,13 @@ Initialize the automation system and create required tables.
 
 #### Logs
 ```
-GET /api/super-admin/automation/logs?page=1&limit=20&task_name=task&status=status
+GET /api/superadmin/automation/logs?page=1&limit=20&task_name=task&status=status
 ```
 Retrieve paginated logs with optional filtering.
 
 #### Cron Runner
 ```
-POST /api/super-admin/automation/cron
+POST /api/superadmin/automation/cron
 ```
 Execute cron runner for scheduled tasks.
 
@@ -270,7 +270,7 @@ Add to `vercel.json`:
 {
   "crons": [
     {
-      "path": "/api/super-admin/automation/cron",
+      "path": "/api/superadmin/automation/cron",
       "schedule": "*/15 * * * *"
     }
   ]
@@ -323,7 +323,7 @@ Add to `vercel.json`:
 
 ### Access Control
 
-1. **Middleware Enforcement**: All `/super-admin/*` routes protected by middleware
+1. **Middleware Enforcement**: All `/superadmin/*` routes protected by middleware
 2. **Role Validation**: Database role verification for SUPERADMIN
 3. **Service Role Only**: Server operations use service role key only
 4. **No Client Exposure**: Service keys never sent to client

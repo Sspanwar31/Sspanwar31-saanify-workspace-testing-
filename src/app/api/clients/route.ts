@@ -148,7 +148,8 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id } = request.query
+    const url = new URL(request.url)
+    const id = url.searchParams.get('id')
 
     if (!id) {
       return NextResponse.json(
@@ -157,10 +158,12 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const body = await request.json()
+
     // Update client
-    const updatedClient = await db.user.update({
+    const updatedClient = await db.societyAccount.update({
       where: { id },
-      data: request.body
+      data: body
     })
 
     return NextResponse.json({
@@ -180,7 +183,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { id } = request.query
+    const url = new URL(request.url)
+    const id = url.searchParams.get('id')
 
     if (!id) {
       return NextResponse.json(
@@ -190,7 +194,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete client
-    await db.user.delete({
+    await db.societyAccount.delete({
       where: { id }
     })
 

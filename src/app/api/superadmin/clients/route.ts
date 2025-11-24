@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticateAndAuthorize, createUnauthorizedResponse, createForbiddenResponse } from '@/lib/auth-helpers'
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate and authorize user
+    const { user, error } = await authenticateAndAuthorize(request, 'SUPERADMIN')
+    
+    if (error) {
+      if (error.includes('No authentication')) {
+        return createUnauthorizedResponse(error)
+      }
+      return createForbiddenResponse(error)
+    }
+
     const { action, clientId, name, email, plan, newPlan } = await request.json()
 
     // Use the same database operations as the main clients API
@@ -93,6 +104,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Authenticate and authorize user
+    const { user, error } = await authenticateAndAuthorize(request, 'SUPERADMIN')
+    
+    if (error) {
+      if (error.includes('No authentication')) {
+        return createUnauthorizedResponse(error)
+      }
+      return createForbiddenResponse(error)
+    }
+
     const { clientId } = await request.json()
 
     if (!clientId) {
@@ -102,19 +123,54 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete client from society accounts
+    // Check if there are any users associated with this society account
+    const associatedUsers = await db.user.findMany({
+      where: { societyAccountId: clientId }
+    })
+
+    // If there are associated users, we need to handle them first
+    if (associatedUsers.length > 0) {
+      console.log(`Found ${associatedUsers.length} users associated with society account ${clientId}`)
+      
+      // Option 1: Delete associated users (cascade delete)
+      await db.user.deleteMany({
+        where: { societyAccountId: clientId }
+      })
+    }
+
+    // Check if there are any societies associated with this society account
+    const associatedSocieties = await db.society.findMany({
+      where: { societyAccountId: clientId }
+    })
+
+    // If there are associated societies, delete them first
+    if (associatedSocieties.length > 0) {
+      console.log(`Found ${associatedSocieties.length} societies associated with society account ${clientId}`)
+      
+      await db.society.deleteMany({
+        where: { societyAccountId: clientId }
+      })
+    }
+
+    // Now delete the client from society accounts
     await db.societyAccount.delete({
       where: { id: clientId }
     })
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Client deleted successfully' 
+      message: 'Client deleted successfully',
+      deletedUsers: associatedUsers.length,
+      deletedSocieties: associatedSocieties.length
     })
   } catch (error) {
     console.error('Delete client API error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { 
+        success: false, 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
@@ -122,6 +178,15 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate and authorize user
+    const { user, error } = await authenticateAndAuthorize(request, 'SUPERADMIN')
+    
+    if (error) {
+      if (error.includes('No authentication')) {
+        return createUnauthorizedResponse(error)
+      }
+      return createForbiddenResponse(error)
+    }
     // Fetch from society accounts
     const clients = await db.societyAccount.findMany({
       select: {

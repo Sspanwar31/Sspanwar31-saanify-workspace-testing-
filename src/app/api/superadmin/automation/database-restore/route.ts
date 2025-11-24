@@ -1,43 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/tokens'
+import { withAdmin } from '@/lib/auth-middleware'
 import { db } from '@/lib/db'
 import { createClient } from '@supabase/supabase-js'
 
 // SuperAdmin only automation endpoint
-export async function POST(request: NextRequest) {
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
-    // Verify SuperAdmin authorization
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - SuperAdmin access required' 
-      }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = verifyAccessToken(token)
-    
-    if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid token' 
-      }, { status: 401 })
-    }
-
-    // Verify user is SuperAdmin
-    const user = await db.user.findUnique({
-      where: { id: (decoded as any).userId },
-      select: { role: true }
-    })
-
-    if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Access denied - SuperAdmin privileges required' 
-      }, { status: 403 })
-    }
-
     // Parse form data for file upload
     const formData = await request.formData()
     const backupFile = formData.get('backupFile') as File
@@ -102,14 +70,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // In a real implementation, you would:
-    // 1. Execute SQL restore commands
-    // 2. Verify database integrity
-    // 3. Update system status
-    
-    // For demo purposes, we'll simulate the restore process
-    // In production, you would use a proper SQL execution method
-    
     // Simulate restore execution time
     await new Promise(resolve => setTimeout(resolve, 2000))
 
@@ -131,4 +91,4 @@ export async function POST(request: NextRequest) {
       error: 'Internal server error during restore' 
     }, { status: 500 })
   }
-}
+})

@@ -59,12 +59,12 @@ export function SecureRevenueToggle({
         
         if (authAttempts >= 2) {
           toast.error('Access Denied', {
-            description: 'Only Super Admin can view revenue data. Please contact your administrator.',
+            description: 'Only Superadmin can view revenue data. Please contact your administrator.',
             duration: 5000,
           })
         } else {
           toast.error('Access Restricted', {
-            description: 'Revenue data is only visible to Super Admin users.',
+            description: 'Revenue data is only visible to Superadmin users.',
             duration: 3000,
           })
         }
@@ -151,7 +151,7 @@ export function SecureRevenueToggle({
                   <h3 className="text-white font-semibold flex items-center gap-2">
                     💰 Show Revenue Data
                     {!isAdmin && (
-                      <Shield className="h-4 w-4 text-amber-200" title="Super Admin Only" />
+                      <Shield className="h-4 w-4 text-amber-200" title="Superadmin Only" />
                     )}
                   </h3>
                   <p className="text-emerald-100 text-sm">
@@ -161,7 +161,7 @@ export function SecureRevenueToggle({
                         ? 'Revenue data is visible' 
                         : isAdmin 
                         ? 'Revenue data is hidden'
-                        : 'Revenue requires Super Admin access'
+                        : 'Revenue requires Superadmin access'
                     }
                   </p>
                 </div>
@@ -245,7 +245,7 @@ export function SecureRevenueToggle({
                     </span>
                   </div>
                   <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">
-                    Super Admin
+                    Superadmin
                   </div>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
                     Full access granted
@@ -281,11 +281,11 @@ export function SecureRevenueToggle({
                 Revenue Access Restricted
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                Financial data is only accessible to Super Admin users for security reasons.
+                Financial data is only accessible to Superadmin users for security reasons.
               </p>
               <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
                 <Shield className="h-3 w-3" />
-                <span>Super Admin privilege required</span>
+                <span>Superadmin privilege required</span>
               </div>
             </div>
           </CardContent>

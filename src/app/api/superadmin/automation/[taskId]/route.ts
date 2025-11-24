@@ -1,47 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/tokens'
+import { withAdmin } from '@/lib/auth-middleware'
 import { db } from '@/lib/db'
 import { createClient } from '@supabase/supabase-js'
 
 // SuperAdmin only automation endpoint
-export async function POST(
+export const POST = withAdmin(async (
   request: NextRequest,
   { params }: { params: { taskId: string } }
-) {
+) => {
   try {
     const { taskId } = params
-
-    // Verify SuperAdmin authorization
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - SuperAdmin access required' 
-      }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = verifyAccessToken(token)
-    
-    if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid token' 
-      }, { status: 401 })
-    }
-
-    // Verify user is SuperAdmin
-    const user = await db.user.findUnique({
-      where: { id: (decoded as any).userId },
-      select: { role: true }
-    })
-
-    if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'SUPERADMIN')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Access denied - SuperAdmin privileges required' 
-      }, { status: 403 })
-    }
 
     // Initialize Supabase client with service role key
     const supabase = createClient(
@@ -89,7 +57,7 @@ export async function POST(
       error: 'Internal server error during task execution' 
     }, { status: 500 })
   }
-}
+})
 
 // Task handler functions
 async function handleDatabaseBackup(supabase: any) {

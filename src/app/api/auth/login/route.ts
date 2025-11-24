@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Check Role
     if (validatedData.userType === 'admin') {
-       if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+       if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
           console.log("❌ Error: Role Mismatch. Required Admin, Got:", user.role); // LOG
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
        }
@@ -71,12 +71,20 @@ export async function POST(request: NextRequest) {
     try { await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }) } catch(e) {}
 
     const tokens = generateTokens(user)
+    
+    // Determine redirect URL based on user role
+    let redirectUrl = '/dashboard/client' // default for clients
+    if (user.role === 'SUPERADMIN') {
+      redirectUrl = '/superadmin'
+    }
+    
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
       accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken
+      refreshToken: tokens.refreshToken,
+      redirectUrl
     })
 
     response.cookies.set('auth-token', tokens.accessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 15 * 60 })

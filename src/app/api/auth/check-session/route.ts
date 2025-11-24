@@ -69,14 +69,21 @@ export async function GET(request: NextRequest) {
 
     console.log("✅ Check-session: User found in DB", { id: user.id, email: user.email, role: user.role }); // LOG
 
-    // 4. Return Real User Data
+    // 4. Return Real User Data with normalized role
+    let normalizedRole = user.role?.toUpperCase();
+    
+    // Normalize role names for consistency
+    if (normalizedRole === 'SUPER_ADMIN') {
+      normalizedRole = 'SUPERADMIN';
+    }
+    
     return NextResponse.json({
       authenticated: true,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role, // Ab ye 'SUPER_ADMIN' bhejega
+        role: normalizedRole, // Always return 'SUPERADMIN' for consistency
         societyAccountId: user.societyAccountId
       }
     });

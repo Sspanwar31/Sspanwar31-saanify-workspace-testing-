@@ -8,7 +8,7 @@ set -e
 echo "🚀 Starting First Time Setup Test..."
 
 # Configuration
-API_BASE="http://localhost:3000/api/super-admin/automation"
+API_BASE="http://localhost:3000/api/superadmin/automation"
 SETUP_KEY="${SETUP_KEY:-test_setup_key_123}"
 
 # Colors for output

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ErrorBoundaryClass } from "@/components/error-boundary-new";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Providers from "@/app/providers";
 
 const geistSans = Geist({
@@ -49,9 +49,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <Providers>
-          <ErrorBoundaryClass>
+          <ErrorBoundary>
             {children}
-          </ErrorBoundaryClass>
+          </ErrorBoundary>
           <Toaster />
         </Providers>
       </body>

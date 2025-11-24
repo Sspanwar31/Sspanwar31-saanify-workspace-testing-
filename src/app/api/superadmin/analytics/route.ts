@@ -15,7 +15,7 @@ export const GET = withAdmin(async (req: AuthenticatedRequest) => {
     ] = await Promise.all([
       db.user.count(),
       db.user.count({ where: { isActive: true } }),
-      db.user.count({ where: { role: 'SUPER_ADMIN' } }),
+      db.user.count({ where: { role: 'SUPERADMIN' } }),
       db.user.count({ where: { role: 'CLIENT' } }),
       db.user.count({
         where: {

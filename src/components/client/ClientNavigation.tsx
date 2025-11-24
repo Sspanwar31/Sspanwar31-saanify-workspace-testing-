@@ -24,49 +24,49 @@ import { cn } from '@/lib/utils'
 const navigationItems = [
   {
     label: 'Dashboard',
-    href: '/client/dashboard',
+    href: '/dashboard/client',
     icon: LayoutDashboard,
     description: 'Overview and analytics'
   },
   {
     label: 'Members',
-    href: '/client/members',
+    href: '/dashboard/client/members',
     icon: Users,
     description: 'Member management'
   },
   {
     label: 'Loans',
-    href: '/client/loans',
+    href: '/dashboard/client/loans',
     icon: CreditCard,
     description: 'Loan management'
   },
   {
     label: 'Passbook',
-    href: '/client/passbook',
+    href: '/dashboard/client/passbook',
     icon: BookOpen,
     description: 'Transaction history'
   },
   {
     label: 'Maturity',
-    href: '/client/maturity',
+    href: '/dashboard/client/maturity',
     icon: Calendar,
     description: 'Maturity tracking'
   },
   {
     label: 'Admin Fund',
-    href: '/client/admin-fund',
+    href: '/dashboard/client/admin-fund',
     icon: DollarSign,
     description: 'Fund management'
   },
   {
     label: 'Reports',
-    href: '/client/reports',
+    href: '/dashboard/client/reports',
     icon: BarChart3,
     description: 'Reports and analytics'
   },
   {
     label: 'User Management',
-    href: '/client/user-management',
+    href: '/dashboard/client/user-management',
     icon: Settings,
     description: 'Role & permission management'
   }

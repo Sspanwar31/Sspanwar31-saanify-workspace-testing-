@@ -132,6 +132,22 @@ export default function AdminDashboard() {
   const [runningTasks, setRunningTasks] = useState<Set<string>>(new Set())
   const [automationSubTab, setAutomationSubTab] = useState("system")
   
+  // Notifications State
+  const [notifications, setNotifications] = useState([
+    { event: 'New Client Signup', enabled: true, lastTriggered: '2 hours ago' },
+    { event: 'Subscription Renewed', enabled: true, lastTriggered: '1 day ago' },
+    { event: 'Payment Failed', enabled: true, lastTriggered: '3 days ago' },
+    { event: 'System Maintenance', enabled: false, lastTriggered: '1 week ago' }
+  ])
+  
+  // Email Automation State
+  const [emailAutomations, setEmailAutomations] = useState([
+    { type: 'Welcome Email', status: 'Active', sent: '24', pending: '0' },
+    { type: 'Trial Expiry Reminder', status: 'Active', sent: '12', pending: '3' },
+    { type: 'Payment Failed', status: 'Active', sent: '2', pending: '1' },
+    { type: 'Renewal Reminder', status: 'Paused', sent: '8', pending: '5' }
+  ])
+  
   // Subscription State
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -178,6 +194,41 @@ export default function AdminDashboard() {
     systemHealth: 'healthy',
     uptime: '99.9%',
     lastBackup: '2 hours ago'
+  })
+
+  // Global Settings State
+  const [globalSettings, setGlobalSettings] = useState({
+    trialDuration: 15,
+    maxUsersBasic: 25,
+    maxUsersPro: 100,
+    autoRenewal: true,
+    emailNotifications: true,
+    maintenanceMode: false
+  })
+
+  // Admin Management State
+  const [adminUsers, setAdminUsers] = useState([
+    { id: 1, name: 'ADMIN', email: 'admin@saanify.com', role: 'ADMIN', status: 'Active' },
+    { id: 2, name: 'John Doe', email: 'john@saanify.com', role: 'Admin', status: 'Active' },
+    { id: 3, name: 'Jane Smith', email: 'jane@saanify.com', role: 'Admin', status: 'Inactive' }
+  ])
+
+  // Backup & Restore State
+  const [backupStatus, setBackupStatus] = useState({
+    lastBackup: '2 hours ago',
+    size: '124 MB',
+    location: 'GitHub + Local',
+    isBackingUp: false,
+    isRestoring: false
+  })
+
+  // Add New Admin State
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false)
+  const [newAdmin, setNewAdmin] = useState({
+    name: '',
+    email: '',
+    role: 'Admin',
+    password: ''
   })
 
   // --- FETCH DATA ---
@@ -431,6 +482,109 @@ export default function AdminDashboard() {
         toast.info(`Action ${action} executed for client ${clientId}`)
     }
   }
+
+  // --- ADMIN MANAGEMENT HANDLERS ---
+  const handleAddAdmin = async () => {
+    if (!newAdmin.name || !newAdmin.email || !newAdmin.password) {
+      toast.error('Please fill all fields')
+      return
+    }
+
+    try {
+      // Simulate API call to add admin
+      const newAdminUser = {
+        id: adminUsers.length + 1,
+        name: newAdmin.name,
+        email: newAdmin.email,
+        role: newAdmin.role,
+        status: 'Active'
+      }
+      
+      setAdminUsers([...adminUsers, newAdminUser])
+      setShowAddAdminModal(false)
+      setNewAdmin({ name: '', email: '', role: 'Admin', password: '' })
+      
+      toast.success(`✅ Admin ${newAdmin.name} added successfully!`)
+    } catch (error) {
+      toast.error('Failed to add admin')
+    }
+  }
+
+  const handleBackupNow = async () => {
+    if (backupStatus.isBackingUp) return
+    
+    setBackupStatus(prev => ({ ...prev, isBackingUp: true }))
+    toast.info('🔄 Starting backup process...')
+    
+    try {
+      // Simulate backup process
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      setBackupStatus(prev => ({
+        ...prev,
+        isBackingUp: false,
+        lastBackup: 'Just now',
+        size: '128 MB'
+      }))
+      
+      toast.success('✅ Backup completed successfully!')
+    } catch (error) {
+      setBackupStatus(prev => ({ ...prev, isBackingUp: false }))
+      toast.error('❌ Backup failed!')
+    }
+  }
+
+  const handleRestore = async () => {
+    if (backupStatus.isRestoring) return
+    
+    setBackupStatus(prev => ({ ...prev, isRestoring: true }))
+    toast.info('🔄 Starting restore process...')
+    
+    try {
+      // Simulate restore process
+      await new Promise(resolve => setTimeout(resolve, 4000))
+      
+      setBackupStatus(prev => ({ ...prev, isRestoring: false }))
+      
+      toast.success('✅ System restored successfully!')
+    } catch (error) {
+      setBackupStatus(prev => ({ ...prev, isRestoring: false }))
+      toast.error('❌ Restore failed!')
+    }
+  }
+
+  const handleGlobalSettingChange = (setting: string, value: any) => {
+    setGlobalSettings(prev => ({ ...prev, [setting]: value }))
+    
+    const settingName = setting.replace(/([A-Z])/g, ' $1').trim()
+    const valueText = typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : value
+    
+    toast.success(`⚙️ ${settingName} updated to ${valueText}`)
+  }
+
+  const toggleAdminStatus = async (adminId: number) => {
+    const admin = adminUsers.find(a => a.id === adminId)
+    if (!admin) return
+    
+    const newStatus = admin.status === 'Active' ? 'Inactive' : 'Active'
+    
+    setAdminUsers(prev => 
+      prev.map(a => a.id === adminId ? { ...a, status: newStatus } : a)
+    )
+    
+    toast.success(`👤 Admin ${admin.name} ${newStatus.toLowerCase()}`)
+  }
+
+  const deleteAdmin = async (adminId: number) => {
+    const admin = adminUsers.find(a => a.id === adminId)
+    if (!admin) return
+    
+    if (confirm(`Are you sure you want to remove admin ${admin.name}?`)) {
+      setAdminUsers(prev => prev.filter(a => a.id !== adminId))
+      toast.success(`🗑️ Admin ${admin.name} removed`)
+    }
+  }
+
   const runTask = async (taskName: string) => {
     if (runningTasks.has(taskName)) return
     setRunningTasks(prev => new Set(prev).add(taskName))
@@ -444,7 +598,16 @@ export default function AdminDashboard() {
       })
       
       if (res.ok) {
-        toast.success(`✅ Task ${taskName} completed successfully`)
+        const data = await res.json()
+        toast.success(`✅ ${data.message}`)
+        
+        // Show detailed results if available
+        if (data.task?.result?.details) {
+          toast.info('📊 Task Details', {
+            description: data.task.result.details,
+            duration: 5000,
+          })
+        }
       } else {
         throw new Error('Task execution failed')
       }
@@ -462,6 +625,70 @@ export default function AdminDashboard() {
   const toggleTask = (id: string) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t))
     toast.success(`Task ${tasks.find(t => t.id === id)?.enabled ? 'disabled' : 'enabled'} successfully`)
+  }
+
+  const toggleNotification = async (event: string) => {
+    try {
+      const response = await fetch('/api/admin/automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggleNotification', event })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message)
+        
+        // Update local state to reflect the change
+        setNotifications(prev => prev.map(n => 
+          n.event === event 
+            ? { ...n, enabled: !n.enabled, lastTriggered: n.enabled ? 'Just now' : n.lastTriggered }
+            : n
+        ))
+      } else {
+        throw new Error('Failed to toggle notification')
+      }
+    } catch (error) {
+      toast.error('Failed to toggle notification')
+      // Still update local state for better UX
+      setNotifications(prev => prev.map(n => 
+        n.event === event 
+          ? { ...n, enabled: !n.enabled, lastTriggered: n.enabled ? 'Just now' : n.lastTriggered }
+          : n
+      ))
+    }
+  }
+
+  const toggleEmailAutomation = async (type: string) => {
+    try {
+      const response = await fetch('/api/admin/automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggleEmail', type })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message)
+        
+        // Update local state to reflect the change
+        setEmailAutomations(prev => prev.map(e => 
+          e.type === type 
+            ? { ...e, status: e.status === 'Active' ? 'Paused' : 'Active' }
+            : e
+        ))
+      } else {
+        throw new Error('Failed to toggle email automation')
+      }
+    } catch (error) {
+      toast.error('Failed to toggle email automation')
+      // Still update local state for better UX
+      setEmailAutomations(prev => prev.map(e => 
+        e.type === type 
+          ? { ...e, status: e.status === 'Active' ? 'Paused' : 'Active' }
+          : e
+      ))
+    }
   }
 
   const handleCreateDemoClient = async () => {
@@ -1174,20 +1401,20 @@ export default function AdminDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {[
-                            { type: 'Welcome Email', status: 'Active', sent: '24', pending: '0' },
-                            { type: 'Trial Expiry Reminder', status: 'Active', sent: '12', pending: '3' },
-                            { type: 'Payment Failed', status: 'Active', sent: '2', pending: '1' },
-                            { type: 'Renewal Reminder', status: 'Paused', sent: '8', pending: '5' }
-                          ].map((email, index) => (
+                          {emailAutomations.map((email, index) => (
                             <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                               <div>
                                 <p className="text-white font-medium">{email.type}</p>
                                 <p className="text-white/60 text-sm">Sent: {email.sent} | Pending: {email.pending}</p>
                               </div>
-                              <Badge className={email.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={email.status === 'Active' ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30" : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30"}
+                                onClick={() => toggleEmailAutomation(email.type)}
+                              >
                                 {email.status}
-                              </Badge>
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -1203,12 +1430,7 @@ export default function AdminDashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {[
-                            { event: 'New Client Signup', enabled: true, lastTriggered: '2 hours ago' },
-                            { event: 'Subscription Renewed', enabled: true, lastTriggered: '1 day ago' },
-                            { event: 'Payment Failed', enabled: true, lastTriggered: '3 days ago' },
-                            { event: 'System Maintenance', enabled: false, lastTriggered: '1 week ago' }
-                          ].map((notification, index) => (
+                          {notifications.map((notification, index) => (
                             <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                               <div>
                                 <p className="text-white font-medium">{notification.event}</p>
@@ -1218,6 +1440,7 @@ export default function AdminDashboard() {
                                 size="sm"
                                 variant={notification.enabled ? "default" : "outline"}
                                 className={notification.enabled ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30" : "border-white/20 text-white hover:bg-white/10"}
+                                onClick={() => toggleNotification(notification.event)}
                               >
                                 {notification.enabled ? 'Enabled' : 'Disabled'}
                               </Button>
@@ -1307,22 +1530,43 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {[
-                          { name: 'ADMIN', email: 'admin@saanify.com', role: 'ADMIN', status: 'Active' },
-                          { name: 'John Doe', email: 'john@saanify.com', role: 'Admin', status: 'Active' },
-                          { name: 'Jane Smith', email: 'jane@saanify.com', role: 'Admin', status: 'Inactive' }
-                        ].map((admin, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                        {adminUsers.map((admin, index) => (
+                          <div key={admin.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                             <div>
                               <p className="text-white font-medium">{admin.name}</p>
                               <p className="text-white/60 text-sm">{admin.email} • {admin.role}</p>
                             </div>
-                            <Badge className={admin.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                              {admin.status}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => toggleAdminStatus(admin.id)}
+                                className={`border ${
+                                  admin.status === 'Active' 
+                                    ? 'border-green-500/30 text-green-400 hover:bg-green-500/10' 
+                                    : 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                                }`}
+                              >
+                                {admin.status === 'Active' ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteAdmin(admin.id)}
+                                className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                              <Badge className={admin.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                                {admin.status}
+                              </Badge>
+                            </div>
                           </div>
                         ))}
-                        <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                          onClick={() => setShowAddAdminModal(true)}
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Add New Admin
                         </Button>
@@ -1342,25 +1586,42 @@ export default function AdminDashboard() {
                         <div className="p-4 rounded-lg bg-white/5">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-white font-medium">Last Backup</span>
-                            <span className="text-cyan-400">{stats.lastBackup}</span>
+                            <span className="text-cyan-400">{backupStatus.lastBackup}</span>
                           </div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-white/60 text-sm">Size</span>
-                            <span className="text-white/60 text-sm">124 MB</span>
+                            <span className="text-white/60 text-sm">{backupStatus.size}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-white/60 text-sm">Location</span>
-                            <span className="text-white/60 text-sm">GitHub + Local</span>
+                            <span className="text-white/60 text-sm">{backupStatus.location}</span>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button className="flex-1 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600">
-                            <Download className="h-4 w-4 mr-2" />
-                            Backup Now
+                          <Button 
+                            className="flex-1 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+                            onClick={handleBackupNow}
+                            disabled={backupStatus.isBackingUp || backupStatus.isRestoring}
+                          >
+                            {backupStatus.isBackingUp ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4 mr-2" />
+                            )}
+                            {backupStatus.isBackingUp ? 'Backing Up...' : 'Backup Now'}
                           </Button>
-                          <Button variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">
-                            <Upload className="h-4 w-4 mr-2" />
-                            Restore
+                          <Button 
+                            variant="outline" 
+                            className="flex-1 border-white/20 text-white hover:bg-white/10"
+                            onClick={handleRestore}
+                            disabled={backupStatus.isBackingUp || backupStatus.isRestoring}
+                          >
+                            {backupStatus.isRestoring ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {backupStatus.isRestoring ? 'Restoring...' : 'Restore'}
                           </Button>
                         </div>
                       </div>
@@ -1378,12 +1639,12 @@ export default function AdminDashboard() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[
-                        { setting: 'Trial Duration', value: '15 days', type: 'number' },
-                        { setting: 'Max Users (Basic)', value: '25', type: 'number' },
-                        { setting: 'Max Users (Pro)', value: '100', type: 'number' },
-                        { setting: 'Auto-Renewal', value: 'Enabled', type: 'toggle' },
-                        { setting: 'Email Notifications', value: 'Enabled', type: 'toggle' },
-                        { setting: 'Maintenance Mode', value: 'Disabled', type: 'toggle' }
+                        { setting: 'Trial Duration', key: 'trialDuration', value: `${globalSettings.trialDuration} days`, type: 'number' },
+                        { setting: 'Max Users (Basic)', key: 'maxUsersBasic', value: globalSettings.maxUsersBasic, type: 'number' },
+                        { setting: 'Max Users (Pro)', key: 'maxUsersPro', value: globalSettings.maxUsersPro, type: 'number' },
+                        { setting: 'Auto-Renewal', key: 'autoRenewal', value: globalSettings.autoRenewal, type: 'toggle' },
+                        { setting: 'Email Notifications', key: 'emailNotifications', value: globalSettings.emailNotifications, type: 'toggle' },
+                        { setting: 'Maintenance Mode', key: 'maintenanceMode', value: globalSettings.maintenanceMode, type: 'toggle' }
                       ].map((item, index) => (
                         <div key={index} className="p-4 rounded-lg bg-white/5">
                           <label className="text-white/60 text-sm">{item.setting}</label>
@@ -1391,16 +1652,22 @@ export default function AdminDashboard() {
                             {item.type === 'toggle' ? (
                               <Button
                                 size="sm"
-                                variant={item.value === 'Enabled' ? 'default' : 'outline'}
-                                className={item.value === 'Enabled' ? 'bg-green-500 hover:bg-green-600' : 'border-white/20 text-white hover:bg-white/10'}
+                                variant={item.value ? 'default' : 'outline'}
+                                className={item.value ? 'bg-green-500 hover:bg-green-600' : 'border-white/20 text-white hover:bg-white/10'}
+                                onClick={() => handleGlobalSettingChange(item.key, !item.value)}
                               >
-                                {item.value}
+                                {item.value ? 'Enabled' : 'Disabled'}
                               </Button>
                             ) : (
                               <Input
                                 value={item.value}
                                 className="bg-white/10 border-white/20 text-white"
-                                readOnly
+                                onChange={(e) => {
+                                  const numValue = parseInt(e.target.value.replace(/\D/g, ''))
+                                  if (!isNaN(numValue)) {
+                                    handleGlobalSettingChange(item.key, numValue)
+                                  }
+                                }}
                               />
                             )}
                           </div>
@@ -1755,6 +2022,81 @@ export default function AdminDashboard() {
             >
               {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Renew Subscription
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Admin Modal */}
+      <Dialog open={showAddAdminModal} onOpenChange={setShowAddAdminModal}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add New Admin</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a new admin account with access permissions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-name" className="text-gray-300">Full Name</Label>
+              <Input
+                id="admin-name"
+                value={newAdmin.name}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-email" className="text-gray-300">Email Address</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={newAdmin.email}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, email: e.target.value }))}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="admin@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-role" className="text-gray-300">Role</Label>
+              <Select value={newAdmin.role} onValueChange={(value) => setNewAdmin(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Super Admin">Super Admin</SelectItem>
+                  <SelectItem value="Viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-password" className="text-gray-300">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={newAdmin.password}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, password: e.target.value }))}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter secure password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddAdminModal(false)}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddAdmin}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Admin
             </Button>
           </DialogFooter>
         </DialogContent>

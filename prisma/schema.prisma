@@ -23,6 +23,7 @@ model User {
   isActive         Boolean  @default(true)
   lastLoginAt      DateTime?
   societyAccountId String?  // Link to SocietyAccount manually or via relation below
+  societyAccount  SocietyAccount? @relation(fields: [societyAccountId], references: [id])
 
   // Relations for NextAuth
   accounts      Account[]
@@ -96,6 +97,9 @@ model SocietyAccount {
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  
+  // Relation to Users
+  users               User[]
 
   @@map("society_accounts")
 }

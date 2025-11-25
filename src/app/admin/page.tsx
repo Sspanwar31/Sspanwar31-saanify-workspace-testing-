@@ -312,8 +312,7 @@ export default function AdminDashboard() {
     
     switch (action) {
       case 'view':
-        toast.info(`Viewing details for client ${clientId}`)
-        // TODO: Open client details modal
+        router.push(`/admin/clients/${clientId}`)
         break
       case 'edit':
         // Find the client data and populate edit form

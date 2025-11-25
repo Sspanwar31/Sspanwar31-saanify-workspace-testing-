@@ -96,7 +96,7 @@ export default function ClientDetailPage() {
 
   const fetchClient = async () => {
     try {
-      const response = await fetch(`/api/clients/${params.id}`)
+      const response = await fetch(`/api/admin/clients/${params.id}`)
       if (response.ok) {
         const data = await response.json()
         setClient(data.client)
@@ -111,7 +111,7 @@ export default function ClientDetailPage() {
 
   const handleAction = async (action: string) => {
     try {
-      const response = await fetch(`/api/clients/${params.id}`, {
+      const response = await fetch(`/api/admin/clients/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -130,7 +130,7 @@ export default function ClientDetailPage() {
 
   const handleRenewal = async (plan: string) => {
     try {
-      const response = await fetch(`/api/clients/${params.id}`, {
+      const response = await fetch(`/api/admin/clients/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'renew', plan })

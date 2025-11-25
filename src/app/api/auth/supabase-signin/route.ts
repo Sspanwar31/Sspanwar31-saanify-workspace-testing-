@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use Supabase auth
-    const { data: authData, error: authError } = await supabaseService.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabaseService().auth.signInWithPassword({
       email,
       password
     })

@@ -243,7 +243,7 @@ model SocietyAccount {
   email               String   @unique
   phone               String?
   address             String?
-  subscriptionPlan    String   @default("TRIAL") // TRIAL, BASIC, PRO, ENTERPRISE
+  subscriptionPlan    String   @default("TRIAL") // TRIAL, BASIC, STANDARD, PRO, PREMIUM, ENTERPRISE
   status              String   @default("TRIAL") // TRIAL, ACTIVE, EXPIRED, LOCKED
   trialEndsAt         DateTime?
   subscriptionEndsAt  DateTime?

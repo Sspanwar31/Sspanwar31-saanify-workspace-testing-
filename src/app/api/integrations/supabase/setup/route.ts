@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         email TEXT UNIQUE NOT NULL,
         phone TEXT,
         address TEXT,
-        subscription_plan TEXT DEFAULT 'TRIAL' CHECK (subscription_plan IN ('TRIAL', 'BASIC', 'PRO', 'ENTERPRISE')),
+        subscription_plan TEXT DEFAULT 'TRIAL' CHECK (subscription_plan IN ('TRIAL', 'BASIC', 'STANDARD', 'PRO', 'PREMIUM', 'ENTERPRISE')),
         status TEXT DEFAULT 'TRIAL' CHECK (status IN ('TRIAL', 'ACTIVE', 'EXPIRED', 'LOCKED')),
         trial_ends_at TIMESTAMP WITH TIME ZONE,
         subscription_ends_at TIMESTAMP WITH TIME ZONE,

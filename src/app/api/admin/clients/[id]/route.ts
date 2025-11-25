@@ -107,6 +107,16 @@ export async function PATCH(
           )
         }
         
+        // STEP 1: Clear previous subscription for same client
+        await db.societyAccount.update({
+          where: { id },
+          data: {
+            subscriptionPlan: "BASIC",
+            subscriptionEndsAt: null,
+            trialEndsAt: null
+          }
+        });
+        
         // Calculate subscription end date based on plan
         const now = new Date()
         let subscriptionEndsAt: Date
@@ -115,7 +125,13 @@ export async function PATCH(
           case 'BASIC':
             subscriptionEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 1 month
             break
+          case 'STANDARD':
+            subscriptionEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 1 month
+            break
           case 'PRO':
+            subscriptionEndsAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) // 3 months
+            break
+          case 'PREMIUM':
             subscriptionEndsAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000) // 3 months
             break
           case 'ENTERPRISE':
@@ -128,6 +144,7 @@ export async function PATCH(
             )
         }
         
+        // STEP 2: Apply new subscription
         updateData = {
           status: 'ACTIVE',
           subscriptionPlan: plan.toUpperCase(),

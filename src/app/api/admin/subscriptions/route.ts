@@ -94,7 +94,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update the society account's subscription
+    // STEP 1: Clear previous subscription for same client
+    await db.societyAccount.update({
+      where: { id: body.societyAccountId },
+      data: {
+        subscriptionPlan: "BASIC",
+        subscriptionEndsAt: null,
+        trialEndsAt: null
+      }
+    });
+
+    // STEP 2: Apply new subscription
     const updatedAccount = await db.societyAccount.update({
       where: {
         id: body.societyAccountId
@@ -102,6 +112,7 @@ export async function POST(request: NextRequest) {
       data: {
         subscriptionPlan: body.plan,
         subscriptionEndsAt: body.subscriptionEndsAt ? new Date(body.subscriptionEndsAt) : null,
+        trialEndsAt: body.trialEndsAt ? new Date(body.trialEndsAt) : null,
         isActive: body.isActive !== undefined ? body.isActive : true,
         updatedAt: new Date()
       }
@@ -145,7 +156,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update the subscription
+    // STEP 1: Clear previous subscription for same client
+    await db.societyAccount.update({
+      where: { id: body.id },
+      data: {
+        subscriptionPlan: "BASIC",
+        subscriptionEndsAt: null,
+        trialEndsAt: null
+      }
+    });
+
+    // STEP 2: Apply new subscription
     const updatedAccount = await db.societyAccount.update({
       where: {
         id: body.id

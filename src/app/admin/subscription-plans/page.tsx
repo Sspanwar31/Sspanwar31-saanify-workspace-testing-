@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, Users, IndianRupee, Plus, Edit, Trash2, Check, X, Search, ChevronDown, Building } from "lucide-react";
+import { Calendar, Clock, Users, IndianRupee, Plus, Edit, Trash2, Check, X, Search, ChevronDown, Building, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -60,6 +61,7 @@ interface Client {
 }
 
 export default function SubscriptionPlansPage() {
+  const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [clientSubscriptions, setClientSubscriptions] = useState<ClientSubscription[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -533,9 +535,20 @@ export default function SubscriptionPlansPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Subscription Plans Management</h1>
-          <p className="text-muted-foreground">Manage subscription plans and client activations</p>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => router.push('/admin')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Admin
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Subscription Plans Management</h1>
+            <p className="text-muted-foreground">Manage subscription plans and client activations</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Dialog open={showCreatePlan} onOpenChange={setShowCreatePlan}>

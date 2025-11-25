@@ -143,7 +143,17 @@ export async function POST(request: NextRequest) {
       endDate.setMonth(endDate.getMonth() + planDuration);
     }
 
-    // Update the society account's subscription
+    // STEP 1: Clear previous subscription for same client
+    await db.societyAccount.update({
+      where: { id: body.clientId },
+      data: {
+        subscriptionPlan: "BASIC",
+        subscriptionEndsAt: null,
+        trialEndsAt: null
+      }
+    });
+
+    // STEP 2: Apply new subscription
     const updatedAccount = await db.societyAccount.update({
       where: {
         id: body.clientId
@@ -151,6 +161,7 @@ export async function POST(request: NextRequest) {
       data: {
         subscriptionPlan: mapPlanIdToPlanName(body.planId),
         subscriptionEndsAt: endDate,
+        trialEndsAt: body.trialEndsAt ? new Date(body.trialEndsAt) : null,
         isActive: true,
         updatedAt: new Date()
       }

@@ -11,7 +11,7 @@ export async function POST(
 
     console.log(`Renewing subscription for client ${id} to plan: ${plan}`)
 
-    if (!plan || !['BASIC', 'PRO', 'ENTERPRISE'].includes(plan)) {
+    if (!plan || !['BASIC', 'PRO', 'ENTERPRISE', 'STANDARD', 'PREMIUM'].includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid plan specified' },
         { status: 400 }
@@ -21,9 +21,11 @@ export async function POST(
     // Calculate subscription end date
     const subscriptionEndsAt = new Date()
     const planDurations = {
-      BASIC: 30, // 1 month
-      PRO: 90,   // 3 months
-      ENTERPRISE: 365 // 1 year
+      BASIC: 30,        // 1 month
+      STANDARD: 30,    // 1 month
+      PRO: 90,         // 3 months
+      PREMIUM: 90,     // 3 months
+      ENTERPRISE: 365  // 1 year
     }
     subscriptionEndsAt.setDate(subscriptionEndsAt.getDate() + planDurations[plan as keyof typeof planDurations])
 

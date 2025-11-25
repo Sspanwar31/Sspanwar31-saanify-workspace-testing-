@@ -126,6 +126,16 @@ export async function PATCH(
           )
         }
         
+        // STEP 1: Clear previous subscription for same client
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: {
+            subscriptionPlan: "BASIC",
+            subscriptionEndsAt: null,
+            trialEndsAt: null
+          }
+        });
+        
         // Calculate subscription end date based on plan
         const now = new Date()
         let subscriptionEndsAt: Date
@@ -147,6 +157,7 @@ export async function PATCH(
             )
         }
         
+        // STEP 2: Apply new subscription
         updateData = {
           status: 'ACTIVE',
           subscriptionPlan: plan.toUpperCase(),
@@ -156,7 +167,18 @@ export async function PATCH(
         break
       
       case 'renew_basic':
+        // STEP 1: Clear previous subscription for same client
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: {
+            subscriptionPlan: "BASIC",
+            subscriptionEndsAt: null,
+            trialEndsAt: null
+          }
+        });
+        
         subscriptionEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 1 month
+        // STEP 2: Apply new subscription
         updateData = {
           status: 'ACTIVE',
           subscriptionPlan: 'BASIC',
@@ -166,7 +188,18 @@ export async function PATCH(
         break
       
       case 'renew_pro':
+        // STEP 1: Clear previous subscription for same client
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: {
+            subscriptionPlan: "BASIC",
+            subscriptionEndsAt: null,
+            trialEndsAt: null
+          }
+        });
+        
         subscriptionEndsAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 3 months
+        // STEP 2: Apply new subscription
         updateData = {
           status: 'ACTIVE',
           subscriptionPlan: 'PRO',
@@ -176,7 +209,18 @@ export async function PATCH(
         break
       
       case 'renew_enterprise':
+        // STEP 1: Clear previous subscription for same client
+        await db.societyAccount.update({
+          where: { id: clientId },
+          data: {
+            subscriptionPlan: "BASIC",
+            subscriptionEndsAt: null,
+            trialEndsAt: null
+          }
+        });
+        
         subscriptionEndsAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 12 months
+        // STEP 2: Apply new subscription
         updateData = {
           status: 'ACTIVE',
           subscriptionPlan: 'ENTERPRISE',

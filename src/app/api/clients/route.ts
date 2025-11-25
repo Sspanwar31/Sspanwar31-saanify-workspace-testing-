@@ -12,7 +12,7 @@ const createClientSchema = z.object({
   state: z.string().optional(),
   pincode: z.string().optional(),
   country: z.string().optional(),
-  subscriptionType: z.enum(['TRIAL', 'BASIC', 'PRO', 'ENTERPRISE']).default('TRIAL'),
+  subscriptionType: z.enum(['TRIAL', 'BASIC', 'STANDARD', 'PRO', 'PREMIUM', 'ENTERPRISE']).default('TRIAL'),
   trialPeriod: z.string().optional(),
   totalMembers: z.string().optional(),
   description: z.string().optional(),

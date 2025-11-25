@@ -27,7 +27,7 @@ export default function UnifiedLoginPage() {
   // Demo credentials
   const demoCredentials = {
     admin: {
-      email: 'ADMIN@saanify.com',
+      email: 'admin@saanify.com',
       password: 'admin123'
     },
     client: {

@@ -7,7 +7,7 @@ async function main() {
   console.log('Seeding database...')
 
   // Create admin user (merged from ADMIN)
-  const adminEmail = 'admin@saanify.com'
+  const adminEmail = 'ADMIN@saanify.com'
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail }
   })

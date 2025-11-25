@@ -38,7 +38,7 @@ export const GET = withAdmin(async (req: AuthenticatedRequest) => {
       db.societyAccount.count({ where: { subscriptionPlan: 'TRIAL' } }),
       db.societyAccount.count({
         where: {
-          subscriptionPlan: { in: ['BASIC', 'PRO', 'ENTERPRISE'] }
+          subscriptionPlan: { in: ['BASIC', 'STANDARD', 'PRO', 'PREMIUM', 'ENTERPRISE'] }
         }
       })
     ])

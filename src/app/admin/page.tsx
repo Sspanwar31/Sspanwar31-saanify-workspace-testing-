@@ -566,11 +566,27 @@ export default function AdminDashboard() {
       // Map plan names to backend expected values
       const planMapping: { [key: string]: string } = {
         'Basic': 'BASIC',
-        'Professional': 'PRO', 
+        'Basic Plan': 'BASIC',
+        'Standard': 'STANDARD',
+        'Standard Plan': 'STANDARD',
+        'Professional': 'PRO',
+        'Professional Plan': 'PRO',
+        'Premium': 'PREMIUM',
+        'Premium Plan': 'PREMIUM',
         'Enterprise': 'ENTERPRISE',
+        'Enterprise Annual': 'ENTERPRISE',
+        'Enterprise Plan': 'ENTERPRISE',
         'basic': 'BASIC',
-        'professional': 'PRO', 
-        'enterprise': 'ENTERPRISE'
+        'basic plan': 'BASIC',
+        'standard': 'STANDARD',
+        'standard plan': 'STANDARD',
+        'professional': 'PRO',
+        'professional plan': 'PRO',
+        'premium': 'PREMIUM',
+        'premium plan': 'PREMIUM',
+        'enterprise': 'ENTERPRISE',
+        'enterprise annual': 'ENTERPRISE',
+        'enterprise plan': 'ENTERPRISE'
       }
       
       const backendPlan = planMapping[renewData.planId] || renewData.planId.toUpperCase()
@@ -614,7 +630,16 @@ export default function AdminDashboard() {
     setSelectedSubscription(subscription)
     
     // Map current plan to the format expected by the select dropdown
-    const currentPlanName = subscription.plan?.charAt(0).toUpperCase() + subscription.plan?.slice(1).toLowerCase() || 'Basic'
+    let currentPlanName = 'Basic Plan' // default
+    if (subscription.plan) {
+      const planLower = subscription.plan.toLowerCase()
+      if (planLower.includes('basic')) currentPlanName = 'Basic Plan'
+      else if (planLower.includes('standard')) currentPlanName = 'Standard Plan'
+      else if (planLower.includes('pro')) currentPlanName = 'Professional Plan'
+      else if (planLower.includes('premium')) currentPlanName = 'Premium Plan'
+      else if (planLower.includes('enterprise')) currentPlanName = 'Enterprise Annual'
+      else currentPlanName = subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1).toLowerCase()
+    }
     
     setRenewData({
       planId: currentPlanName,

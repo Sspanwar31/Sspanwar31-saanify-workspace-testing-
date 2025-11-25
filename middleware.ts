@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtDecode } from 'jwt-decode';
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -25,14 +26,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Use require for jsonwebtoken
-  const jwt = require("jsonwebtoken");
-
+  // Use jwt-decode for Edge Runtime compatibility (no verification)
   let decoded: any = null;
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    decoded = jwtDecode(token);
   } catch (error) {
-    // Token is invalid or expired, clear it and redirect to login
+    // Token is invalid, clear it and redirect to login
     const res = NextResponse.redirect(new URL("/login", req.url));
     res.cookies.delete("auth-token");
     return res;

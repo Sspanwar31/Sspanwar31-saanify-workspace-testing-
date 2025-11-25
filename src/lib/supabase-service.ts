@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Service client for server-side operations only
@@ -30,3 +30,42 @@ export function getAutomationClient() {
   // Set service role context for elevated operations
   return client
 }
+
+/**
+ * Export supabaseService as function for lazy initialization
+ */
+export function supabaseService() {
+  return getServiceClient()
+}
+
+/**
+ * Class-based service for backward compatibility
+ */
+class SupabaseServiceClass {
+  private static instance: SupabaseServiceClass | null = null
+  private client: SupabaseClient | null = null
+
+  static getInstance(): SupabaseServiceClass {
+    if (!SupabaseServiceClass.instance) {
+      SupabaseServiceClass.instance = new SupabaseServiceClass()
+    }
+    return SupabaseServiceClass.instance
+  }
+
+  async getClient(): Promise<SupabaseClient | null> {
+    if (!this.client) {
+      try {
+        this.client = getServiceClient()
+      } catch (error) {
+        console.error('Failed to create Supabase client:', error)
+        return null
+      }
+    }
+    return this.client
+  }
+}
+
+/**
+ * Default export for class-based usage
+ */
+export default SupabaseServiceClass

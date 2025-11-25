@@ -12,7 +12,11 @@ import {
   CreditCard,
   Edit,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  UserCheck,
+  Ban,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,7 +25,8 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
-  DropdownMenuSeparator 
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -151,45 +156,77 @@ export function ActionsDropdown({ client, onAction, onDelete }: ActionsDropdownP
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <MoreHorizontal className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="h-8 px-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <Settings className="h-4 w-4 mr-1" />
+            Actions
           </Button>
         </DropdownMenuTrigger>
         
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => handleAction('view')} className="cursor-pointer">
-            <Eye className="mr-2 h-4 w-4 text-blue-600" />
-            View Details
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Client Management
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={() => handleAction('view')} className="cursor-pointer py-2">
+            <Eye className="mr-3 h-4 w-4 text-blue-600" />
+            <div className="flex-1">
+              <div className="font-medium">View Details</div>
+              <div className="text-xs text-slate-500">See complete client information</div>
+            </div>
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => handleAction('edit')} className="cursor-pointer">
-            <Edit className="mr-2 h-4 w-4 text-slate-600" />
-            Edit
+          <DropdownMenuItem onClick={() => handleAction('edit')} className="cursor-pointer py-2">
+            <Edit className="mr-3 h-4 w-4 text-slate-600" />
+            <div className="flex-1">
+              <div className="font-medium">Edit Client</div>
+              <div className="text-xs text-slate-500">Update client details</div>
+            </div>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={() => handleAction('send_email')} className="cursor-pointer py-2">
+            <Mail className="mr-3 h-4 w-4 text-green-600" />
+            <div className="flex-1">
+              <div className="font-medium">Send Email</div>
+              <div className="text-xs text-slate-500">Contact client directly</div>
+            </div>
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
           
           {client.status === 'ACTIVE' ? (
-            <DropdownMenuItem onClick={() => handleAction('lock')} className="cursor-pointer">
-              <Lock className="mr-2 h-4 w-4 text-amber-600" />
-              Lock Account
+            <DropdownMenuItem onClick={() => handleAction('lock')} className="cursor-pointer py-2">
+              <Lock className="mr-3 h-4 w-4 text-amber-600" />
+              <div className="flex-1">
+                <div className="font-medium">Lock Account</div>
+                <div className="text-xs text-slate-500">Suspend client access</div>
+              </div>
             </DropdownMenuItem>
           ) : client.status === 'LOCKED' ? (
-            <DropdownMenuItem onClick={() => handleAction('unlock')} className="cursor-pointer">
-              <Unlock className="mr-2 h-4 w-4 text-emerald-600" />
-              Unlock Account
+            <DropdownMenuItem onClick={() => handleAction('unlock')} className="cursor-pointer py-2">
+              <Unlock className="mr-3 h-4 w-4 text-emerald-600" />
+              <div className="flex-1">
+                <div className="font-medium">Unlock Account</div>
+                <div className="text-xs text-slate-500">Restore client access</div>
+              </div>
             </DropdownMenuItem>
           ) : null}
           
-          <DropdownMenuItem onClick={() => setRenewDialog(true)} className="cursor-pointer">
-            <RefreshCw className="mr-2 h-4 w-4 text-purple-600" />
-            Renew
+          <DropdownMenuItem onClick={() => setRenewDialog(true)} className="cursor-pointer py-2">
+            <RefreshCw className="mr-3 h-4 w-4 text-purple-600" />
+            <div className="flex-1">
+              <div className="font-medium">Renew Subscription</div>
+              <div className="text-xs text-slate-500">Extend client subscription</div>
+            </div>
           </DropdownMenuItem>
           
           {client.status === 'ACTIVE' && (
-            <DropdownMenuItem onClick={() => handleAction('expire')} className="cursor-pointer">
-              <Calendar className="mr-2 h-4 w-4 text-red-600" />
-              Mark as Expired
+            <DropdownMenuItem onClick={() => handleAction('expire')} className="cursor-pointer py-2">
+              <Calendar className="mr-3 h-4 w-4 text-red-600" />
+              <div className="flex-1">
+                <div className="font-medium">Mark as Expired</div>
+                <div className="text-xs text-slate-500">End subscription immediately</div>
+              </div>
             </DropdownMenuItem>
           )}
           
@@ -197,10 +234,13 @@ export function ActionsDropdown({ client, onAction, onDelete }: ActionsDropdownP
           
           <DropdownMenuItem 
             onClick={() => handleAction('delete')} 
-            className="cursor-pointer text-red-600 focus:text-red-600"
+            className="cursor-pointer py-2 text-red-600 focus:text-red-600"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            <Trash2 className="mr-3 h-4 w-4" />
+            <div className="flex-1">
+              <div className="font-medium">Delete Client</div>
+              <div className="text-xs text-red-500">This action cannot be undone</div>
+            </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

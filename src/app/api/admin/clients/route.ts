@@ -4,7 +4,10 @@ import { db } from '@/lib/db'
 export async function GET() {
   try {
     console.log('🔄 Fetching clients...')
-    // Fetch all users with society accounts
+    // Fetch society accounts
+    const societyAccounts = await db.societyAccount.findMany()
+
+    // Fetch only users that have society accounts
     const users = await db.user.findMany({
       where: {
         role: {
@@ -13,26 +16,25 @@ export async function GET() {
       }
     })
 
-    // Fetch society accounts separately
-    const societyAccounts = await db.societyAccount.findMany()
-
-    // Transform data for frontend
-    const clients = users.map(user => {
-      const societyAccount = societyAccounts.find(sa => sa.email === user.email)
+    // Transform data for frontend - only include users with matching society accounts
+    const clients = societyAccounts.map(societyAccount => {
+      const user = users.find(u => u.email === societyAccount.email)
       return {
-        id: user.id,
-        name: societyAccount?.name || user.name || 'Unknown Society',
-        email: user.email,
-        phone: societyAccount?.phone || '',
-        address: societyAccount?.address || '',
-        plan: societyAccount?.subscriptionPlan || 'TRIAL',
-        status: societyAccount?.status || 'Active',
+        id: societyAccount.id, // Use society account ID
+        name: societyAccount.name || user?.name || 'Unknown Society',
+        adminName: user?.name || societyAccount.adminName || 'Unknown Admin',
+        email: societyAccount.email,
+        phone: societyAccount.phone || '',
+        address: societyAccount.address || '',
+        subscriptionPlan: societyAccount.subscriptionPlan || 'TRIAL',
+        status: societyAccount.status || 'TRIAL',
         members: Math.floor(Math.random() * 500) + 50, // Demo data
-        revenue: societyAccount?.subscriptionPlan === 'PRO' ? '₹2,400' : 
-                societyAccount?.subscriptionPlan === 'BASIC' ? '₹600' : '₹0',
+        revenue: societyAccount.subscriptionPlan === 'PRO' ? '₹2,400' : 
+                societyAccount.subscriptionPlan === 'BASIC' ? '₹600' : '₹0',
         lastActive: '2h ago',
-        createdAt: user.createdAt.toISOString(),
-        trialEndsAt: societyAccount?.trialEndsAt?.toISOString()
+        createdAt: societyAccount.createdAt.toISOString(),
+        trialEndsAt: societyAccount.trialEndsAt?.toISOString(),
+        subscriptionEndsAt: societyAccount.subscriptionEndsAt?.toISOString()
       }
     })
 
@@ -54,11 +56,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, phone, address, plan } = body
-
-    if (!name || !email) {
+    const { name, adminName, email, phone, address, plan } = body
+    
+    if (!name || !adminName || !email) {
       return NextResponse.json(
-        { error: 'Name and email are required' },
+        { error: 'Name, admin name, and email are required' },
         { status: 400 }
       )
     }
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Create user first
     const user = await db.user.create({
       data: {
-        name: name,
+        name: adminName,
         email: email,
         role: 'CLIENT',
         isActive: true,
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
     const societyAccount = await db.societyAccount.create({
       data: {
         name: name,
-        adminName: name,
+        adminName: adminName,
         email: email,
         phone: phone,
         address: address,
@@ -99,11 +101,18 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Client created successfully',
       client: {
-        id: user.id,
+        id: societyAccount.id, // Return society account ID for individual operations
         name: name,
+        adminName: adminName,
         email: email,
-        plan: plan,
-        status: plan === 'TRIAL' ? 'TRIAL' : 'ACTIVE'
+        phone: phone,
+        address: address,
+        subscriptionPlan: plan, // Changed from 'plan' to 'subscriptionPlan'
+        status: plan === 'TRIAL' ? 'TRIAL' : 'ACTIVE',
+        createdAt: societyAccount.createdAt.toISOString(),
+        trialEndsAt: plan === 'TRIAL' ? societyAccount.trialEndsAt?.toISOString() : null,
+        subscriptionEndsAt: societyAccount.subscriptionEndsAt?.toISOString(),
+        userId: user.id // Also include user ID for reference
       }
     })
 
@@ -111,6 +120,80 @@ export async function POST(request: NextRequest) {
     console.error('Failed to create client:', error)
     return NextResponse.json(
       { error: 'Failed to create client' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { clientId } = body
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: 'Client ID is required' },
+        { status: 400 }
+      )
+    }
+
+    console.log(`Deleting client with ID: ${clientId}`)
+
+    // Try to delete by society account ID first
+    try {
+      await db.societyAccount.delete({
+        where: { id: clientId }
+      })
+      
+      // Also try to delete the associated user if exists
+      const user = await db.user.findFirst({
+        where: { societyAccountId: clientId }
+      })
+      
+      if (user) {
+        await db.user.delete({
+          where: { id: user.id }
+        })
+      }
+    } catch (societyError) {
+      console.log('Failed to delete by society account ID, trying by user ID...')
+      
+      // If that fails, try to delete by user ID
+      const user = await db.user.findUnique({
+        where: { id: clientId }
+      })
+      
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Client not found' },
+          { status: 404 }
+        )
+      }
+      
+      // Delete society account first if it exists
+      if (user.societyAccountId) {
+        await db.societyAccount.delete({
+          where: { id: user.societyAccountId }
+        })
+      }
+      
+      // Then delete the user
+      await db.user.delete({
+        where: { id: clientId }
+      })
+    }
+
+    console.log('Client deleted successfully')
+
+    return NextResponse.json({
+      success: true,
+      message: 'Client deleted successfully'
+    })
+
+  } catch (error) {
+    console.error('Failed to delete client:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete client: ' + error.message },
       { status: 500 }
     )
   }

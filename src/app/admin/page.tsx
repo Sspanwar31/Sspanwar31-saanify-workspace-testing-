@@ -28,6 +28,8 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/providers/auth-provider'
 import { ActivityMonitor } from '@/components/activity-monitor'
 import { DataCharts } from '@/components/data-charts'
+import { AddClientModal } from '@/components/admin/AddClientModal'
+import { ActionsDropdown } from '@/components/admin/ActionsDropdown'
 
 // --- 🛡️ SAFETY FUNCTIONS ---
 const safeRender = (val: any) => {
@@ -154,7 +156,7 @@ export default function AdminDashboard() {
     email: '',
     phone: '',
     address: '',
-    plan: 'TRIAL'
+    subscriptionPlan: 'TRIAL'
   })
   const [newClient, setNewClient] = useState({
     name: '',
@@ -305,6 +307,115 @@ export default function AdminDashboard() {
   }, [clients, searchTerm, filterStatus])
 
   // --- ACTION HANDLERS ---
+  const handleClientAction = async (action: string, clientId: string) => {
+    console.log(`Action: ${action} for client: ${clientId}`)
+    
+    switch (action) {
+      case 'view':
+        toast.info(`Viewing details for client ${clientId}`)
+        // TODO: Open client details modal
+        break
+      case 'edit':
+        // Find the client data and populate edit form
+        const clientToEdit = clients.find(c => c.id === clientId)
+        if (clientToEdit) {
+          setSelectedClient(clientToEdit)
+          setEditClient({
+            name: clientToEdit.name,
+            email: clientToEdit.email,
+            phone: clientToEdit.phone,
+            address: clientToEdit.address,
+            subscriptionPlan: clientToEdit.subscriptionPlan
+          })
+          setIsEditModalOpen(true)
+        } else {
+          toast.error('Client not found')
+        }
+        break
+      case 'send_email':
+        toast.success(`Email composer opened for client`)
+        // TODO: Open email composer
+        break
+      case 'lock':
+        try {
+          const res = await fetch(`/api/admin/clients/${clientId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'LOCKED' })
+          })
+          if (res.ok) {
+            toast.success(`Client account locked successfully`)
+            fetchClients()
+          } else {
+            throw new Error('Failed to lock client')
+          }
+        } catch (e) {
+          toast.error(`Failed to lock client account`)
+        }
+        break
+      case 'unlock':
+        try {
+          const res = await fetch(`/api/admin/clients/${clientId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'ACTIVE' })
+          })
+          if (res.ok) {
+            toast.success(`Client account unlocked successfully`)
+            fetchClients()
+          } else {
+            throw new Error('Failed to unlock client')
+          }
+        } catch (e) {
+          toast.error(`Failed to unlock client account`)
+        }
+        break
+      case 'delete':
+        if (confirm('Are you sure you want to delete this client?')) {
+          await handleDeleteClient(clientId)
+        }
+        break
+      case 'expire':
+        try {
+          const res = await fetch(`/api/admin/clients/${clientId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'EXPIRED' })
+          })
+          if (res.ok) {
+            toast.success(`Client marked as expired`)
+            fetchClients()
+          } else {
+            throw new Error('Failed to expire client')
+          }
+        } catch (e) {
+          toast.error(`Failed to mark client as expired`)
+        }
+        break
+      case 'renew_basic':
+      case 'renew_pro':
+      case 'renew_enterprise':
+        const plan = action.replace('renew_', '').toUpperCase()
+        try {
+          const res = await fetch(`/api/admin/clients/${clientId}/renew`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan })
+          })
+          if (res.ok) {
+            toast.success(`Client subscription renewed to ${plan}`)
+            fetchClients()
+          } else {
+            throw new Error('Failed to renew subscription')
+          }
+        } catch (e) {
+          toast.error(`Failed to renew subscription`)
+        }
+        break
+      default:
+        toast.info(`Action ${action} executed for client ${clientId}`)
+    }
+  }
   const runTask = async (taskName: string) => {
     if (runningTasks.has(taskName)) return
     setRunningTasks(prev => new Set(prev).add(taskName))
@@ -368,39 +479,9 @@ export default function AdminDashboard() {
   }
 
   const handleAddClient = async () => {
-    if (!newClient.name || !newClient.email) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/admin/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'create',
-          name: newClient.name,
-          email: newClient.email,
-          phone: newClient.phone,
-          address: newClient.address,
-          plan: newClient.plan
-        })
-      })
-      
-      if (res.ok) {
-        toast.success('✅ Client added successfully')
-        setIsAddModalOpen(false)
-        setNewClient({ name: '', email: '', phone: '', address: '', plan: 'TRIAL' })
-        fetchClients()
-      } else {
-        throw new Error('Failed to add client')
-      }
-    } catch (e) {
-      toast.error('❌ Failed to add client')
-    } finally {
-      setIsLoading(false)
-    }
+    // Function is now handled by AddClientModal component
+    // This function can be removed or kept for reference
+    console.log('Add client handled by AddClientModal')
   }
 
   const handleEditClient = async () => {
@@ -411,14 +492,20 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/clients/${selectedClient.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editClient)
+        body: JSON.stringify({
+          name: editClient.name,
+          email: editClient.email,
+          phone: editClient.phone,
+          address: editClient.address,
+          subscriptionPlan: editClient.subscriptionPlan
+        })
       })
       
       if (res.ok) {
         toast.success('✅ Client updated successfully')
         setIsEditModalOpen(false)
         setSelectedClient(null)
-        setEditClient({ name: '', email: '', phone: '', address: '', plan: 'TRIAL' })
+        setEditClient({ name: '', email: '', phone: '', address: '', subscriptionPlan: 'TRIAL' })
         fetchClients()
       } else {
         throw new Error('Failed to update client')
@@ -434,10 +521,8 @@ export default function AdminDashboard() {
     if (!confirm('Are you sure you want to delete this client?')) return
     
     try {
-      const res = await fetch('/api/admin/clients', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId })
+      const res = await fetch(`/api/admin/clients/${clientId}`, {
+        method: 'DELETE'
       })
       
       if (res.ok) {
@@ -709,7 +794,7 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <Button 
-                        onClick={handleCreateDemoClient}
+                        onClick={() => setIsAddModalOpen(true)}
                         className="w-full justify-start bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -868,39 +953,11 @@ export default function AdminDashboard() {
                                 <span className="text-white">{client.members}</span>
                               </td>
                               <td className="p-4">
-                                <div className="flex gap-2">
-                                  <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button size="sm" variant="ghost" className="text-white hover:bg-white/10">
-                                        <ChevronDown className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-slate-800 border-white/10">
-                                      <DropdownMenuItem className="text-white hover:bg-white/10">
-                                        <Lock className="h-4 w-4 mr-2" />
-                                        Lock Client
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem className="text-white hover:bg-white/10">
-                                        <Unlock className="h-4 w-4 mr-2" />
-                                        Unlock Client
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator className="bg-white/10" />
-                                      <DropdownMenuItem 
-                                        className="text-red-400 hover:bg-white/10"
-                                        onClick={() => handleDeleteClient(client.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Client
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                                <ActionsDropdown 
+                                  client={client}
+                                  onAction={handleClientAction}
+                                  onDelete={handleDeleteClient}
+                                />
                               </td>
                             </motion.tr>
                           ))}
@@ -1473,83 +1530,20 @@ export default function AdminDashboard() {
 
       {/* Add Client Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="bg-slate-800 border-white/10">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white">Add New Client</DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogTitle className="text-xl font-bold">Add New Client</DialogTitle>
+            <DialogDescription>
               Create a new society client account
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-white">Client Name</Label>
-              <Input
-                value={newClient.name}
-                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
-                placeholder="Enter society name"
-              />
-            </div>
-            <div>
-              <Label className="text-white">Email</Label>
-              <Input
-                type="email"
-                value={newClient.email}
-                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
-                placeholder="admin@society.com"
-              />
-            </div>
-            <div>
-              <Label className="text-white">Phone</Label>
-              <Input
-                value={newClient.phone}
-                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
-                placeholder="+91 9876543210"
-              />
-            </div>
-            <div>
-              <Label className="text-white">Address</Label>
-              <Input
-                value={newClient.address}
-                onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-                className="bg-white/10 border-white/20 text-white"
-                placeholder="123 Society Street"
-              />
-            </div>
-            <div>
-              <Label className="text-white">Plan</Label>
-              <Select value={newClient.plan} onValueChange={(value) => setNewClient({ ...newClient, plan: value })}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-white/10">
-                  <SelectItem value="TRIAL">Trial</SelectItem>
-                  <SelectItem value="BASIC">Basic</SelectItem>
-                  <SelectItem value="PRO">Pro</SelectItem>
-                  <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsAddModalOpen(false)}
-              className="border-white/20 text-white hover:bg-white/10"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddClient}
-              disabled={isLoading}
-              className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-              Add Client
-            </Button>
-          </DialogFooter>
+          <AddClientModal 
+            onClose={() => setIsAddModalOpen(false)}
+            onSuccess={() => {
+              setIsAddModalOpen(false)
+              fetchClients()
+            }}
+          />
         </DialogContent>
       </Dialog>
 
@@ -1598,7 +1592,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <Label className="text-white">Plan</Label>
-              <Select value={editClient.plan} onValueChange={(value) => setEditClient({ ...editClient, plan: value })}>
+              <Select value={editClient.subscriptionPlan} onValueChange={(value) => setEditClient({ ...editClient, subscriptionPlan: value })}>
                 <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue />
                 </SelectTrigger>

@@ -7,8 +7,17 @@ const createClientSchema = z.object({
   adminName: z.string().min(2, 'Admin name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
+  country: z.string().optional(),
   subscriptionType: z.enum(['TRIAL', 'BASIC', 'PRO', 'ENTERPRISE']).default('TRIAL'),
-  trialPeriod: z.string().optional()
+  trialPeriod: z.string().optional(),
+  totalMembers: z.string().optional(),
+  description: z.string().optional(),
+  sendWelcomeEmail: z.boolean().optional(),
+  autoGeneratePassword: z.boolean().optional()
 })
 
 export async function POST(request: NextRequest) {
@@ -45,6 +54,7 @@ export async function POST(request: NextRequest) {
         adminName: validatedData.adminName,
         email: validatedData.email,
         phone: validatedData.phone,
+        address: validatedData.address,
         subscriptionPlan: validatedData.subscriptionType,
         status: validatedData.subscriptionType === 'TRIAL' ? 'TRIAL' : 'ACTIVE',
         trialEndsAt: trialEndsAt,
@@ -62,12 +72,20 @@ export async function POST(request: NextRequest) {
         adminName: client.adminName,
         email: client.email,
         phone: client.phone,
+        address: client.address,
         subscriptionPlan: client.subscriptionPlan,
         status: client.status,
         trialEndsAt: client.trialEndsAt,
         subscriptionEndsAt: client.subscriptionEndsAt,
         isActive: client.isActive,
-        createdAt: client.createdAt
+        createdAt: client.createdAt,
+        // Additional fields from form
+        city: validatedData.city,
+        state: validatedData.state,
+        pincode: validatedData.pincode,
+        country: validatedData.country,
+        totalMembers: validatedData.totalMembers,
+        description: validatedData.description
       }
     })
 
@@ -102,6 +120,7 @@ export async function GET(request: NextRequest) {
         adminName: true,
         email: true,
         phone: true,
+        address: true,
         subscriptionPlan: true,
         status: true,
         trialEndsAt: true,
@@ -120,6 +139,7 @@ export async function GET(request: NextRequest) {
       adminName: client.adminName,
       email: client.email,
       phone: client.phone,
+      address: client.address,
       plan: client.subscriptionPlan,
       status: client.status.toLowerCase(),
       renewDate: client.subscriptionEndsAt || client.trialEndsAt ? 

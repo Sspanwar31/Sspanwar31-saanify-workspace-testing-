@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, Users, IndianRupee, Plus, Edit, Trash2, Check, X } from "lucide-react";
+import { Calendar, Clock, Users, IndianRupee, Plus, Edit, Trash2, Check, X, Search, ChevronDown, Building } from "lucide-react";
+import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface SubscriptionPlan {
   id: string;
@@ -40,14 +42,35 @@ interface ClientSubscription {
   paymentStatus: 'paid' | 'pending' | 'overdue';
 }
 
+interface Client {
+  id: string;
+  name: string;
+  adminName: string;
+  email: string;
+  phone: string;
+  address: string;
+  subscriptionPlan: string;
+  status: string;
+  members: number;
+  revenue: string;
+  lastActive: string;
+  createdAt: string;
+  trialEndsAt?: string;
+  subscriptionEndsAt?: string;
+}
+
 export default function SubscriptionPlansPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [clientSubscriptions, setClientSubscriptions] = useState<ClientSubscription[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [showActivateSubscription, setShowActivateSubscription] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Form states for new plan
   const [newPlan, setNewPlan] = useState({
@@ -71,15 +94,51 @@ export default function SubscriptionPlansPage() {
     customAmount: ""
   });
 
-  // Sample data
+  // Fetch data on component mount
   useEffect(() => {
     fetchSubscriptionPlans();
     fetchClientSubscriptions();
+    fetchClients();
   }, []);
+
+  // Click outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowClientDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch('/api/admin/clients');
+      const result = await response.json();
+      if (result.success) {
+        setClients(result.clients);
+      }
+    } catch (error) {
+      console.error('Failed to fetch clients:', error);
+      toast.error('Failed to fetch clients');
+    }
+  };
 
   const fetchSubscriptionPlans = async () => {
     try {
-      const response = await fetch('/api/ADMIN/subscription-plans');
+      const response = await fetch('/api/admin/subscription-plans');
       const result = await response.json();
       if (result.success) {
         setPlans(result.data);
@@ -142,7 +201,7 @@ export default function SubscriptionPlansPage() {
 
   const fetchClientSubscriptions = async () => {
     try {
-      const response = await fetch('/api/ADMIN/client-subscriptions');
+      const response = await fetch('/api/admin/client-subscriptions');
       const result = await response.json();
       if (result.success) {
         setClientSubscriptions(result.data);
@@ -195,7 +254,7 @@ export default function SubscriptionPlansPage() {
         maxTransactions: parseInt(newPlan.maxTransactions)
       };
 
-      const url = editingPlan ? '/api/ADMIN/subscription-plans' : '/api/ADMIN/subscription-plans';
+      const url = editingPlan ? '/api/admin/subscription-plans' : '/api/admin/subscription-plans';
       const method = editingPlan ? 'PUT' : 'POST';
       const body = editingPlan ? { ...planData, id: editingPlan.id } : planData;
 
@@ -298,8 +357,22 @@ export default function SubscriptionPlansPage() {
   };
 
   const handleActivateSubscription = async () => {
+    // Validation
+    if (!subscriptionData.clientId) {
+      toast.error('Please select a society/client');
+      return;
+    }
+    if (!subscriptionData.planId) {
+      toast.error('Please select a plan');
+      return;
+    }
+    if (!subscriptionData.startDate) {
+      toast.error('Please select a start date');
+      return;
+    }
+
     try {
-      const subscriptionData = {
+      const data = {
         clientId: subscriptionData.clientId,
         planId: subscriptionData.planId,
         startDate: subscriptionData.startDate,
@@ -307,17 +380,18 @@ export default function SubscriptionPlansPage() {
         customAmount: subscriptionData.customAmount
       };
 
-      const response = await fetch('/api/ADMIN/client-subscriptions', {
+      const response = await fetch('/api/admin/client-subscriptions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(subscriptionData),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
       if (result.success) {
         setClientSubscriptions([...clientSubscriptions, result.data]);
+        toast.success('Subscription activated successfully!');
         
         // Reset form
         setSubscriptionData({
@@ -327,6 +401,7 @@ export default function SubscriptionPlansPage() {
           societyName: "",
           customAmount: ""
         });
+        setClientSearchTerm("");
         setShowActivateSubscription(false);
       } else {
         console.error('Failed to activate subscription:', result.error);
@@ -365,6 +440,7 @@ export default function SubscriptionPlansPage() {
           societyName: "",
           customAmount: ""
         });
+        setClientSearchTerm("");
         setShowActivateSubscription(false);
       }
     } catch (error) {
@@ -404,6 +480,7 @@ export default function SubscriptionPlansPage() {
         societyName: "",
         customAmount: ""
       });
+      setClientSearchTerm("");
       setShowActivateSubscription(false);
     }
   };
@@ -452,6 +529,9 @@ export default function SubscriptionPlansPage() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{editingPlan ? 'Edit Plan' : 'Create New Subscription Plan'}</DialogTitle>
+                <DialogDescription>
+                  {editingPlan ? 'Edit the subscription plan details' : 'Create a new subscription plan for clients'}
+                </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -549,46 +629,115 @@ export default function SubscriptionPlansPage() {
             </DialogContent>
           </Dialog>
 
+          {/* Activate Subscription Button */}
+          <Button 
+            variant="outline"
+            onClick={() => setShowActivateSubscription(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Activate Subscription
+          </Button>
+
+          {/* Activate Subscription Dialog */}
           <Dialog open={showActivateSubscription} onOpenChange={setShowActivateSubscription}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Activate Subscription
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Activate Client Subscription</DialogTitle>
+                <DialogDescription>
+                  Select a client and subscription plan to activate their subscription
+                </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
+                <div className="relative" ref={dropdownRef}>
+                  <Label htmlFor="societyName">Society Name</Label>
+                  <div className="relative">
+                    <Input
+                      id="societyName"
+                      value={subscriptionData.societyName}
+                      onChange={(e) => {
+                        setSubscriptionData({...subscriptionData, societyName: e.target.value});
+                        setClientSearchTerm(e.target.value);
+                        setShowClientDropdown(true);
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      placeholder="Type or select society name"
+                      className="pr-10"
+                    />
+                    <Building className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                  </div>
+                  
+                  {/* Client Dropdown */}
+                  {showClientDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {clients.filter(client => 
+                        client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                        client.adminName.toLowerCase().includes(clientSearchTerm.toLowerCase())
+                      ).length > 0 ? (
+                        clients.filter(client => 
+                          client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                          client.adminName.toLowerCase().includes(clientSearchTerm.toLowerCase())
+                        ).map(client => (
+                          <button
+                            key={client.id}
+                            type="button"
+                            className="w-full px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 text-left"
+                            onClick={() => {
+                              setSubscriptionData({
+                                ...subscriptionData,
+                                societyName: client.name,
+                                clientId: client.id
+                              });
+                              setClientSearchTerm(client.name);
+                              setShowClientDropdown(false);
+                              toast.success(`Selected: ${client.name}`);
+                            }}
+                          >
+                            <div className="font-medium text-sm">{client.name}</div>
+                            <div className="text-xs text-gray-500">{client.adminName} • {client.email}</div>
+                            <div className="text-xs text-gray-400">ID: {client.id}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500 text-sm">
+                          No clients found
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div>
                   <Label htmlFor="clientId">Client ID</Label>
                   <Input
                     id="clientId"
                     value={subscriptionData.clientId}
-                    onChange={(e) => setSubscriptionData({...subscriptionData, clientId: e.target.value})}
-                    placeholder="client123"
+                    readOnly
+                    className="bg-gray-50"
+                    placeholder="Auto-selected from society name"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="societyName">Society Name</Label>
-                  <Input
-                    id="societyName"
-                    value={subscriptionData.societyName}
-                    onChange={(e) => setSubscriptionData({...subscriptionData, societyName: e.target.value})}
-                    placeholder="Shanti Niketan Society"
-                  />
+                  <p className="text-xs text-gray-500 mt-1">Auto-populated when society is selected</p>
                 </div>
                 <div>
                   <Label htmlFor="planSelect">Select Plan</Label>
-                  <Select value={subscriptionData.planId} onValueChange={(value) => setSubscriptionData({...subscriptionData, planId: value})}>
+                  <Select 
+                    value={subscriptionData.planId} 
+                    onValueChange={(value) => {
+                      setSubscriptionData({...subscriptionData, planId: value});
+                      const selectedPlan = plans.find(p => p.id === value);
+                      if (selectedPlan) {
+                        toast.success(`Selected: ${selectedPlan.name}`);
+                      }
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a plan" />
                     </SelectTrigger>
                     <SelectContent>
                       {plans.filter(p => p.isActive).map(plan => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name} - ₹{plan.price}/{plan.durationType === 'monthly' ? 'month' : 'year'}
+                          <div>
+                            <div className="font-medium">{plan.name}</div>
+                            <div className="text-sm text-gray-500">₹{plan.price}/{plan.durationType === 'monthly' ? 'month' : 'year'}</div>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>

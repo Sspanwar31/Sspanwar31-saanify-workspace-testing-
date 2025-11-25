@@ -100,6 +100,9 @@ interface Subscription {
   status: string;
   expiryDate: string;
   revenue: string;
+  subscriptionEndsAt?: string;
+  trialEndsAt?: string;
+  memberCount?: number;
 }
 
 // --- DATABASE TASKS DATA (from original) ---
@@ -253,7 +256,20 @@ export default function AdminDashboard() {
       const response = await fetch('/api/admin/subscriptions');
       const result = await response.json();
       if (result.success) {
-        setSubscriptions(result.data);
+        // Map the API response to match the frontend interface
+        const mappedSubscriptions = result.data.map((item: any) => ({
+          id: item.id,
+          clientId: item.id, // API returns id as the society account ID
+          clientName: item.societyName,
+          plan: item.plan,
+          status: item.status,
+          expiryDate: item.subscriptionEndsAt || item.trialEndsAt || 'N/A',
+          revenue: item.plan === 'basic' ? '₹0' : item.plan === 'professional' ? '₹99' : item.plan === 'enterprise' ? '₹299' : '₹0',
+          subscriptionEndsAt: item.subscriptionEndsAt,
+          trialEndsAt: item.trialEndsAt,
+          memberCount: item.memberCount
+        }));
+        setSubscriptions(mappedSubscriptions);
       }
     } catch (error) {
       console.error('Failed to fetch subscriptions:', error);
@@ -263,19 +279,19 @@ export default function AdminDashboard() {
           id: 1,
           clientId: "client1",
           clientName: "Shanti Niketan Society",
-          plan: "Standard Plan",
+          plan: "Professional",
           status: "active",
           expiryDate: "2024-12-31",
-          revenue: "₹1,999"
+          revenue: "₹99"
         },
         {
           id: 2,
           clientId: "client2", 
           clientName: "Green Valley Apartments",
-          plan: "Basic Plan",
+          plan: "Basic",
           status: "expired",
           expiryDate: "2024-11-15",
-          revenue: "₹999"
+          revenue: "₹0"
         }
       ]);
     }
@@ -547,14 +563,30 @@ export default function AdminDashboard() {
 
     setIsLoading(true)
     try {
-      const res = await fetch('/api/admin/renew-subscription', {
+      // Map plan names to backend expected values
+      const planMapping: { [key: string]: string } = {
+        'Basic': 'BASIC',
+        'Professional': 'PRO', 
+        'Enterprise': 'ENTERPRISE',
+        'basic': 'BASIC',
+        'professional': 'PRO', 
+        'enterprise': 'ENTERPRISE'
+      }
+      
+      const backendPlan = planMapping[renewData.planId] || renewData.planId.toUpperCase()
+
+      console.log('Renewing subscription:', {
+        clientId: selectedSubscription.clientId,
+        currentPlan: selectedSubscription.plan,
+        newPlan: renewData.planId,
+        backendPlan
+      })
+
+      const res = await fetch(`/api/admin/clients/${selectedSubscription.clientId}/renew`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId: selectedSubscription.clientId,
-          newPlan: renewData.planId,
-          duration: renewData.duration,
-          autoRenew: false
+          plan: backendPlan
         })
       })
       
@@ -566,19 +598,26 @@ export default function AdminDashboard() {
         fetchSubscriptions()
         fetchClients() // Refresh client data to update subscription status
       } else {
-        throw new Error('Failed to renew subscription')
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Failed to renew subscription')
       }
-    } catch (e) {
-      toast.error('❌ Failed to renew subscription')
+    } catch (e: any) {
+      console.error('Renew subscription error:', e)
+      toast.error(`❌ Failed to renew subscription: ${e.message}`)
     } finally {
       setIsLoading(false)
     }
   }
 
   const openRenewModal = (subscription: Subscription) => {
+    console.log('Opening renew modal for subscription:', subscription)
     setSelectedSubscription(subscription)
+    
+    // Map current plan to the format expected by the select dropdown
+    const currentPlanName = subscription.plan?.charAt(0).toUpperCase() + subscription.plan?.slice(1).toLowerCase() || 'Basic'
+    
     setRenewData({
-      planId: subscription.plan,
+      planId: currentPlanName,
       duration: '1'
     })
     setIsRenewModalOpen(true)
@@ -601,10 +640,17 @@ export default function AdminDashboard() {
 
   const getPlanColor = (plan: string) => {
     switch (plan?.toUpperCase()) {
-      case 'PRO': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'BASIC': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'TRIAL': return 'bg-orange-100 text-orange-800 border-orange-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'PRO':
+      case 'PROFESSIONAL': 
+        return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'BASIC': 
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'ENTERPRISE':
+        return 'bg-green-100 text-green-800 border-green-200'
+      case 'TRIAL': 
+        return 'bg-orange-100 text-orange-800 border-orange-200'
+      default: 
+        return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
 
@@ -1350,7 +1396,7 @@ export default function AdminDashboard() {
                     <p className="text-white/60">Manage plans, revenue, and client subscriptions</p>
                   </div>
                   <Button 
-                    onClick={() => router.push('/ADMIN/subscription-plans')}
+                    onClick={() => router.push('/admin/subscription-plans')}
                     className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
                   >
                     <Settings className="h-4 w-4 mr-2" />
@@ -1385,7 +1431,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="text-right">
                               <p className="text-white font-medium">
-                                {subscriptions?.filter(s => s?.plan === plan?.name).length || 0} clients
+                                {subscriptions?.filter(s => s?.plan?.toLowerCase() === plan?.name?.toLowerCase()).length || 0} clients
                               </p>
                               <p className="text-white/60 text-sm">₹{plan?.price || 0}</p>
                             </div>

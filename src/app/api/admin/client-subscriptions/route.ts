@@ -133,8 +133,11 @@ export async function POST(request: NextRequest) {
 
     // Calculate end date based on plan
     const planDuration = getPlanDuration(body.planId);
-    const endDate = new Date();
-    if (body.planId.includes('yearly')) {
+    const planPrice = getPlanPrice(body.planId);
+    const endDate = new Date(body.startDate || new Date());
+    
+    // Check if it's a yearly plan
+    if (body.planId.toLowerCase().includes('yearly') || body.planId.toLowerCase().includes('annual')) {
       endDate.setFullYear(endDate.getFullYear() + planDuration);
     } else {
       endDate.setMonth(endDate.getMonth() + planDuration);
@@ -146,7 +149,7 @@ export async function POST(request: NextRequest) {
         id: body.clientId
       },
       data: {
-        subscriptionPlan: body.planId.toUpperCase(),
+        subscriptionPlan: mapPlanIdToPlanName(body.planId),
         subscriptionEndsAt: endDate,
         isActive: true,
         updatedAt: new Date()
@@ -164,16 +167,16 @@ export async function POST(request: NextRequest) {
     const clientName = users.length > 0 ? users[0].name : 'Client Name';
 
     const newSubscription = {
-      id: updatedAccount.id,
+      id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       clientId: updatedAccount.id,
       clientName: clientName,
       societyName: body.societyName || updatedAccount.name,
       planId: body.planId,
-      planName: body.planId.charAt(0).toUpperCase() + body.planId.slice(1) + ' Plan',
+      planName: getPlanDisplayName(body.planId),
       startDate: body.startDate || new Date().toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       status: "active" as const,
-      amount: parseInt(body.customAmount) || getPlanPrice(body.planId),
+      amount: parseInt(body.customAmount) || planPrice,
       paymentStatus: "pending" as const
     };
 
@@ -193,21 +196,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to map plan ID to plan name
+function mapPlanIdToPlanName(planId: string): string {
+  const planMap: Record<string, string> = {
+    '1': 'BASIC',
+    '2': 'STANDARD', 
+    '3': 'PREMIUM',
+    '4': 'ENTERPRISE',
+    'basic': 'BASIC',
+    'standard': 'STANDARD',
+    'premium': 'PREMIUM', 
+    'enterprise': 'ENTERPRISE'
+  };
+  return planMap[planId.toLowerCase()] || 'BASIC';
+}
+
+// Helper function to get display name for plan
+function getPlanDisplayName(planId: string): string {
+  const planNames: Record<string, string> = {
+    '1': 'Basic Plan',
+    '2': 'Standard Plan',
+    '3': 'Premium Plan',
+    '4': 'Enterprise Annual',
+    'basic': 'Basic Plan',
+    'standard': 'Standard Plan',
+    'premium': 'Premium Plan',
+    'enterprise': 'Enterprise Plan'
+  };
+  return planNames[planId.toLowerCase()] || 'Basic Plan';
+}
+
 // Helper function to get plan price
 function getPlanPrice(planId: string): number {
   const prices: Record<string, number> = {
+    '1': 0,
+    '2': 1999,
+    '3': 4999,
+    '4': 49999,
     'basic': 0,
     'standard': 1999,
     'premium': 4999,
-    'enterprise': 999,
+    'enterprise': 49999,
     'basic-plan': 0,
     'standard-plan': 1999,
     'premium-plan': 4999,
-    'enterprise-plan': 999,
+    'enterprise-plan': 49999,
     'basic plan': 0,
     'standard plan': 1999,
     'premium plan': 4999,
-    'enterprise plan': 999
+    'enterprise plan': 49999
   };
   return prices[planId.toLowerCase()] || 0;
 }
@@ -215,6 +252,10 @@ function getPlanPrice(planId: string): number {
 // Helper function to get plan duration
 function getPlanDuration(planId: string): number {
   const durations: Record<string, number> = {
+    '1': 1,
+    '2': 1,
+    '3': 1,
+    '4': 12, // Enterprise Annual is 12 months
     'basic': 1,
     'standard': 1,
     'premium': 1,

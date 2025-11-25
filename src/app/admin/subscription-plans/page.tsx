@@ -89,7 +89,7 @@ export default function SubscriptionPlansPage() {
   const [subscriptionData, setSubscriptionData] = useState({
     clientId: "",
     planId: "",
-    startDate: "",
+    startDate: new Date().toISOString().split('T')[0], // Default to today
     societyName: "",
     customAmount: ""
   });
@@ -137,6 +137,7 @@ export default function SubscriptionPlansPage() {
   };
 
   const fetchSubscriptionPlans = async () => {
+    console.log('fetchSubscriptionPlans called');
     try {
       const response = await fetch('/api/admin/subscription-plans');
       const result = await response.json();
@@ -200,6 +201,7 @@ export default function SubscriptionPlansPage() {
   };
 
   const fetchClientSubscriptions = async () => {
+    console.log('fetchClientSubscriptions called');
     try {
       const response = await fetch('/api/admin/client-subscriptions');
       const result = await response.json();
@@ -241,6 +243,7 @@ export default function SubscriptionPlansPage() {
   };
 
   const handleCreatePlan = async () => {
+    console.log('handleCreatePlan called');
     try {
       const planData = {
         name: newPlan.name,
@@ -357,6 +360,9 @@ export default function SubscriptionPlansPage() {
   };
 
   const handleActivateSubscription = async () => {
+    console.log('handleActivateSubscription called');
+    console.log('Current subscription data:', subscriptionData);
+    
     // Validation
     if (!subscriptionData.clientId) {
       toast.error('Please select a society/client');
@@ -371,6 +377,9 @@ export default function SubscriptionPlansPage() {
       return;
     }
 
+    // Add loading state
+    const loadingToast = toast.loading('Activating subscription...');
+
     try {
       const data = {
         clientId: subscriptionData.clientId,
@@ -379,6 +388,8 @@ export default function SubscriptionPlansPage() {
         societyName: subscriptionData.societyName,
         customAmount: subscriptionData.customAmount
       };
+
+      console.log('Sending subscription activation request:', data);
 
       const response = await fetch('/api/admin/client-subscriptions', {
         method: 'POST',
@@ -389,9 +400,11 @@ export default function SubscriptionPlansPage() {
       });
 
       const result = await response.json();
+      console.log('Subscription activation response:', result);
+
       if (result.success) {
         setClientSubscriptions([...clientSubscriptions, result.data]);
-        toast.success('Subscription activated successfully!');
+        toast.success('Subscription activated successfully!', { id: loadingToast });
         
         // Reset form
         setSubscriptionData({
@@ -405,6 +418,8 @@ export default function SubscriptionPlansPage() {
         setShowActivateSubscription(false);
       } else {
         console.error('Failed to activate subscription:', result.error);
+        toast.error(result.error || 'Failed to activate subscription', { id: loadingToast });
+        
         // Fallback to local state update
         const plan = plans.find(p => p.id === subscriptionData.planId);
         if (!plan) return;
@@ -417,9 +432,9 @@ export default function SubscriptionPlansPage() {
         }
 
         const newSubscription: ClientSubscription = {
-          id: Date.now().toString(),
+          id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           clientId: subscriptionData.clientId,
-          clientName: "Client Name", // This would come from client data
+          clientName: clients.find(c => c.id === subscriptionData.clientId)?.name || "Client Name",
           societyName: subscriptionData.societyName,
           planId: plan.id,
           planName: plan.name,
@@ -431,6 +446,7 @@ export default function SubscriptionPlansPage() {
         };
 
         setClientSubscriptions([...clientSubscriptions, newSubscription]);
+        toast.success('Subscription activated (local fallback)!', { id: loadingToast });
         
         // Reset form
         setSubscriptionData({
@@ -445,6 +461,8 @@ export default function SubscriptionPlansPage() {
       }
     } catch (error) {
       console.error('Error activating subscription:', error);
+      toast.error('Network error. Please try again.', { id: loadingToast });
+      
       // Fallback to local state update
       const plan = plans.find(p => p.id === subscriptionData.planId);
       if (!plan) return;
@@ -457,9 +475,9 @@ export default function SubscriptionPlansPage() {
       }
 
       const newSubscription: ClientSubscription = {
-        id: Date.now().toString(),
+        id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         clientId: subscriptionData.clientId,
-        clientName: "Client Name", // This would come from client data
+        clientName: clients.find(c => c.id === subscriptionData.clientId)?.name || "Client Name",
         societyName: subscriptionData.societyName,
         planId: plan.id,
         planName: plan.name,
@@ -471,6 +489,7 @@ export default function SubscriptionPlansPage() {
       };
 
       setClientSubscriptions([...clientSubscriptions, newSubscription]);
+      toast.success('Subscription activated (offline mode)!', { id: loadingToast });
       
       // Reset form
       setSubscriptionData({
@@ -521,7 +540,10 @@ export default function SubscriptionPlansPage() {
         <div className="flex gap-2">
           <Dialog open={showCreatePlan} onOpenChange={setShowCreatePlan}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingPlan(null)}>
+              <Button onClick={() => {
+                console.log('Create New Plan button clicked');
+                setEditingPlan(null);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create New Plan
               </Button>
@@ -629,17 +651,20 @@ export default function SubscriptionPlansPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Activate Subscription Button */}
-          <Button 
-            variant="outline"
-            onClick={() => setShowActivateSubscription(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Activate Subscription
-          </Button>
-
           {/* Activate Subscription Dialog */}
           <Dialog open={showActivateSubscription} onOpenChange={setShowActivateSubscription}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  console.log('Activate Subscription button clicked');
+                  setEditingPlan(null);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Activate Subscription
+              </Button>
+            </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Activate Client Subscription</DialogTitle>
@@ -678,10 +703,11 @@ export default function SubscriptionPlansPage() {
                           client.adminName.toLowerCase().includes(clientSearchTerm.toLowerCase())
                         ).map(client => (
                           <button
-                            key={client.id}
+                            key={`client-${client.id}-${client.name}`}
                             type="button"
                             className="w-full px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 text-left"
                             onClick={() => {
+                              console.log('Selected client:', client);
                               setSubscriptionData({
                                 ...subscriptionData,
                                 societyName: client.name,
@@ -721,9 +747,11 @@ export default function SubscriptionPlansPage() {
                   <Select 
                     value={subscriptionData.planId} 
                     onValueChange={(value) => {
+                      console.log('Selected plan ID:', value);
                       setSubscriptionData({...subscriptionData, planId: value});
                       const selectedPlan = plans.find(p => p.id === value);
                       if (selectedPlan) {
+                        console.log('Selected plan details:', selectedPlan);
                         toast.success(`Selected: ${selectedPlan.name}`);
                       }
                     }}
@@ -733,7 +761,7 @@ export default function SubscriptionPlansPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {plans.filter(p => p.isActive).map(plan => (
-                        <SelectItem key={plan.id} value={plan.id}>
+                        <SelectItem key={`plan-${plan.id}-${plan.name}`} value={plan.id}>
                           <div>
                             <div className="font-medium">{plan.name}</div>
                             <div className="text-sm text-gray-500">₹{plan.price}/{plan.durationType === 'monthly' ? 'month' : 'year'}</div>
@@ -781,7 +809,7 @@ export default function SubscriptionPlansPage() {
         <TabsContent value="plans" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {plans.map((plan) => (
-              <Card key={plan.id} className={`${!plan.isActive ? 'opacity-50' : ''}`}>
+              <Card key={`plan-card-${plan.id}-${plan.name}`} className={`${!plan.isActive ? 'opacity-50' : ''}`}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -834,7 +862,7 @@ export default function SubscriptionPlansPage() {
                       <p className="text-sm font-medium">Features:</p>
                       <ul className="text-sm space-y-1">
                         {plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-center gap-1">
+                          <li key={`feature-${plan.id}-${index}`} className="flex items-center gap-1">
                             <Check className="w-3 h-3 text-green-500" />
                             {feature}
                           </li>
@@ -876,8 +904,8 @@ export default function SubscriptionPlansPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clientSubscriptions.map((subscription) => (
-                    <TableRow key={subscription.id}>
+                  {clientSubscriptions.map((subscription, index) => (
+                    <TableRow key={`${subscription.id}-${index}-${subscription.clientId}`}>
                       <TableCell>{subscription.clientName}</TableCell>
                       <TableCell>{subscription.societyName}</TableCell>
                       <TableCell>{subscription.planName}</TableCell>

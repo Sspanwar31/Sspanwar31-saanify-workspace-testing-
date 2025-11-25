@@ -7,59 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-////////////////////////////////////////////////////
-// 1. AUTH & USERS (Login System - NextAuth Required)
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?   // Optional for OAuth (Google), Required for Email/Pass
-
-  // Custom Fields for your Logic
-  role             String   @default("CLIENT") // ADMIN, CLIENT
-  isActive         Boolean  @default(true)
+  id               String          @id @default(cuid())
+  name             String?
+  email            String?         @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  role             String          @default("CLIENT")
+  isActive         Boolean         @default(true)
   lastLoginAt      DateTime?
-  societyAccountId String?  // Link to SocietyAccount manually or via relation below
-  societyAccount  SocietyAccount? @relation(fields: [societyAccountId], references: [id])
-
-  // Relations for NextAuth
-  accounts      Account[]
-  sessions      Session[]
-  
-  // Relation to your custom tables
-  posts         Post[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  societyAccountId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  accounts         Account[]
+  posts            Post[]
+  sessions         Session[]
+  societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
 
   @@map("users")
 }
 
-// NextAuth: Account Linking (Google, GitHub etc.)
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
 }
 
-// NextAuth: Session Management
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
@@ -70,7 +59,6 @@ model Session {
   @@map("sessions")
 }
 
-// NextAuth: Email Verification
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -80,68 +68,62 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-////////////////////////////////////////////////////
-// 2. SOCIETY ACCOUNTS (Your Business Logic)
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model SocietyAccount {
-  id                  String   @id @default(uuid())
-  name                String
-  adminName           String?
-  email               String   @unique
-  phone               String?
-  address             String?
-  subscriptionPlan    String   @default("TRIAL")
-  status              String   @default("TRIAL")
-  trialEndsAt         DateTime?
-  subscriptionEndsAt  DateTime?
-  isActive            Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  // Relation to Users
-  users               User[]
+  id                 String    @id @default(uuid())
+  name               String
+  adminName          String?
+  email              String    @unique
+  phone              String?
+  address            String?
+  subscriptionPlan   String    @default("TRIAL")
+  status             String    @default("TRIAL")
+  trialEndsAt        DateTime?
+  subscriptionEndsAt DateTime?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  users              User[]
 
   @@map("society_accounts")
 }
 
-////////////////////////////////////////////////////
-// 3. SOCIETIES
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model Society {
-  id                String   @id @default(uuid())
-  name              String
-  description       String?
-  address           String?
-  phone             String?
-  email             String?
-  societyAccountId  String
-  createdByUserId   String
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  address          String?
+  phone            String?
+  email            String?
+  societyAccountId String
+  createdByUserId  String
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("societies")
 }
 
-////////////////////////////////////////////////////
-// 4. POSTS
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model Post {
   id        String   @id @default(uuid())
   title     String
   content   String?
   published Boolean  @default(false)
   authorId  String
-  user      User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [authorId], references: [id])
 
   @@map("posts")
 }
 
-////////////////////////////////////////////////////
-// 5. AUTOMATION TASKS (No Relations)
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model AutomationTask {
   id              String    @id @default(uuid())
   task_name       String    @unique
@@ -155,11 +137,10 @@ model AutomationTask {
   @@map("automation_tasks")
 }
 
-////////////////////////////////////////////////////
-// 6. AUTOMATION LOGS (No Relations)
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 model AutomationLog {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   task_name   String?
   status      String
   message     String?

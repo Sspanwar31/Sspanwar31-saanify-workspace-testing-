@@ -110,9 +110,9 @@ function verifySupabaseTables() {
   console.log('===============================');
   
   const criticalData = {
-    super_admin: {
-      email: 'superadmin@saanify.com',
-      role: 'SUPER_ADMIN',
+    ADMIN: {
+      email: 'ADMIN@saanify.com',
+      role: 'ADMIN',
       status: '✅ Found'
     },
     demo_client: {

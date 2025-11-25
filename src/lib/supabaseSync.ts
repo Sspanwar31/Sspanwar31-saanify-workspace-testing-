@@ -204,7 +204,7 @@ class SupabaseSyncHelper {
       `CREATE POLICY "admin_full_access_${tableName}" ON ${tableName} FOR ALL USING (
         EXISTS (
           SELECT 1 FROM users 
-          WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+          WHERE id = auth.uid() AND role IN ('admin', 'ADMIN')
         )
       );`
     ];

@@ -14,7 +14,7 @@
 - **Status**: ✅ Connected and seeded
 
 ### **Authentication**: ✅ Working
-- **Super Admin Login**: ✅ Successful
+- **ADMIN Login**: ✅ Successful
 - **JWT Tokens**: ✅ Generated
 - **API Response**: ✅ Valid
 
@@ -33,11 +33,11 @@ curl http://localhost:3000/api/health
 # Response: {"message":"Good!"}
 ```
 
-### **✅ Super Admin Login**
+### **✅ ADMIN Login**
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "superadmin@saanify.com", "password": "admin123"}'
+  -d '{"email": "ADMIN@saanify.com", "password": "admin123"}'
 # Response: {"success":true,"message":"Login successful",...}
 ```
 
@@ -50,7 +50,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ## 📊 Database Status
 
 ### **Users Table**: ✅ Populated
-- Super Admin: `superadmin@saanify.com`
+- ADMIN: `ADMIN@saanify.com`
 - Demo Client: `client@saanify.com`
 - Total Users: 6
 
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 ### **✅ Working Features**:
 1. **User Authentication** - Login/logout with JWT
-2. **Role-Based Access** - Super Admin & Client roles
+2. **Role-Based Access** - ADMIN & Client roles
 3. **Dashboard Navigation** - Admin & Client dashboards
 4. **Database Operations** - CRUD with Prisma
 5. **API Endpoints** - RESTful APIs working
@@ -109,7 +109,7 @@ npm run deploy:glm       # Full GLM deployment
 
 ### **Development Environment**:
 - **URL**: http://localhost:3000
-- **Super Admin**: superadmin@saanify.com / admin123
+- **ADMIN**: ADMIN@saanify.com / admin123
 - **Demo Client**: client@saanify.com / client123
 
 ### **Production Environment** (After Deployment):
@@ -177,7 +177,7 @@ npm run deploy:glm       # Full GLM deployment
 
 **🎉 Development server is running successfully! You can now:**
 1. **Access the application** at http://localhost:3000
-2. **Login as Super Admin** with superadmin@saanify.com / admin123
+2. **Login as ADMIN** with ADMIN@saanify.com / admin123
 3. **Test all features** in the admin and client dashboards
 4. **Deploy to production** when ready using the provided scripts
 

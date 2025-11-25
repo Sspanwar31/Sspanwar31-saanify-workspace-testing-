@@ -132,6 +132,6 @@ console.log('=====================================');
 
 console.log('\n🎉 Database is ready for production use!');
 console.log('🌐 URL: http://localhost:3000');
-console.log('🔑� Super Admin: superadmin@saanify.com / admin123');
+console.log('🔑� ADMIN: ADMIN@saanify.com / admin123');
 console.log('👤 Demo Client: client@saanify.com / client123');
 console.log('🎯 System Status: PostgreSQL Ready');

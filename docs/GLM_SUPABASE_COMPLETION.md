@@ -45,7 +45,7 @@ GLM (Global Lifecycle Management) has been successfully integrated with Supabase
 4. ✅ `posts` - Content management
 
 ### **Default Data Automatically Seeded**:
-- ✅ **Super Admin**: `superadmin@saanify.com` / `admin123`
+- ✅ **ADMIN**: `ADMIN@saanify.com` / `admin123`
 - ✅ **Demo Client**: `client@saanify.com` / `client123`
 - ✅ **Demo Society**: Green Valley Society (PRO plan)
 
@@ -154,7 +154,7 @@ NODE_ENV="production"
 ## 🚀 Production Ready Features
 
 ### ✅ **Login API Working**:
-- Super Admin authentication: ✅
+- ADMIN authentication: ✅
 - Client authentication: ✅
 - JWT token generation: ✅
 - Session management: ✅
@@ -216,7 +216,7 @@ NODE_ENV="production"
 
 4. **Access Live Application**:
    - URL: https://saanify-workspace.vercel.app
-   - Login with Super Admin credentials
+   - Login with ADMIN credentials
    - Explore all features
 
 ---

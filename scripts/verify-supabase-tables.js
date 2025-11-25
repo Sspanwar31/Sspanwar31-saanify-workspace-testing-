@@ -46,22 +46,22 @@ async function verifyTables() {
       }
     }
     
-    // Check for Super Admin user
+    // Check for ADMIN user
     try {
-      const superAdmin = await prisma.user.findUnique({
-        where: { email: 'superadmin@saanify.com' }
+      const ADMIN = await prisma.user.findUnique({
+        where: { email: 'ADMIN@saanify.com' }
       });
       
-      if (superAdmin) {
-        console.log('✅ Super Admin user found: superadmin@saanify.com');
-        results.superAdmin = { status: '✅ Created', id: superAdmin.id };
+      if (ADMIN) {
+        console.log('✅ ADMIN user found: ADMIN@saanify.com');
+        results.ADMIN = { status: '✅ Created', id: ADMIN.id };
       } else {
-        console.log('❌ Super Admin user not found');
-        results.superAdmin = { status: '❌ Missing' };
+        console.log('❌ ADMIN user not found');
+        results.ADMIN = { status: '❌ Missing' };
       }
     } catch (error) {
-      console.log(`❌ Super Admin check failed: ${error.message}`);
-      results.superAdmin = { status: '❌ Error', error: error.message };
+      console.log(`❌ ADMIN check failed: ${error.message}`);
+      results.ADMIN = { status: '❌ Error', error: error.message };
     }
     
     // Check for Demo Client user
@@ -99,7 +99,7 @@ const simulatedResults = {
   society_accounts: { status: '✅ Created', count: 4, accessible: true },
   societies: { status: '✅ Created', count: 4, accessible: true },
   posts: { status: '✅ Created', count: 0, accessible: true },
-  superAdmin: { status: '✅ Created', id: 'user_super_admin_123' },
+  ADMIN: { status: '✅ Created', id: 'user_super_admin_123' },
   demoClient: { status: '✅ Created', id: 'user_demo_client_456' }
 };
 
@@ -109,7 +109,7 @@ console.log('✅ Table \'users\': 6 records');
 console.log('✅ Table \'society_accounts\': 4 records');
 console.log('✅ Table \'societies\': 4 records');
 console.log('✅ Table \'posts\': 0 records');
-console.log('✅ Super Admin user found: superadmin@saanify.com');
+console.log('✅ ADMIN user found: ADMIN@saanify.com');
 console.log('✅ Demo Client user found: client@saanify.com');
 
 // Save results

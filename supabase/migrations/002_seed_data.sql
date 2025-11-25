@@ -1,5 +1,5 @@
--- Insert default super admin user
--- This will be created when the super admin signs up for the first time
+-- Insert default ADMIN user
+-- This will be created when the ADMIN signs up for the first time
 -- or you can create them manually in the Supabase dashboard
 
 -- Default demo users (passwords should be hashed in production)
@@ -19,9 +19,9 @@ VALUES (
 INSERT INTO public.profiles (id, email, name, role, is_active)
 VALUES (
   '00000000-0000-0000-0000-000000000002',
-  'superadmin@saanify.com',
-  'Super Admin',
-  'SUPER_ADMIN',
+  'ADMIN@saanify.com',
+  'ADMIN',
+  'ADMIN',
   true
 ) ON CONFLICT (id) DO NOTHING;
 

@@ -17,7 +17,7 @@
 //    - profiles table with RLS policies
 //    - society_accounts table
 //    - societies table
-//    - Demo users: client@saanify.com / client123, superadmin@saanify.com / admin123
+//    - Demo users: client@saanify.com / client123, ADMIN@saanify.com / admin123
 
 // STEP 3: Test Authentication
 // -------------------------
@@ -25,7 +25,7 @@
 // 2. The login page will automatically detect Supabase connection
 // 3. Try logging in with demo credentials:
 //    - Client: client@saanify.com / client123
-//    - Admin: superadmin@saanify.com / admin123
+//    - Admin: ADMIN@saanify.com / admin123
 // 4. Users will be redirected to appropriate dashboards
 
 // STEP 4: Verify Database Setup (Optional)

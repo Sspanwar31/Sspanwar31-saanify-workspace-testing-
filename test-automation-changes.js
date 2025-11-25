@@ -1,5 +1,5 @@
 // Test script to check if automation changes are working
-console.log('🔍 Testing SuperAdmin Automation Changes...');
+console.log('🔍 Testing ADMIN Automation Changes...');
 
 // Test 1: Check if page loads with new elements
 const checkPageElements = () => {
@@ -18,7 +18,7 @@ const checkNetworkRequests = () => {
   const originalFetch = window.fetch;
   window.fetch = function(...args) {
     const url = args[0];
-    if (typeof url === 'string' && url.includes('/api/superadmin/automation')) {
+    if (typeof url === 'string' && url.includes('/api/ADMIN/automation')) {
       console.log('🌐 Automation API Call:', url);
     }
     return originalFetch.apply(this, args);
@@ -41,4 +41,4 @@ checkPageElements();
 checkNetworkRequests();
 checkConsoleErrors();
 
-console.log('✅ Test script loaded. Open SuperAdmin panel and check Automation tab.');
+console.log('✅ Test script loaded. Open ADMIN panel and check Automation tab.');

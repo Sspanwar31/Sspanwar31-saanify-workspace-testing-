@@ -9,10 +9,10 @@ export async function POST() {
     // Demo users data
     const demoUsers = [
       {
-        name: 'Super Admin',
-        email: 'superadmin@saanify.com',
+        name: 'ADMIN',
+        email: 'ADMIN@saanify.com',
         password: 'admin123',
-        role: 'SUPER_ADMIN'
+        role: 'ADMIN'
       },
       {
         name: 'Admin User',

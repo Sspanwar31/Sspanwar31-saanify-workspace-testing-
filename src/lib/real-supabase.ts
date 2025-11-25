@@ -6,9 +6,9 @@ export const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Example: create superadmins table
+// Example: create admins table
 export const createTables = async () => {
-  await supabase.rpc('create_superadmins_table')
+  await supabase.rpc('create_admins_table')
   await supabase.rpc('create_clients_table')
   await supabase.rpc('create_sessions_table')
 }

@@ -184,16 +184,16 @@ const seedScript = `#!/usr/bin/env
 
 echo "🌱 Seeding Secure Supabase Database..."
 
-# Insert Super Admin
-echo "Creating Super Admin..."
+# Insert ADMIN
+echo "Creating ADMIN..."
 psql "$DATABASE_URL" << 'EOF'
 INSERT INTO users (id, email, name, password, role, is_active, created_at, updated_at)
 VALUES (
   gen_random_uuid(),
-  'superadmin@saanify.com',
-  'Super Admin',
+  'ADMIN@saanify.com',
+  'ADMIN',
   'admin123',
-  'SUPER_ADMIN',
+  'ADMIN',
   true,
   NOW(),
   NOW()
@@ -231,8 +231,8 @@ console.log('✅ Authentication: JWT + Supabase Auth');
 console.log('✅ API Routes: Authentication and User Management');
 console.log('✅ Security: Row Level Security enabled');
 console.log('');
-console.log('🔑 Super Admin Credentials:');
-console.log('   Email: superadmin@saanify.com');
+console.log('🔑 ADMIN Credentials:');
+console.log('   Email: ADMIN@saanify.com');
 console.log('   Password: admin123');
 console.log('');
 console.log('🌐 Access the application:');

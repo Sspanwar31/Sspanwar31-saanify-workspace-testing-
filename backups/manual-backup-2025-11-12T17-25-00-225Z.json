@@ -18,7 +18,7 @@
         "id": "1",
         "email": "admin@saanify.com",
         "name": "Admin User",
-        "role": "SUPERADMIN"
+        "role": "ADMIN"
       },
       {
         "id": "2",

@@ -48,4 +48,4 @@ EOF
 
 echo "✅ Deployment completed successfully!"
 echo "🌐 Live at: https://saanify-workspace.vercel.app"
-echo "🔑 Super Admin: superadmin@saanify.com / admin123"
+echo "🔑 ADMIN: ADMIN@saanify.com / admin123"

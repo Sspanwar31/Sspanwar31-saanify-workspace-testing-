@@ -437,8 +437,8 @@ class DatabaseManager {
       const bcrypt = require('bcryptjs');
       const prisma = new PrismaClient();
 
-      // Create Super Admin if not exists
-      const superAdminEmail = 'superadmin@saanify.com';
+      // Create ADMIN if not exists
+      const superAdminEmail = 'ADMIN@saanify.com';
       const existingAdmin = await prisma.user.findUnique({
         where: { email: superAdminEmail }
       });
@@ -448,15 +448,15 @@ class DatabaseManager {
         await prisma.user.create({
           data: {
             email: superAdminEmail,
-            name: 'Super Admin',
+            name: 'ADMIN',
             password: hashedPassword,
-            role: 'SUPER_ADMIN',
+            role: 'ADMIN',
             isActive: true
           }
         });
-        this.logger.success(`Super Admin created: ${superAdminEmail}`);
+        this.logger.success(`ADMIN created: ${superAdminEmail}`);
       } else {
-        this.logger.info(`Super Admin already exists: ${superAdminEmail}`);
+        this.logger.info(`ADMIN already exists: ${superAdminEmail}`);
       }
 
       // Create demo client if not exists

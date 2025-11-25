@@ -8,7 +8,7 @@ async function testFixedPanels() {
     console.log('🔐 Testing Authentication:');
     
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });

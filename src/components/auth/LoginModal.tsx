@@ -40,7 +40,7 @@ export default function LoginModal({ isOpen, onOpenChange }: LoginModalProps) {
 
       if (response.ok) {
         toast.success("🎉 Welcome Back!", {
-          description: `Successfully signed in as ${data.user.role === 'SUPERADMIN' ? 'Administrator' : 'Client'}.`,
+          description: `Successfully signed in as ${data.user.role === 'ADMIN' ? 'Administrator' : 'Client'}.`,
           duration: 3000,
         })
         
@@ -54,8 +54,8 @@ export default function LoginModal({ isOpen, onOpenChange }: LoginModalProps) {
         }
         
         // Redirect based on user role
-        if (data.user.role === 'SUPERADMIN') {
-          window.location.href = '/superadmin'
+        if (data.user.role === 'ADMIN') {
+          window.location.href = '/ADMIN'
         } else {
           window.location.href = '/dashboard/client'
         }

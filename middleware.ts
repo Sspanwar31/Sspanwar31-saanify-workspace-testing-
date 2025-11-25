@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -26,6 +25,9 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // Use require for jsonwebtoken
+  const jwt = require("jsonwebtoken");
+
   let decoded: any = null;
   try {
     decoded = jwt.verify(token, JWT_SECRET);
@@ -38,10 +40,10 @@ export function middleware(req: NextRequest) {
 
   const role = decoded.role?.toUpperCase() || "";
 
-  // Protect Superadmin routes
-  if (pathname.startsWith("/superadmin")) {
-    if (role !== "SUPERADMIN") {
-      // If user is not Superadmin, redirect to appropriate dashboard
+  // Protect ADMIN routes
+  if (pathname.startsWith("/ADMIN")) {
+    if (role !== "ADMIN") {
+      // If user is not ADMIN, redirect to appropriate dashboard
       if (role === "CLIENT") {
         return NextResponse.redirect(new URL("/dashboard/client", req.url));
       } else if (role === "ADMIN") {
@@ -53,11 +55,11 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Protect Superadmin API routes
-  if (pathname.startsWith("/api/superadmin")) {
-    if (role !== "SUPERADMIN") {
+  // Protect ADMIN API routes
+  if (pathname.startsWith("/api/ADMIN")) {
+    if (role !== "ADMIN") {
       return new NextResponse(
-        JSON.stringify({ error: 'Access denied - Superadmin privileges required' }),
+        JSON.stringify({ error: 'Access denied - ADMIN privileges required' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -65,7 +67,7 @@ export function middleware(req: NextRequest) {
 
   // Protect Admin routes
   if (pathname.startsWith("/admin")) {
-    if (role !== "SUPERADMIN" && role !== "ADMIN") {
+    if (role !== "ADMIN" && role !== "ADMIN") {
       if (role === "CLIENT") {
         return NextResponse.redirect(new URL("/dashboard/client", req.url));
       } else {
@@ -76,7 +78,7 @@ export function middleware(req: NextRequest) {
 
   // Protect Client dashboard routes
   if (pathname.startsWith("/dashboard/client")) {
-    if (role !== "CLIENT" && role !== "SUPERADMIN") {
+    if (role !== "CLIENT" && role !== "ADMIN") {
       if (role === "ADMIN") {
         return NextResponse.redirect(new URL("/dashboard/admin", req.url));
       } else {

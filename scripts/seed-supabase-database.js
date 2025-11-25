@@ -52,9 +52,9 @@ async function manualSeeding() {
     users: [
       {
         id: 'user_super_admin_001',
-        email: 'superadmin@saanify.com',
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN',
+        email: 'ADMIN@saanify.com',
+        name: 'ADMIN',
+        role: 'ADMIN',
         isActive: true,
         createdAt: new Date().toISOString()
       },
@@ -214,7 +214,7 @@ async function verifySeededData() {
     society_accounts: { expected: 4, actual: 4, status: '✅ Verified' },
     societies: { expected: 2, actual: 2, status: '✅ Verified' },
     posts: { expected: 0, actual: 0, status: '✅ Ready' },
-    super_admin: { status: '✅ Found', email: 'superadmin@saanify.com' },
+    ADMIN: { status: '✅ Found', email: 'ADMIN@saanify.com' },
     demo_client: { status: '✅ Found', email: 'client@saanify.com' }
   };
   

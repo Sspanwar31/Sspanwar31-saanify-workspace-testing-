@@ -8,8 +8,8 @@
     },
     "superAdminLogin": {
       "status": "✅ Passed",
-      "user": "Super Admin",
-      "role": "SUPER_ADMIN"
+      "user": "ADMIN",
+      "role": "ADMIN"
     },
     "demoClientLogin": {
       "status": "✅ Passed",

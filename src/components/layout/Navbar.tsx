@@ -38,10 +38,14 @@ export default function Navbar() {
             const data = await response.json()
             setIsAuthenticated(true)
             setUserRole(data.user.role)
+          } else {
+            // Handle non-2xx responses gracefully
+            console.warn('Auth check failed with status:', response.status)
           }
         }
       } catch (error) {
         console.error('Auth check failed:', error)
+        // Don't throw the error, just log it to prevent breaking the UI
       }
     }
 
@@ -119,8 +123,8 @@ export default function Navbar() {
       case 'github':
         setIsGitHubOpen(true)
         break
-      case 'superadmin':
-        handleNavClick('/superadmin', 'Superadmin Panel')
+      case 'ADMIN':
+        handleNavClick('/ADMIN', 'ADMIN Panel')
         break
       case 'analytics':
         handleNavClick('/analytics', 'Analytics')
@@ -144,11 +148,11 @@ export default function Navbar() {
       action: 'github',
       gradient: 'from-gray-600 to-gray-800'
     },
-    ...(isAuthenticated && userRole === 'SUPERADMIN' ? [{
+    ...(isAuthenticated && userRole === 'ADMIN' ? [{
       icon: <Shield className="h-4 w-4" />,
-      label: 'Superadmin Panel',
+      label: 'ADMIN Panel',
       description: 'Access admin controls',
-      action: 'superadmin',
+      action: 'ADMIN',
       gradient: 'from-red-600 to-pink-700'
     }] : []),
     {

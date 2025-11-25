@@ -36,7 +36,7 @@
 - **society_accounts**: ✅ Created (4 records)
 - **societies**: ✅ Created (4 records)
 - **posts**: ✅ Created (0 records)
-- **Super Admin**: ✅ superadmin@saanify.com
+- **ADMIN**: ✅ ADMIN@saanify.com
 - **Demo Client**: ✅ client@saanify.com
 - **Status**: ✅ All tables verified and accessible
 
@@ -67,13 +67,13 @@
 ### **Supabase PostgreSQL Tables**:
 | Table | Records | Status | Description |
 |-------|---------|--------|-------------|
-| users | 6 | ✅ Active | Super Admin + Demo Client + 4 Society Users |
+| users | 6 | ✅ Active | ADMIN + Demo Client + 4 Society Users |
 | society_accounts | 4 | ✅ Active | Demo societies for testing |
 | societies | 4 | ✅ Active | Society details and management |
 | posts | 0 | ✅ Ready | Content management ready |
 
 ### **Default Accounts**:
-- **Super Admin**: `superadmin@saanify.com` / `admin123`
+- **ADMIN**: `ADMIN@saanify.com` / `admin123`
 - **Demo Client**: `client@saanify.com` / `client123`
 - **Demo Societies**: Green Valley, Sunset Apartments, Royal Residency, Blue Sky Heights
 
@@ -90,8 +90,8 @@
 
 ### **Login Credentials**:
 ```
-👑 Super Admin:
-   Email: superadmin@saanify.com
+👑 ADMIN:
+   Email: ADMIN@saanify.com
    Password: admin123
    Access: Full system administration
 
@@ -186,7 +186,7 @@
 
 ### **🌐 Live Access Confirmed**:
 - **URL**: https://saanify-workspace.vercel.app ✅
-- **Super Admin Login**: superadmin@saanify.com / admin123 ✅
+- **ADMIN Login**: ADMIN@saanify.com / admin123 ✅
 - **Demo Client Login**: client@saanify.com / client123 ✅
 - **All Features**: Operational ✅
 

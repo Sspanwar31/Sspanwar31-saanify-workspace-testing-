@@ -155,7 +155,7 @@ Set these in your Vercel dashboard:
 4. **Database Migration**
    - Generate Prisma client
    - Push schema changes
-   - Seed default data (Super Admin, Demo Client)
+   - Seed default data (ADMIN, Demo Client)
 
 5. **UI Protection**
    - Test critical routes
@@ -196,10 +196,10 @@ Set these in your Vercel dashboard:
 
 ## 🎯 **Default Data**
 
-### 👑 **Super Admin**
-- Email: `superadmin@saanify.com`
+### 👑 **ADMIN**
+- Email: `ADMIN@saanify.com`
 - Password: `admin123`
-- Role: `SUPER_ADMIN`
+- Role: `ADMIN`
 
 ### 👤 **Demo Client**
 - Email: `client@saanify.com`

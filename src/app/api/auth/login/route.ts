@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Check Role
     if (validatedData.userType === 'admin') {
-       if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN') {
+       if (user.role !== 'ADMIN' && user.role !== 'ADMIN') {
           console.log("❌ Error: Role Mismatch. Required Admin, Got:", user.role); // LOG
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
        }
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
     
     // Determine redirect URL based on user role
     let redirectUrl = '/dashboard/client' // default for clients
-    if (user.role === 'SUPERADMIN') {
-      redirectUrl = '/superadmin'
+    if (user.role === 'ADMIN') {
+      redirectUrl = '/ADMIN'
     }
     
     const response = NextResponse.json({

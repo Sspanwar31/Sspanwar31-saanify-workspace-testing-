@@ -21,7 +21,7 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("auth-token");
 
   // 2. Protect Admin Routes
-  if (pathname.startsWith("/superadmin")) {
+  if (pathname.startsWith("/ADMIN")) {
     
     // Agar token nahi hai -> Login pe bhejo
     if (!token) {

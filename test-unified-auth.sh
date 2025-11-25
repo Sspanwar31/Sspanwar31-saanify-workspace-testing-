@@ -4,12 +4,12 @@ echo "🧪 Testing Unified Authentication System"
 echo "===================================="
 
 echo ""
-echo "1️⃣ Testing Admin Login (superadmin@saanify.com)"
+echo "1️⃣ Testing Admin Login (ADMIN@saanify.com)"
 echo "-------------------------------------------"
 
 ADMIN_RESPONSE=$(curl -s -X POST http://localhost:3000/api/auth/unified-login \
   -H "Content-Type: application/json" \
-  -d '{"email": "superadmin@saanify.com", "password": "admin123"}')
+  -d '{"email": "ADMIN@saanify.com", "password": "admin123"}')
 
 echo "Admin Response:"
 echo "$ADMIN_RESPONSE" | jq -r '
@@ -89,9 +89,9 @@ echo ""
 echo "🔗 Access your unified login page at: http://localhost:3000/login"
 echo ""
 echo "👑 Admin Demo Credentials:"
-echo "   Email: superadmin@saanify.com"
+echo "   Email: ADMIN@saanify.com"
 echo "   Password: admin123"
-echo "   Redirect: /superadmin"
+echo "   Redirect: /ADMIN"
 echo ""
 echo "👤 Client Demo Credentials:"
 echo "   Email: client@saanify.com"

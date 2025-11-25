@@ -16,9 +16,9 @@ try {
     users: [
       {
         id: 'user_super_admin_001',
-        email: 'superadmin@saanify.com',
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN',
+        email: 'ADMIN@saanify.com',
+        name: 'ADMIN',
+        role: 'ADMIN',
         isActive: true,
         createdAt: new Date().toISOString()
       },

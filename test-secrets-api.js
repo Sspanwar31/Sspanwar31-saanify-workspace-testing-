@@ -10,12 +10,12 @@ const testSecretsAPI = async () => {
     const unauthData = await unauthResponse.json()
     console.log('Response:', unauthData)
 
-    // Test 2: Authenticated request with super admin token
+    // Test 2: Authenticated request with ADMIN token
     console.log('\n✅ Test 2: Authenticated request (with mock token)')
     // Note: This will fail without proper JWT token, but shows the structure
     
     console.log('\n📋 Summary:')
-    console.log('- API routes now require SUPER_ADMIN authentication')
+    console.log('- API routes now require ADMIN authentication')
     console.log('- Actual secret values are returned for authenticated admins')
     console.log('- Frontend Eye/EyeOff toggle will work once user is authenticated')
     

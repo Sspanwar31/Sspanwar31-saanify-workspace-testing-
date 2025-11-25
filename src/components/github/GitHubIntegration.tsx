@@ -243,6 +243,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
       
       if (data.success) {
@@ -263,6 +267,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         if (!silent) setMessage({ type: 'error', text: data.error || '❌ Backup failed' })
       }
     } catch (error) {
+      console.error('Backup error:', error)
       if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
     } finally {
       if (!silent) setIsLoading(false)
@@ -291,6 +296,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
       
       if (data.success) {
@@ -305,6 +314,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         setMessage({ type: 'error', text: data.error || '❌ Restore failed' })
       }
     } catch (error) {
+      console.error('Restore error:', error)
       setMessage({ type: 'error', text: '❌ Error restoring from backup' })
     } finally {
       setIsRestoring(false)
@@ -327,6 +337,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         })
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
       
       if (data.success) {
@@ -335,6 +349,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         setMessage({ type: 'error', text: data.error || 'Failed to load history' })
       }
     } catch (error) {
+      console.error('Load backup history error:', error)
       setMessage({ type: 'error', text: 'Failed to load backup history' })
     }
   }

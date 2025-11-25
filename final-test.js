@@ -4,10 +4,10 @@ async function finalComprehensiveTest() {
   console.log('🚀 FINAL COMPREHENSIVE LOGIN SYSTEM TEST\n');
 
   try {
-    // Test 1: Super Admin Login and Dashboard Access
-    console.log('👑 Testing Super Admin Flow:');
+    // Test 1: ADMIN Login and Dashboard Access
+    console.log('👑 Testing ADMIN Flow:');
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });

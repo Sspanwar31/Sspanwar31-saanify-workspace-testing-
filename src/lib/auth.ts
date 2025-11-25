@@ -8,7 +8,7 @@ export interface UserInfo {
   id: string
   email: string
   name?: string
-  role: 'SUPERADMIN' | 'CLIENT'
+  role: 'ADMIN' | 'CLIENT'
   societyAccountId?: string
 }
 

@@ -7,25 +7,25 @@ async function createDemoUsers() {
   try {
     console.log('🚀 Creating demo users...');
 
-    // Create Super Admin
+    // Create ADMIN
     const superAdminPassword = await bcrypt.hash('admin123', 10);
-    const superAdmin = await prisma.user.upsert({
+    const ADMIN = await prisma.user.upsert({
       where: { email: 'admin@saanify.com' },
       update: {},
       create: {
-        name: 'Super Admin',
+        name: 'ADMIN',
         email: 'admin@saanify.com',
         password: superAdminPassword,
-        role: 'SUPER_ADMIN',
+        role: 'ADMIN',
         isActive: true,
         emailVerified: new Date(),
       },
     });
 
-    console.log('✅ Super Admin created:', {
+    console.log('✅ ADMIN created:', {
       email: 'admin@saanify.com',
       password: 'admin123',
-      role: 'SUPER_ADMIN'
+      role: 'ADMIN'
     });
 
     // Create Demo Client
@@ -92,10 +92,10 @@ async function createDemoUsers() {
 
     console.log('\n🎉 Demo users created successfully!');
     console.log('\n📋 Login Credentials:');
-    console.log('🔑 Super Admin:');
+    console.log('🔑 ADMIN:');
     console.log('   Email: admin@saanify.com');
     console.log('   Password: admin123');
-    console.log('   Role: SUPER_ADMIN');
+    console.log('   Role: ADMIN');
     console.log('\n🔑 Demo Client:');
     console.log('   Email: client@demo.com');
     console.log('   Password: client123');

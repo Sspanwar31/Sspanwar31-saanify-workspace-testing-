@@ -7,7 +7,7 @@
 console.log('🌱 Starting database seeding for Supabase...');
 
 console.log('📦 Running npm run seed...');
-console.log('✅ Super admin already exists: superadmin@saanify.com');
+console.log('✅ Super admin already exists: ADMIN@saanify.com');
 console.log('✅ Society already exists: Green Valley Society');
 console.log('✅ Society already exists: Sunset Apartments');
 console.log('✅ Society already exists: Royal Residency');
@@ -20,7 +20,7 @@ const seedingResults = {
   timestamp: new Date().toISOString(),
   users: {
     total: 6,
-    super_admin: { email: 'superadmin@saanify.com', status: '✅ Created' },
+    ADMIN: { email: 'ADMIN@saanify.com', status: '✅ Created' },
     demo_client: { email: 'client@saanify.com', status: '✅ Created' },
     society_admins: 4,
     status: '✅ All users created'

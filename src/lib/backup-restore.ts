@@ -270,9 +270,9 @@ export function validateBackup(backupData: any): { valid: boolean; errors: strin
 
   // Check for potentially dangerous data
   if (backupData.data.users && Array.isArray(backupData.data.users)) {
-    const adminUsers = backupData.data.users.filter((user: any) => user.role === 'SUPERADMIN')
+    const adminUsers = backupData.data.users.filter((user: any) => user.role === 'ADMIN')
     if (adminUsers.length > 0) {
-      warnings.push(`Backup contains ${adminUsers.length} SUPERADMIN user(s)`)
+      warnings.push(`Backup contains ${adminUsers.length} ADMIN user(s)`)
     }
   }
 

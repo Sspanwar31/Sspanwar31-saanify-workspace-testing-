@@ -46,8 +46,8 @@ A modern SaaS platform for housing society automation. Built with Next.js 15, Ty
 
 ## Demo Credentials
 
-### Super Admin
-- Email: `superadmin@saanify.com`
+### ADMIN
+- Email: `ADMIN@saanify.com`
 - Password: `admin123`
 
 ### Admin

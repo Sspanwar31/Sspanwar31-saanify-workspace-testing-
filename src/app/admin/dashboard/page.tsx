@@ -224,7 +224,7 @@ export default function AdminDashboard() {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Super Admin Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ADMIN Dashboard</h1>
               <p className="text-gray-600 dark:text-gray-400">Manage your entire platform</p>
             </div>
           </div>

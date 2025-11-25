@@ -38,11 +38,11 @@ async function testProductionSystem() {
     console.log(`   Error: ${error.message}`);
   }
   
-  // Test 2: Super Admin Login
-  console.log('\n🔐 Testing Super Admin Login...');
+  // Test 2: ADMIN Login
+  console.log('\n🔐 Testing ADMIN Login...');
   try {
     const loginData = JSON.stringify({
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123'
     });
     
@@ -56,7 +56,7 @@ async function testProductionSystem() {
         hasToken: !!loginResult.accessToken,
         statusCode: 200
       };
-      console.log('✅ Super Admin Login: PASSED');
+      console.log('✅ ADMIN Login: PASSED');
       console.log(`   User: ${loginResult.user.name} (${loginResult.user.email})`);
       console.log(`   Role: ${loginResult.user.role}`);
       console.log(`   Token: ${loginResult.accessToken ? 'Generated' : 'Missing'}`);
@@ -69,7 +69,7 @@ async function testProductionSystem() {
       error: error.message,
       statusCode: 'error'
     };
-    console.log('❌ Super Admin Login: FAILED');
+    console.log('❌ ADMIN Login: FAILED');
     console.log(`   Error: ${error.message}`);
   }
   
@@ -273,7 +273,7 @@ const results = testProductionSystem().then(results => {
   if (results.overall.status.includes('✅')) {
     console.log('\n🎉 Production system is ready for use!');
     console.log('🌐 Access: https://saanify-workspace.vercel.app');
-    console.log('👑 Super Admin: superadmin@saanify.com / admin123');
+    console.log('👑 ADMIN: ADMIN@saanify.com / admin123');
     console.log('👤 Demo Client: client@saanify.com / client123');
   } else {
     console.log('\n❌ Production system needs attention!');

@@ -4,13 +4,13 @@ async function testClientSection() {
   console.log('🔍 TESTING CLIENT SECTION IN SUPER ADMIN\n');
 
   try {
-    // Login as super admin
+    // Login as ADMIN
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify finance.com',
+      email: 'ADMIN@saanify finance.com',
       password: 'admin123',
       userType: 'admin'
     });
-    console.log('✅ Super Admin Login: SUCCESS');
+    console.log('✅ ADMIN Login: SUCCESS');
 
     // Test client dashboard access
     console.log('\n👤 Testing Client Dashboard Access:');
@@ -25,7 +25,7 @@ async function testClientSection() {
       
       const contentType = clientDashboard.headers['content-type'];
       if (contentType && contentType.includes('text/html')) {
-        console.log('✅ Client Dashboard: ACCESSIBLE from Super Admin');
+        console.log('✅ Client Dashboard: ACCESSIBLE from ADMIN');
       } else {
         console.log('❌ Client Dashboard: NOT ACCESSIBLE');
       }
@@ -45,7 +45,7 @@ async function testClientSection() {
 
     console.log('\n🎉 CLIENT SECTION TESTING COMPLETED!');
     console.log('\n📋 SUMMARY:');
-    console.log('✅ Super Admin Login: Working');
+    console.log('✅ ADMIN Login: Working');
     console.log('✅ Client Dashboard Access: Working');
     console.log('✅ Client Management: All features working');
     console.log('✅ Search & Filter: Working');

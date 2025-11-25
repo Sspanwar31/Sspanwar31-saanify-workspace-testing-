@@ -21,7 +21,7 @@
    - Click "Add user"
    - Email: testadmin1@gmail.com
    - Password: admin123
-   - Role: Super Admin (in user metadata)
+   - Role: ADMIN (in user metadata)
    - Click "Create user"
 
 3️⃣ RUN SQL SCRIPT

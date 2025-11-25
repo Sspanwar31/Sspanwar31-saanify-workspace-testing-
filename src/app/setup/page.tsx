@@ -13,8 +13,8 @@ import { toast } from 'sonner'
 export default function SetupPage() {
   const [formData, setFormData] = useState({
     setupKey: '',
-    superadminEmail: '',
-    superadminPassword: '',
+    adminEmail: '',
+    adminPassword: '',
     confirmPassword: ''
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -33,25 +33,25 @@ export default function SetupPage() {
       setError('Setup key is required')
       return false
     }
-    if (!formData.superadminEmail.trim()) {
-      setError('Superadmin email is required')
+    if (!formData.adminEmail.trim()) {
+      setError('ADMIN email is required')
       return false
     }
-    if (!formData.superadminPassword.trim()) {
-      setError('Superadmin password is required')
+    if (!formData.adminPassword.trim()) {
+      setError('ADMIN password is required')
       return false
     }
-    if (formData.superadminPassword.length < 8) {
+    if (formData.adminPassword.length < 8) {
       setError('Password must be at least 8 characters long')
       return false
     }
-    if (formData.superadminPassword !== formData.confirmPassword) {
+    if (formData.adminPassword !== formData.confirmPassword) {
       setError('Passwords do not match')
       return false
     }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.superadminEmail)) {
+    if (!emailRegex.test(formData.adminEmail)) {
       setError('Please enter a valid email address')
       return false
     }
@@ -77,8 +77,8 @@ export default function SetupPage() {
         },
         body: JSON.stringify({
           setupKey: formData.setupKey,
-          superadminEmail: formData.superadminEmail,
-          superadminPassword: formData.superadminPassword
+          adminEmail: formData.adminEmail,
+          adminPassword: formData.adminPassword
         })
       })
 
@@ -87,7 +87,7 @@ export default function SetupPage() {
       if (result.success) {
         setIsCompleted(true)
         toast.success('🎉 Setup Completed!', {
-          description: 'Superadmin account created successfully',
+          description: 'ADMIN account created successfully',
           duration: 5000
         })
         
@@ -138,18 +138,18 @@ export default function SetupPage() {
               </h1>
               
               <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Your superadmin account has been created successfully.
+                Your ADMIN account has been created successfully.
               </p>
               
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Mail className="w-4 h-4 text-green-600 dark:text-green-400" />
                   <span className="font-medium text-green-800 dark:text-green-200">
-                    {formData.superadminEmail}
+                    {formData.adminEmail}
                   </span>
                 </div>
                 <div className="text-sm text-green-700 dark:text-green-300">
-                  Role: Superadmin
+                  Role: ADMIN
                 </div>
               </div>
               
@@ -227,15 +227,15 @@ export default function SetupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="superadminEmail">Superadmin Email</Label>
+                <Label htmlFor="adminEmail">ADMIN Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                   <Input
-                    id="superadminEmail"
+                    id="adminEmail"
                     type="email"
                     placeholder="admin@yourcompany.com"
-                    value={formData.superadminEmail}
-                    onChange={(e) => handleInputChange('superadminEmail', e.target.value)}
+                    value={formData.adminEmail}
+                    onChange={(e) => handleInputChange('adminEmail', e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -243,15 +243,15 @@ export default function SetupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="superadminPassword">Superadmin Password</Label>
+                <Label htmlFor="adminPassword">ADMIN Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                   <Input
-                    id="superadminPassword"
+                    id="adminPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a strong password"
-                    value={formData.superadminPassword}
-                    onChange={(e) => handleInputChange('superadminPassword', e.target.value)}
+                    value={formData.adminPassword}
+                    onChange={(e) => handleInputChange('adminPassword', e.target.value)}
                     className="pl-10 pr-10"
                     required
                     minLength={8}

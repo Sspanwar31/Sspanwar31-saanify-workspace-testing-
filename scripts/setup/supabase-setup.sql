@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT,
   name TEXT,
-  role TEXT DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'SUPER_ADMIN')),
+  role TEXT DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'ADMIN')),
   is_active BOOLEAN DEFAULT true,
   last_login_at TIMESTAMP WITH TIME ZONE,
   society_account_id UUID,
@@ -55,10 +55,10 @@ ALTER TABLE societies ENABLE ROW LEVEL SECURITY;
 CREATE POLICY IF NOT EXISTS "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY IF NOT EXISTS "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY IF NOT EXISTS "Super admins can view all profiles" ON profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY IF NOT EXISTS "Super admins can update all profiles" ON profiles FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- 6. Create policies for society_accounts
@@ -66,10 +66,10 @@ CREATE POLICY IF NOT EXISTS "Users can view own society account" ON society_acco
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND society_account_id = id)
 );
 CREATE POLICY IF NOT EXISTS "Super admins can view all society_accounts" ON society_accounts FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY IF NOT EXISTS "Super admins can manage all society accounts" ON society_accounts FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- 7. Create policies for societies
@@ -77,10 +77,10 @@ CREATE POLICY IF NOT EXISTS "Users can view own societies" ON societies FOR SELE
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND society_account_id = society_account_id)
 );
 CREATE POLICY IF NOT EXISTS "Super admins can view all societies" ON societies FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY IF NOT EXISTS "Super admins can manage all societies" ON societies FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- 8. Create function to handle new user signup
@@ -137,7 +137,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.profiles (id, email, name, role, is_active)
 VALUES 
-  ('00000000-0000-0000-0000-000000000002', 'superadmin@saanify.com', 'Super Admin', 'SUPER_ADMIN', true)
+  ('00000000-0000-0000-0000-000000000002', 'ADMIN@saanify.com', 'ADMIN', 'ADMIN', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 13. Create demo society account

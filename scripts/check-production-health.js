@@ -79,7 +79,7 @@ console.log('🔐 Testing authentication endpoint...');
 
 const authTest = {
   status: 200,
-  response: '{"success":true,"message":"Login successful","user":{"id":"user_super_admin_123","email":"superadmin@saanify.com","name":"Super Admin","role":"SUPER_ADMIN"}}',
+  response: '{"success":true,"message":"Login successful","user":{"id":"user_super_admin_123","email":"ADMIN@saanify.com","name":"ADMIN","role":"ADMIN"}}',
   success: true
 };
 

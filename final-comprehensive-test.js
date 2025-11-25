@@ -7,7 +7,7 @@ async function finalTest() {
     // Test 1: Admin Login and Dashboard
     console.log('👑 Admin Test:');
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });
@@ -35,7 +35,7 @@ async function finalTest() {
     console.log(`✅ Client Dashboard: ${isClientHtml ? 'HTML PAGE' : 'ERROR'}`);
 
     console.log('\n🎉 FINAL RESULT:');
-    console.log('✅ Super Admin Dashboard: FIXED (no JSON response)');
+    console.log('✅ ADMIN Dashboard: FIXED (no JSON response)');
     console.log('✅ Client Dashboard: FIXED (no error page)');
     console.log('✅ Authentication: Working for both roles');
     console.log('✅ Dashboard Access: Working properly');

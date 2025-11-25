@@ -78,10 +78,10 @@ export default function ClientDetailPage() {
       const response = await fetch('/api/auth/check-session')
       if (response.ok) {
         const data = await response.json()
-        setIsAdmin(data.user?.role === 'SUPER_ADMIN')
+        setIsAdmin(data.user?.role === 'ADMIN')
         
         // Load revenue preference for admins
-        if (data.user?.role === 'SUPER_ADMIN') {
+        if (data.user?.role === 'ADMIN') {
           const savedPreference = localStorage.getItem('revenue-visibility')
           if (savedPreference) {
             const preference = JSON.parse(savedPreference)
@@ -158,7 +158,7 @@ export default function ClientDetailPage() {
   const toggleRevenue = (show: boolean) => {
     if (!isAdmin && show) {
       toast.error('Access Denied', {
-        description: 'Only Super Admin can view revenue data.',
+        description: 'Only ADMIN can view revenue data.',
         duration: 3000,
       })
       return

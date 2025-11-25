@@ -29,7 +29,7 @@ export default createMiddleware(async (req) => {
     
     // Verify token (simplified for now)
     const user = await prisma.user.findUnique({
-      where: { email: 'superadmin@saanify.com' }
+      where: { email: 'ADMIN@saanify.com' }
     });
     
     if (!user) {

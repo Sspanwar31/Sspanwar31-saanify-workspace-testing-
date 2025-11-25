@@ -25,8 +25,8 @@ const createConfirmedUsers = async () => {
       {
         email: 'admin@saanify.app',
         password: 'admin123',
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN'
+        name: 'ADMIN',
+        role: 'ADMIN'
       }
     ]
     

@@ -19,10 +19,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Database connection failed" }, { status: 500 });
     }
 
-    // Create default superadmin if not exists
+    // Create default ADMIN if not exists
     try {
       const existingAdmin = await db.user.findUnique({
-        where: { email: "superadmin@example.com" }
+        where: { email: "ADMIN@example.com" }
       });
 
       if (!existingAdmin) {
@@ -30,17 +30,17 @@ export async function POST(req: NextRequest) {
         
         await db.user.create({
           data: {
-            email: "superadmin@example.com",
-            name: "Super Admin",
+            email: "ADMIN@example.com",
+            name: "ADMIN",
             password: hashedPassword,
-            role: "SUPER_ADMIN",
+            role: "ADMIN",
             isActive: true
           }
         });
         
-        console.log("✅ Default superadmin created: superadmin@example.com");
+        console.log("✅ Default ADMIN created: ADMIN@example.com");
       } else {
-        console.log("✅ Superadmin already exists: superadmin@example.com");
+        console.log("✅ ADMIN already exists: ADMIN@example.com");
       }
     } catch (adminError) {
       console.error("❌ Admin creation failed:", adminError);

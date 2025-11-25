@@ -46,20 +46,20 @@ async function verifyTables() {
     
     // Check for specific users
     try {
-      const superAdmin = await prisma.user.findUnique({
-        where: { email: 'superadmin@saanify.com' }
+      const ADMIN = await prisma.user.findUnique({
+        where: { email: 'ADMIN@saanify.com' }
       });
       
-      if (superAdmin) {
-        console.log('✅ Super Admin found: superadmin@saanify.com');
-        results.superAdmin = { status: '✅ Found', id: superAdmin.id };
+      if (ADMIN) {
+        console.log('✅ ADMIN found: ADMIN@saanify.com');
+        results.ADMIN = { status: '✅ Found', id: ADMIN.id };
       } else {
-        console.log('❌ Super Admin not found');
-        results.superAdmin = { status: '❌ Missing' };
+        console.log('❌ ADMIN not found');
+        results.ADMIN = { status: '❌ Missing' };
       }
     } catch (error) {
-      console.log(`❌ Super Admin check failed: ${error.message}`);
-      results.superAdmin = { status: '❌ Error', error: error.message };
+      console.log(`❌ ADMIN check failed: ${error.message}`);
+      results.ADMIN = { status: '❌ Error', error: error.message };
     }
     
     // Check for Demo Client
@@ -111,16 +111,16 @@ verifyTables().then(results => {
     });
     
     const totalTables = Object.keys(results).filter(key => 
-      !['superAdmin', 'demoClient'].includes(key)
+      !['ADMIN', 'demoClient'].includes(key)
     ).length;
     
     const workingTables = Object.entries(results).filter(([name, result]) => 
-      !['superAdmin', 'demoClient'].includes(name) && result.exists
+      !['ADMIN', 'demoClient'].includes(name) && result.exists
     ).length;
     
     console.log(`\n📈 Tables: ${workingTables}/${totalTables} working`);
     
-    if (workingTables === totalTables && results.superAdmin?.status === '✅ Found') {
+    if (workingTables === totalTables && results.ADMIN?.status === '✅ Found') {
       console.log('🎉 All tables verified successfully!');
     } else {
       console.log('⚠️ Some tables may need attention');

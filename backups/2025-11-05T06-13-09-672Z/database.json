@@ -5,10 +5,10 @@
     "users": [
       {
         "id": "cmhhzy2do0000k59baqn3q0sj",
-        "email": "superadmin@saanify.com",
-        "name": "Super Admin",
+        "email": "ADMIN@saanify.com",
+        "name": "ADMIN",
         "password": "$2b$12$iTEco/tXh56WS.l.B/AQIu.X7rDS4F8OIQ.UFGHDbvjojMlQlyQ2i",
-        "role": "SUPER_ADMIN",
+        "role": "ADMIN",
         "isActive": true,
         "lastLoginAt": "2025-11-05T04:31:35.801Z",
         "societyAccountId": null,

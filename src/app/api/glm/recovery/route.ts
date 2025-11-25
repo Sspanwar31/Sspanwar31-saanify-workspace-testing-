@@ -318,12 +318,12 @@ async function autoRecover(): Promise<NextResponse> {
     
     const userCount = await db.user.count();
     const societyCount = await db.societyAccount.count();
-    const adminCount = await db.user.count({ where: { role: 'SUPER_ADMIN' } });
+    const adminCount = await db.user.count({ where: { role: 'ADMIN' } });
 
     await db.$disconnect();
 
     const issues = [];
-    if (adminCount === 0) issues.push("No super admin found");
+    if (adminCount === 0) issues.push("No ADMIN found");
     if (userCount === 0) issues.push("No users found");
     if (societyCount === 0) issues.push("No societies found");
 
@@ -345,7 +345,7 @@ async function autoRecover(): Promise<NextResponse> {
     // Try to fix issues automatically
     const fixes = [];
 
-    // Create super admin if missing
+    // Create ADMIN if missing
     if (adminCount === 0) {
       try {
         const baseUrl = process.env.VERCEL_URL 
@@ -363,10 +363,10 @@ async function autoRecover(): Promise<NextResponse> {
         if (response.ok) {
           fixes.push("✅ Super admin created");
         } else {
-          fixes.push("❌ Failed to create super admin");
+          fixes.push("❌ Failed to create ADMIN");
         }
       } catch (error) {
-        fixes.push("❌ Error creating super admin");
+        fixes.push("❌ Error creating ADMIN");
       }
     }
 

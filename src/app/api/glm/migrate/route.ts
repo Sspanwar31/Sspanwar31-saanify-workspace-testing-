@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       { name: 'Environment Validation', status: 'pending' },
       { name: 'Database Connection Test', status: 'pending' },
       { name: 'Schema Verification', status: 'pending' },
-      { name: 'Super Admin Seeding', status: 'pending' },
+      { name: 'ADMIN Seeding', status: 'pending' },
       { name: 'Demo Societies Seeding', status: 'pending' },
       { name: 'Demo Client Seeding', status: 'pending' },
       { name: 'Final Verification', status: 'pending' }
@@ -92,25 +92,25 @@ async function performFullMigration(log: MigrationLog): Promise<NextResponse> {
     log.steps[2].status = 'completed';
     log.steps[2].timestamp = new Date().toISOString();
 
-    // Step 4: Super Admin Seeding
+    // Step 4: ADMIN Seeding
     log.steps[3].status = 'running';
-    const superAdminEmail = 'superadmin@saanify.com';
+    const adminEmail = 'ADMIN@saanify.com';
     const existingAdmin = await db.user.findUnique({
-      where: { email: superAdminEmail }
+      where: { email: adminEmail }
     });
 
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash('admin123', 12);
       await db.user.create({
         data: {
-          email: superAdminEmail,
-          name: 'Super Admin',
+          email: adminEmail,
+          name: 'ADMIN',
           password: hashedPassword,
-          role: 'SUPER_ADMIN',
+          role: 'ADMIN',
           isActive: true
         }
       });
-      console.log('✅ Super Admin created:', superAdminEmail);
+      console.log('✅ ADMIN created:', adminEmail);
     }
     log.steps[3].status = 'completed';
     log.steps[3].timestamp = new Date().toISOString();
@@ -193,7 +193,7 @@ async function performFullMigration(log: MigrationLog): Promise<NextResponse> {
 
     // Step 7: Final Verification
     log.steps[6].status = 'running';
-    const adminCount = await db.user.count({ where: { role: 'SUPER_ADMIN' } });
+    const adminCount = await db.user.count({ where: { role: 'ADMIN' } });
     const clientCount = await db.user.count({ where: { role: 'CLIENT' } });
     const societyCount = await db.societyAccount.count();
     
@@ -213,7 +213,7 @@ async function performFullMigration(log: MigrationLog): Promise<NextResponse> {
       message: "✅ Full migration completed successfully",
       migrationLog: log,
       stats: {
-        superAdmins: adminCount,
+        admins: adminCount,
         clients: clientCount,
         societies: societyCount
       },
@@ -287,7 +287,7 @@ export async function GET(req: NextRequest) {
     const stats = {
       users: await db.user.count(),
       societies: await db.societyAccount.count(),
-      superAdmins: await db.user.count({ where: { role: 'SUPER_ADMIN' } }),
+      admins: await db.user.count({ where: { role: 'ADMIN' } }),
       clients: await db.user.count({ where: { role: 'CLIENT' } })
     };
 

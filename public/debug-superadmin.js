@@ -1,9 +1,9 @@
-// Debug script to check superadmin page functionality
-console.log('🔍 SuperAdmin Debug Script Loaded');
+// Debug script to check ADMIN page functionality
+console.log('🔍 ADMIN Debug Script Loaded');
 
 // Function to check if automation tab exists and is clickable
 function checkSuperAdminPage() {
-  console.log('🔍 Checking SuperAdmin Page...');
+  console.log('🔍 Checking ADMIN Page...');
   
   // Check if navigation items exist
   const navItems = document.querySelectorAll('button');

@@ -8,7 +8,7 @@ The Saanify client management system now allows SuperAdmins to create clients wh
 
 ## 📋 Features Implemented
 
-### ✅ SuperAdmin Features
+### ✅ ADMIN Features
 - **Create Client**: Add new societies with admin users
 - **Auto Credentials**: Default password generated (societyname + 123)
 - **Society Management**: Each client linked to their society account
@@ -62,7 +62,7 @@ All clients have access to these 9 sections:
 
 ## 🚀 How to Use
 
-### For SuperAdmin:
+### For ADMIN:
 1. Go to Admin Panel → Clients
 2. Click "Add Client"
 3. Fill society details:

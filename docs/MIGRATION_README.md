@@ -23,5 +23,5 @@ x-run-migrations-token: <NEXTAUTH_SECRET value>
 3. Run `/api/run-migrations` manually once via Postman or curl.
 4. Check Supabase tables — verify seed admin exists.
 5. Login to frontend using:  
-   Email: superadmin@example.com  
+   Email: ADMIN@example.com  
    Password: admin123

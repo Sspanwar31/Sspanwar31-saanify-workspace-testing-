@@ -188,7 +188,7 @@ export function EnhancedClientsTable({
   }
 
   const handleViewClient = (clientId: string) => {
-    router.push(`/superadmin/clients/${clientId}`)
+    router.push(`/ADMIN/clients/${clientId}`)
   }
 
   const handleQuickRenew = (clientId: string, currentPlan: string) => {

@@ -7,7 +7,7 @@ async function testClientSectionManual() {
     // Test 1: Get admin token
     console.log('🔑 Getting Admin Token:');
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });
@@ -65,7 +65,7 @@ async function testClientSectionManual() {
     
     console.log('\n🎯 CLIENT SECTION TESTING COMPLETED!');
     console.log('\n📋 RESULTS:');
-    console.log('✅ Super Admin Authentication: Working');
+    console.log('✅ ADMIN Authentication: Working');
     console.log('✅ Client Dashboard Access: Working');
     console.log('✅ Client Management: Available');
     console.log('✅ Search & Filter: Available');

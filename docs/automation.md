@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Saanify Workspace Automation Suite is a comprehensive, secure automation system designed for SuperAdmin users to manage database operations, backups, and system maintenance tasks. The system provides a production-ready infrastructure for automated database management with full audit logging and security controls.
+The Saanify Workspace Automation Suite is a comprehensive, secure automation system designed for ADMIN users to manage database operations, backups, and system maintenance tasks. The system provides a production-ready infrastructure for automated database management with full audit logging and security controls.
 
 ## Architecture
 
@@ -10,15 +10,15 @@ The Saanify Workspace Automation Suite is a comprehensive, secure automation sys
 
 1. **Database Layer** - PostgreSQL with Supabase
 2. **API Layer** - Next.js server-side routes
-3. **Authentication** - JWT-based with SUPERADMIN role enforcement
-4. **UI Layer** - React-based SuperAdmin dashboard
+3. **Authentication** - JWT-based with ADMIN role enforcement
+4. **UI Layer** - React-based ADMIN dashboard
 5. **Scheduling** - Cron-based task execution
 6. **Storage** - Supabase Storage for backup files
 
 ### Security Model
 
 - **Service Role Access**: All server operations use `SUPABASE_SERVICE_ROLE_KEY`
-- **SUPERADMIN Enforcement**: Middleware validates SUPERADMIN role for all automation routes
+- **ADMIN Enforcement**: Middleware validates ADMIN role for all automation routes
 - **RLS Policies**: Row Level Security for tenant data isolation
 - **Audit Logging**: All operations logged to `automation_logs` table
 - **No Client Secrets**: Service keys never exposed to client-side code
@@ -108,7 +108,7 @@ CREATE TABLE users (
     id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     email text NOT NULL UNIQUE,
     name text,
-    role text DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'SUPERADMIN')),
+    role text DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'ADMIN')),
     society_id text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
@@ -130,7 +130,7 @@ CREATE TABLE societies (
 
 ### Authentication Required
 All endpoints require either:
-- Bearer token with SUPERADMIN role
+- Bearer token with ADMIN role
 - Valid session cookie
 - AUTOMATION_ADMIN_TOKEN for CLI access
 
@@ -138,19 +138,19 @@ All endpoints require either:
 
 #### System Status
 ```
-GET /api/superadmin/automation/status
+GET /api/ADMIN/automation/status
 ```
 Returns current system status, tasks, and recent logs.
 
 #### Health Check
 ```
-GET /api/superadmin/automation/health
+GET /api/ADMIN/automation/health
 ```
 Comprehensive system health check including database, storage, tables, and automation.
 
 #### Task Execution
 ```
-POST /api/superadmin/automation/run
+POST /api/ADMIN/automation/run
 {
   "task": "task_name"
 }
@@ -159,25 +159,25 @@ Manually execute a specific automation task.
 
 #### Schema Synchronization
 ```
-POST /api/superadmin/automation/schema-sync
+POST /api/ADMIN/automation/schema-sync
 ```
 Trigger database schema synchronization and validation.
 
 #### Auto Data Sync
 ```
-POST /api/superadmin/automation/auto-sync
+POST /api/ADMIN/automation/auto-sync
 ```
 Trigger automatic data synchronization.
 
 #### Backup Operations
 ```
-POST /api/superadmin/automation/backup-now
+POST /api/ADMIN/automation/backup-now
 ```
 Create an immediate backup of all data.
 
 #### Restore Operations
 ```
-POST /api/superadmin/automation/restore
+POST /api/ADMIN/automation/restore
 Content-Type: multipart/form-data
 - file: backup file (.json, .sql, .tar.gz)
 - preview: true|false
@@ -186,7 +186,7 @@ Content-Type: multipart/form-data
 
 #### System Initialization
 ```
-POST /api/superadmin/automation/initialize
+POST /api/ADMIN/automation/initialize
 {
   "setup_key": "setup_key"
 }
@@ -195,13 +195,13 @@ Initialize the automation system and create required tables.
 
 #### Logs
 ```
-GET /api/superadmin/automation/logs?page=1&limit=20&task_name=task&status=status
+GET /api/ADMIN/automation/logs?page=1&limit=20&task_name=task&status=status
 ```
 Retrieve paginated logs with optional filtering.
 
 #### Cron Runner
 ```
-POST /api/superadmin/automation/cron
+POST /api/ADMIN/automation/cron
 ```
 Execute cron runner for scheduled tasks.
 
@@ -270,7 +270,7 @@ Add to `vercel.json`:
 {
   "crons": [
     {
-      "path": "/api/superadmin/automation/cron",
+      "path": "/api/ADMIN/automation/cron",
       "schedule": "*/15 * * * *"
     }
   ]
@@ -323,8 +323,8 @@ Add to `vercel.json`:
 
 ### Access Control
 
-1. **Middleware Enforcement**: All `/superadmin/*` routes protected by middleware
-2. **Role Validation**: Database role verification for SUPERADMIN
+1. **Middleware Enforcement**: All `/ADMIN/*` routes protected by middleware
+2. **Role Validation**: Database role verification for ADMIN
 3. **Service Role Only**: Server operations use service role key only
 4. **No Client Exposure**: Service keys never sent to client
 
@@ -339,7 +339,7 @@ Add to `vercel.json`:
 
 1. **Regular Backups**: Automated daily backups
 2. **Key Rotation**: Regular rotation of service keys
-3. **Access Review**: Periodic review of SUPERADMIN access
+3. **Access Review**: Periodic review of ADMIN access
 4. **Monitoring**: Continuous health monitoring and alerting
 
 ## Deployment
@@ -349,7 +349,7 @@ Add to `vercel.json`:
 1. **Environment Variables**: Configure all required environment variables
 2. **Database Setup**: Execute RPC functions in Supabase SQL Editor
 3. **Storage Bucket**: Create `automated-backups` bucket in Supabase Storage
-4. **Initial User**: Create initial SUPERADMIN user if using setup mode
+4. **Initial User**: Create initial ADMIN user if using setup mode
 
 ### Database Initialization
 

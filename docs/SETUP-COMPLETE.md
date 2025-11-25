@@ -17,7 +17,7 @@ Admin: testadmin1@gmail.com / admin123
 Option 2: Local Database (Already Working)
 -----------------------------------------
 Client: client@saanify.com / client123
-Admin: superadmin@saanify.com / admin123
+Admin: ADMIN@saanify.com / admin123
 
 🔧 FINAL SETUP STEPS (5 minutes):
 
@@ -34,7 +34,7 @@ Admin: superadmin@saanify.com / admin123
    - Click "Add user"
    - Email: testadmin1@gmail.com
    - Password: admin123
-   - User metadata: {"role": "SUPER_ADMIN", "name": "Super Admin"}
+   - User metadata: {"role": "ADMIN", "name": "ADMIN"}
    - Click "Create user"
 
 4️⃣ RUN SQL SCRIPT

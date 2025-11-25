@@ -19,7 +19,7 @@ model User {
   password      String?   // Optional for OAuth (Google), Required for Email/Pass
 
   // Custom Fields for your Logic
-  role             String   @default("CLIENT") // ADMIN, CLIENT, SUPERADMIN
+  role             String   @default("CLIENT") // ADMIN, CLIENT
   isActive         Boolean  @default(true)
   lastLoginAt      DateTime?
   societyAccountId String?  // Link to SocietyAccount manually or via relation below

@@ -161,7 +161,7 @@ export function EnhancedActionsDropdown({
   }
 
   const handleViewDetails = () => {
-    router.push(`/superadmin/clients/${client.id}`)
+    router.push(`/ADMIN/clients/${client.id}`)
   }
 
   const handleEditSubmit = async () => {

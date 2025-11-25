@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = verifyAccessToken(token)
-    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+    if (!decoded || decoded.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Admin privileges required' },
         { status: 403 }

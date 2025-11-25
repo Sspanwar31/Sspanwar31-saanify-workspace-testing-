@@ -6,9 +6,9 @@
 
 ### 📋 **Available Demo Accounts**
 
-#### 👑 **Super Admin Account**
+#### 👑 **ADMIN Account**
 ```
-Email: superadmin@saanify.com
+Email: ADMIN@saanify.com
 Password: admin123
 Role: Super Administrator
 Access: Full system control, user management, analytics
@@ -61,7 +61,7 @@ Password: [ऊपर दिया गया password]
 
 ## 🎯 **After Login - What Happens?**
 
-### 👑 **Super Admin Dashboard**
+### 👑 **ADMIN Dashboard**
 - URL: `/dashboard/admin`
 - Features:
   - User management

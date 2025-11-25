@@ -112,7 +112,7 @@ BEGIN
             id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
             email text NOT NULL UNIQUE,
             name text,
-            role text DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'SUPERADMIN')),
+            role text DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'ADMIN')),
             society_id text,
             created_at timestamptz DEFAULT now(),
             updated_at timestamptz DEFAULT now()

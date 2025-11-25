@@ -148,10 +148,10 @@ headers: {
 
 The system automatically seeds the following default data:
 
-### 👑 **Super Admin**
-- Email: `superadmin@saanify.com`
+### 👑 **ADMIN**
+- Email: `ADMIN@saanify.com`
 - Password: `admin123`
-- Role: `SUPER_ADMIN`
+- Role: `ADMIN`
 
 ### 🏢 **Demo Societies**
 1. **Green Valley Society** (PRO plan)

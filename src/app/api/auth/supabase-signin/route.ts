@@ -54,8 +54,21 @@ export async function POST(request: NextRequest) {
       data: { lastLoginAt: new Date() }
     })
 
+    // Determine redirect URL and user type based on user role
+    let redirectUrl = '/dashboard/client' // default for clients
+    let userType = 'client'
+    
+    if (user.role === 'ADMIN') {
+      redirectUrl = '/admin'
+      userType = 'admin'
+    }
+    
+    console.log("🎯 Supabase Redirecting to:", redirectUrl, "User type:", userType)
+
     return NextResponse.json({
       success: true,
+      message: 'Login successful',
+      userType,
       user: {
         id: user.id,
         email: user.email,
@@ -63,7 +76,8 @@ export async function POST(request: NextRequest) {
         role: user.role,
         societyAccount: user.societyAccount
       },
-      session: authData.session
+      session: authData.session,
+      redirectUrl
     })
   } catch (error) {
     console.error('Supabase login error:', error)

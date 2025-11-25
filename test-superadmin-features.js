@@ -4,11 +4,11 @@ async function testSuperAdminFeatures() {
   console.log('🔧 TESTING SUPER ADMIN FEATURES\n');
 
   try {
-    // Test 1: Super Admin Login
-    console.log('👑 Testing Super Admin Login:');
+    // Test 1: ADMIN Login
+    console.log('👑 Testing ADMIN Login:');
     
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });

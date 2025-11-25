@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT,
   name TEXT,
-  role TEXT DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'SUPER_ADMIN')),
+  role TEXT DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'ADMIN')),
   is_active BOOLEAN DEFAULT true,
   last_login_at TIMESTAMP WITH TIME ZONE,
   society_account_id UUID,
@@ -52,10 +52,10 @@ ALTER TABLE societies ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Super admins can view all profiles" ON profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY "Super admins can update all profiles" ON profiles FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- Create policies for society_accounts
@@ -63,10 +63,10 @@ CREATE POLICY "Users can view own society account" ON society_accounts FOR SELEC
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND society_account_id = id)
 );
 CREATE POLICY "Super admins can view all society accounts" ON society_accounts FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY "Super admins can manage all society accounts" ON society_accounts FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- Create policies for societies
@@ -74,10 +74,10 @@ CREATE POLICY "Users can view own societies" ON societies FOR SELECT USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND society_account_id = society_account_id)
 );
 CREATE POLICY "Super admins can view all societies" ON societies FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 CREATE POLICY "Super admins can manage all societies" ON societies FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'SUPER_ADMIN')
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
 );
 
 -- Create function to handle new user signup

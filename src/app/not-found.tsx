@@ -75,7 +75,7 @@ export default function NotFound() {
               >
                 Login
               </Button>
-              <Link href="/superadmin">
+              <Link href="/ADMIN">
                 <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400">
                   Dashboard
                 </Button>

@@ -51,7 +51,7 @@ export default function AdminDashboard() {
         const { checkSession } = await import('@/lib/auth')
         const session = await checkSession()
         
-        if (!session.authenticated || session.user?.role !== 'SUPER_ADMIN') {
+        if (!session.authenticated || session.user?.role !== 'ADMIN') {
           window.location.href = '/'
           return
         }
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Saanify Stallone</h1>
-          <p className="text-cyan-400">Initializing Super Admin Suite...</p>
+          <p className="text-cyan-400">Initializing ADMIN Suite...</p>
         </motion.div>
       </div>
     )
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
               
               <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-teal-500/20 rounded-full border border-cyan-500/30">
                 <Shield className="h-4 w-4 text-cyan-400" />
-                <span className="text-sm font-medium text-cyan-300">Super Admin</span>
+                <span className="text-sm font-medium text-cyan-300">ADMIN</span>
               </div>
               
               <DropdownMenu>
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
           <h1 className="text-4xl font-bold text-white mb-2">
             Welcome to <span className="bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">Stallone</span>
           </h1>
-          <p className="text-white/60 text-lg">Super Admin Suite - Complete Control Center</p>
+          <p className="text-white/60 text-lg">ADMIN Suite - Complete Control Center</p>
         </motion.div>
 
         {/* Stats Grid */}
@@ -936,7 +936,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { name: 'Super Admin', email: 'admin@saanify.com', role: 'Super Admin', status: 'Active' },
+                  { name: 'ADMIN', email: 'admin@saanify.com', role: 'ADMIN', status: 'Active' },
                   { name: 'John Doe', email: 'john@saanify.com', role: 'Admin', status: 'Active' },
                   { name: 'Jane Smith', email: 'jane@saanify.com', role: 'Admin', status: 'Inactive' }
                 ].map((admin, index) => (

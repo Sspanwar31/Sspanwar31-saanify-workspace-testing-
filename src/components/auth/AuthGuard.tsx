@@ -10,11 +10,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface AuthGuardProps {
   children: React.ReactNode
-  requiredRole?: 'SUPERADMIN' | 'ADMIN' | 'CLIENT'
+  requiredRole?: 'ADMIN' | 'ADMIN' | 'CLIENT'
   fallback?: React.ReactNode
 }
 
-export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallback }: AuthGuardProps) {
+export default function AuthGuard({ children, requiredRole = 'ADMIN', fallback }: AuthGuardProps) {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -41,10 +41,10 @@ export default function AuthGuard({ children, requiredRole = 'SUPERADMIN', fallb
     const userRole = user.role?.toUpperCase()
     console.log('🔐 AuthGuard: User role check', { userRole, requiredRole })
     
-    if (requiredRole === 'SUPERADMIN' && userRole !== 'SUPERADMIN') {
-      console.log('🚫 AuthGuard: User role', userRole, 'does not match required role SUPERADMIN')
+    if (requiredRole === 'ADMIN' && userRole !== 'ADMIN') {
+      console.log('🚫 AuthGuard: User role', userRole, 'does not match required role ADMIN')
       
-      // If user is not SUPERADMIN, redirect to appropriate dashboard
+      // If user is not ADMIN, redirect to appropriate dashboard
       if (userRole === 'CLIENT') {
         setIsRedirecting(true)
         router.push('/dashboard/client')

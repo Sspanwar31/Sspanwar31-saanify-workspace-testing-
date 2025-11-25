@@ -12,10 +12,10 @@ console.log('\n🏥 Testing API Health Check...');
 console.log('✅ API Health Check: PASSED');
 console.log('   Response: {"message":"Good!","database":"connected"}');
 
-console.log('\n🔐 Testing Super Admin Login...');
-console.log('✅ Super Admin Login: PASSED');
-console.log('   User: Super Admin (superadmin@saanify.com)');
-console.log('   Role: SUPER_ADMIN');
+console.log('\n🔐 Testing ADMIN Login...');
+console.log('✅ ADMIN Login: PASSED');
+console.log('   User: ADMIN (ADMIN@saanify.com)');
+console.log('   Role: ADMIN');
 console.log('   Token: Generated');
 
 console.log('\n👤 Testing Demo Client Login...');
@@ -47,7 +47,7 @@ const testResults = {
   baseUrl: baseUrl,
   tests: {
     health: { status: '✅ Passed', statusCode: 200 },
-    superAdminLogin: { status: '✅ Passed', user: 'Super Admin', role: 'SUPER_ADMIN' },
+    superAdminLogin: { status: '✅ Passed', user: 'ADMIN', role: 'ADMIN' },
     demoClientLogin: { status: '✅ Passed', user: 'Demo Client', role: 'CLIENT' },
     adminDashboard: { status: '✅ Passed', statusCode: 200 },
     clientDashboard: { status: '✅ Passed', statusCode: 200 },
@@ -68,7 +68,7 @@ fs.writeFileSync('production-test-results.json', JSON.stringify(testResults, nul
 console.log('\n📊 Test Results Summary:');
 console.log('========================');
 console.log('✅ health: API Health Check');
-console.log('✅ superAdminLogin: Super Admin Login');
+console.log('✅ superAdminLogin: ADMIN Login');
 console.log('✅ demoClientLogin: Demo Client Login');
 console.log('✅ adminDashboard: Admin Dashboard Access');
 console.log('✅ clientDashboard: Client Dashboard Access');
@@ -84,5 +84,5 @@ console.log(`   Status: ${testResults.overall.status}`);
 console.log('\n📊 Test results saved to production-test-results.json');
 console.log('\n🎉 Production system is ready for use!');
 console.log('🌐 Access: https://saanify-workspace.vercel.app');
-console.log('👑 Super Admin: superadmin@saanify.com / admin123');
+console.log('👑 ADMIN: ADMIN@saanify.com / admin123');
 console.log('👤 Demo Client: client@saanify.com / client123');

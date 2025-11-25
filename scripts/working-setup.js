@@ -25,8 +25,8 @@ const createWorkingUsers = async () => {
       {
         email: 'testadmin1@gmail.com', 
         password: 'admin123',
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN'
+        name: 'ADMIN',
+        role: 'ADMIN'
       }
     ]
     

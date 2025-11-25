@@ -47,7 +47,7 @@ Environment variables were not being properly set when saving Supabase configura
    - Database schema (profiles, society_accounts, societies tables)
    - Demo users:
      - **Client**: `client@saanify.com` / `client123`
-     - **Admin**: `superadmin@saanify.com` / `admin123`
+     - **Admin**: `ADMIN@saanify.com` / `admin123`
 
 ### **Step 3: Test Authentication**
 1. Go to `/login`

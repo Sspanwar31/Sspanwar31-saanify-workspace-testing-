@@ -72,12 +72,12 @@ function AnimatedCounter({ value, duration = 2, prefix = '', suffix = '' }: Anim
 }
 
 export function AnalyticsOverview({ clients, showRevenue, onRevenueToggle, userData }: AnalyticsOverviewProps) {
-  const [isSuperadmin, setIsSuperadmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   
   useEffect(() => {
-    // Check if user is super admin
-    if (userData?.role === 'SUPERADMIN') {
-      setIsSuperadmin(true)
+    // Check if user is ADMIN
+    if (userData?.role === 'ADMIN') {
+      setIsAdmin(true)
     }
   }, [userData])
 
@@ -139,8 +139,8 @@ export function AnalyticsOverview({ clients, showRevenue, onRevenueToggle, userD
 
   return (
     <div className="space-y-6">
-      {/* Revenue Toggle - Only for Superadmin */}
-      {isSuperadmin && (
+      {/* Revenue Toggle - Only for ADMIN */}
+      {isAdmin && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

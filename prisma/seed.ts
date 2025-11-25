@@ -6,28 +6,28 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Seeding database...')
 
-  // Create super admin user
-  const superAdminEmail = 'superadmin@saanify.com'
+  // Create admin user (merged from ADMIN)
+  const adminEmail = 'admin@saanify.com'
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: superAdminEmail }
+    where: { email: adminEmail }
   })
 
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash('admin123', 12)
     
-    const superAdmin = await prisma.user.create({
+    const admin = await prisma.user.create({
       data: {
-        email: superAdminEmail,
-        name: 'Superadmin',
+        email: adminEmail,
+        name: 'Admin',
         password: hashedPassword,
-        role: 'SUPERADMIN',
+        role: 'ADMIN',
         isActive: true
       }
     })
     
-    console.log('✅ Super admin created:', superAdmin.email)
+    console.log('✅ Admin created:', admin.email)
   } else {
-    console.log('✅ Super admin already exists:', existingAdmin.email)
+    console.log('✅ Admin already exists:', existingAdmin.email)
   }
 
   // Create dummy society accounts as requested

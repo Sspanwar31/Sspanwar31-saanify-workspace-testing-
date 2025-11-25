@@ -24,7 +24,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ### Step 1: Access Setup Wizard
 1. Start your application with `SETUP_MODE=true`
 2. Navigate to `/setup` in your browser
-3. Enter your setup key and superadmin credentials
+3. Enter your setup key and ADMIN credentials
 
 ### Step 2: Database Initialization
 The setup wizard will automatically:
@@ -33,9 +33,9 @@ The setup wizard will automatically:
 - Create necessary indexes
 - Set up proper relationships
 
-### Step 3: Superadmin Creation
+### Step 3: ADMIN Creation
 The wizard will:
-- Create a superadmin user with provided email/password
+- Create a ADMIN user with provided email/password
 - Hash passwords securely
 - Insert user into database
 - Attempt to create user in Supabase Auth (if available)
@@ -45,7 +45,7 @@ After successful setup:
 - `SETUP_MODE` is automatically disabled
 - `/setup` route becomes inaccessible
 - User is redirected to `/auth/login`
-- Superadmin can login with created credentials
+- ADMIN can login with created credentials
 
 ## Security Features
 
@@ -92,9 +92,9 @@ SETUP_MODE=false
 # SETUP_KEY=your-secure-setup-key-here
 ```
 
-### 2. Verify Superadmin Access
+### 2. Verify ADMIN Access
 - Navigate to `/auth/login`
-- Login with created superadmin credentials
+- Login with created ADMIN credentials
 - Verify access to admin dashboard
 
 ### 3. Configure Society Settings
@@ -157,7 +157,7 @@ NODE_ENV=production
   "redirectUrl": "/auth/login",
   "superadminCreated": {
     "email": "admin@example.com",
-    "role": "superadmin"
+    "role": "ADMIN"
   }
 }
 
@@ -185,7 +185,7 @@ For setup issues:
 3. **Disable SETUP_MODE after completion**
 4. **Keep setup key confidential**
 5. **Use HTTPS in production environments**
-6. **Regularly rotate superadmin passwords**
+6. **Regularly rotate ADMIN passwords**
 
 ## File Structure
 

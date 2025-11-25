@@ -26,9 +26,9 @@ async function createDemoUsers() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'superadmin@saanify.com',
+        email: 'ADMIN@saanify.com',
         password: 'admin123',
-        name: 'Super Admin',
+        name: 'ADMIN',
         userType: 'admin'
       }),
     })

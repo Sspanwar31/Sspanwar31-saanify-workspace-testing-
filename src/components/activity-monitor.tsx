@@ -54,7 +54,7 @@ export function ActivityMonitor() {
       {
         id: '1',
         userId: 'user1',
-        userName: 'Super Admin',
+        userName: 'ADMIN',
         userEmail: 'admin@saanify.com',
         action: ACTIVITY_TYPES.LOGIN,
         resource: RESOURCE_TYPES.SYSTEM,
@@ -67,7 +67,7 @@ export function ActivityMonitor() {
       {
         id: '2',
         userId: 'user1',
-        userName: 'Super Admin',
+        userName: 'ADMIN',
         userEmail: 'admin@saanify.com',
         action: ACTIVITY_TYPES.CLIENT_VIEW,
         resource: RESOURCE_TYPES.CLIENT,
@@ -82,7 +82,7 @@ export function ActivityMonitor() {
       {
         id: '3',
         userId: 'user1',
-        userName: 'Super Admin',
+        userName: 'ADMIN',
         userEmail: 'admin@saanify.com',
         action: ACTIVITY_TYPES.CLIENT_UPDATE,
         resource: RESOURCE_TYPES.CLIENT,
@@ -97,7 +97,7 @@ export function ActivityMonitor() {
       {
         id: '4',
         userId: 'user1',
-        userName: 'Super Admin',
+        userName: 'ADMIN',
         userEmail: 'admin@saanify.com',
         action: ACTIVITY_TYPES.LOGIN_FAILED,
         resource: RESOURCE_TYPES.SYSTEM,
@@ -111,7 +111,7 @@ export function ActivityMonitor() {
       {
         id: '5',
         userId: 'user1',
-        userName: 'Super Admin',
+        userName: 'ADMIN',
         userEmail: 'admin@saanify.com',
         action: ACTIVITY_TYPES.BACKUP_CREATE,
         resource: RESOURCE_TYPES.BACKUP,

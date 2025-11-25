@@ -10,7 +10,7 @@ export interface AuthenticatedUser {
   role: string
 }
 
-export async function authenticateAndAuthorize(request: NextRequest, requiredRole: string = 'SUPERADMIN'): Promise<{ user: AuthenticatedUser; error?: string }> {
+export async function authenticateAndAuthorize(request: NextRequest, requiredRole: string = 'ADMIN'): Promise<{ user: AuthenticatedUser; error?: string }> {
   // Get token from cookie
   const token = request.cookies.get("auth-token")?.value
 
@@ -28,15 +28,15 @@ export async function authenticateAndAuthorize(request: NextRequest, requiredRol
   const userRole = decoded.role?.toUpperCase() || ""
 
   // Check if user has required role
-  if (requiredRole === 'SUPERADMIN' && userRole !== 'SUPERADMIN') {
-    return { user: null as any, error: 'Access denied - Superadmin privileges required' }
+  if (requiredRole === 'ADMIN' && userRole !== 'ADMIN') {
+    return { user: null as any, error: 'Access denied - ADMIN privileges required' }
   }
 
-  if (requiredRole === 'ADMIN' && userRole !== 'SUPERADMIN' && userRole !== 'ADMIN') {
+  if (requiredRole === 'ADMIN' && userRole !== 'ADMIN' && userRole !== 'ADMIN') {
     return { user: null as any, error: 'Access denied - Admin privileges required' }
   }
 
-  if (requiredRole === 'CLIENT' && userRole !== 'CLIENT' && userRole !== 'SUPERADMIN') {
+  if (requiredRole === 'CLIENT' && userRole !== 'CLIENT' && userRole !== 'ADMIN') {
     return { user: null as any, error: 'Access denied - Client privileges required' }
   }
 

@@ -25,7 +25,7 @@ async function ensureColumn(table: string, column: string, type: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { setupKey, superadminEmail, superadminPassword } = body;
+    const { setupKey, adminEmail, adminPassword } = body;
 
     // --- SECURITY CHECK ---
     if (!process.env.SETUP_KEY) {
@@ -35,8 +35,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Invalid Setup Key" }, { status: 401 });
     }
 
-    const adminEmail = superadminEmail || "testadmin1@gmail.com";
-    const rawPassword = superadminPassword || "admin123_password";
+    const finalAdminEmail = adminEmail || "testadmin1@gmail.com";
+    const rawPassword = adminPassword || "admin123_password";
 
     // ✅ Password Hash (Login compatible)
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
@@ -167,27 +167,27 @@ export async function POST(req: Request) {
       VALUES (
         '${societyId}', 
         'Master Admin Society', 
-        '${adminEmail}', 
+        '${finalAdminEmail}', 
         'LIFETIME', 
-        'Super Admin'
+        'ADMIN'
       )
       ON CONFLICT (email) DO NOTHING;
     `);
 
-    // 2. Create Admin User (with SUPER_ADMIN role and bcrypt password)
+    // 2. Create Admin User (with ADMIN role and bcrypt password)
     await runSql(`
       INSERT INTO public.users (email, password, name, role, "societyAccountId", "emailVerified", "isActive")
       VALUES (
-        '${adminEmail}',
+        '${finalAdminEmail}',
         '${hashedPassword}', 
-        'Super Admin',
-        'SUPER_ADMIN',
+        'ADMIN',
+        'ADMIN',
         '${societyId}',
         NOW(),
         TRUE
       )
       ON CONFLICT (email) DO UPDATE 
-      SET role = 'SUPER_ADMIN', "societyAccountId" = '${societyId}', password = '${hashedPassword}';
+      SET role = 'ADMIN', "societyAccountId" = '${societyId}', password = '${hashedPassword}';
     `);
 
     // --- STEP 5: Default Automation Data ---

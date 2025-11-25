@@ -4,10 +4,10 @@ async function testFixedDashboards() {
   console.log('🔧 TESTING FIXED DASHBOARDS\n');
 
   try {
-    // Test 1: Super Admin Login and Dashboard
-    console.log('👑 Testing Super Admin Dashboard:');
+    // Test 1: ADMIN Login and Dashboard
+    console.log('👑 Testing ADMIN Dashboard:');
     const adminLogin = await axios.post('http://localhost:3000/api/auth/login', {
-      email: 'superadmin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123',
       userType: 'admin'
     });
@@ -81,7 +81,7 @@ async function testFixedDashboards() {
 
     console.log('\n🎉 DASHBOARD FIXES VERIFIED!');
     console.log('\n📋 SUMMARY:');
-    console.log('✅ Super Admin Dashboard: Fixed (no longer returns JSON)');
+    console.log('✅ ADMIN Dashboard: Fixed (no longer returns JSON)');
     console.log('✅ Client Dashboard: Fixed (no longer shows error)');
     console.log('✅ Cross Access Prevention: Still working');
     console.log('✅ Authentication: Working properly');

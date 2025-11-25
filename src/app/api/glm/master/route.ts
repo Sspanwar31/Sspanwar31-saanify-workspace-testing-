@@ -395,7 +395,7 @@ async function getSystemStatus(): Promise<NextResponse> {
         const migrateData = await migrateResponse.json();
         stats.users = migrateData.stats?.users || 0;
         stats.societies = migrateData.stats?.societies || 0;
-        stats.admins = migrateData.stats?.superAdmins || 0;
+        stats.admins = migrateData.stats?.admins || 0;
       }
     } catch (error) {
       console.error("Failed to get stats:", error);

@@ -66,8 +66,8 @@ const setupSupabaseData = async () => {
         .upsert({
           id: adminData.user.id,
           email: adminData.user.email,
-          name: 'Super Admin',
-          role: 'SUPER_ADMIN',
+          name: 'ADMIN',
+          role: 'ADMIN',
           is_active: true
         })
         .select()

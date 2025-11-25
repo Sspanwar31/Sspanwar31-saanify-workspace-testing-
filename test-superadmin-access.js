@@ -5,27 +5,27 @@ const prisma = new PrismaClient();
 
 async function testSuperadminAccess() {
   try {
-    console.log('🔍 Testing Superadmin Access...\n');
+    console.log('🔍 Testing ADMIN Access...\n');
     
-    // 1. Check if superadmin exists
-    const superadmin = await prisma.user.findUnique({
-      where: { email: 'superadmin@saanify.com' }
+    // 1. Check if ADMIN exists
+    const ADMIN = await prisma.user.findUnique({
+      where: { email: 'ADMIN@saanify.com' }
     });
     
-    if (!superadmin) {
-      console.log('❌ Superadmin user not found');
+    if (!ADMIN) {
+      console.log('❌ ADMIN user not found');
       return;
     }
     
-    console.log('✅ Superadmin user found:');
-    console.log('   Email:', superadmin.email);
-    console.log('   Role:', superadmin.role);
-    console.log('   Active:', superadmin.isActive);
-    console.log('   Last Login:', superadmin.lastLoginAt);
+    console.log('✅ ADMIN user found:');
+    console.log('   Email:', ADMIN.email);
+    console.log('   Role:', ADMIN.role);
+    console.log('   Active:', ADMIN.isActive);
+    console.log('   Last Login:', ADMIN.lastLoginAt);
     
     // 2. Test password verification
     const testPassword = 'admin123';
-    const isPasswordValid = await bcrypt.compare(testPassword, superadmin.password);
+    const isPasswordValid = await bcrypt.compare(testPassword, ADMIN.password);
     
     console.log('\n🔐 Password Test:');
     console.log('   Test Password:', testPassword);
@@ -48,9 +48,9 @@ async function testSuperadminAccess() {
       console.log(`   ${index + 1}. ${user.email} (${user.role}) - ${user.isActive ? 'Active' : 'Inactive'}`);
     });
     
-    console.log('\n🎯 Superadmin Panel URL: http://localhost:3000/superadmin');
+    console.log('\n🎯 ADMIN Panel URL: http://localhost:3000/ADMIN');
     console.log('🔑 Login Credentials:');
-    console.log('   Email: superadmin@saanify.com');
+    console.log('   Email: ADMIN@saanify.com');
     console.log('   Password: admin123');
     
   } catch (error) {

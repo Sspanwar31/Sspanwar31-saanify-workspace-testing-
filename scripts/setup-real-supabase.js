@@ -125,7 +125,7 @@ Check your Supabase dashboard > Table Editor to see:
 
 ## Step 5: Test Application
 Visit: https://saanify-workspace.vercel.app
-Login with: superadmin@saanify.com / admin123
+Login with: ADMIN@saanify.com / admin123
 `;
 
 fs.writeFileSync('SUPABASE_SETUP_INSTRUCTIONS.md', instructions);

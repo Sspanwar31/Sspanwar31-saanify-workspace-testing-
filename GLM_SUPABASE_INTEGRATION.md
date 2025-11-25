@@ -59,7 +59,7 @@ datasource db {
 4. **posts** - Content management
 
 ### **Default Data Seeded**:
-- **Super Admin**: `superadmin@saanify.com` / `admin123`
+- **ADMIN**: `ADMIN@saanify.com` / `admin123`
 - **Demo Client**: `client@saanify.com` / `client123`
 - **Demo Society**: Green Valley Society (PRO plan)
 
@@ -184,7 +184,7 @@ curl https://saanify-workspace.vercel.app/api/health
 # Test authentication
 curl -X POST https://saanify-workspace.vercel.app/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "superadmin@saanify.com", "password": "admin123"}'
+  -d '{"email": "ADMIN@saanify.com", "password": "admin123"}'
 
 # Verify database connection
 curl -X GET https://saanify-workspace.vercel.app/api/glm/migrate \
@@ -252,7 +252,7 @@ curl -X GET https://saanify-workspace.vercel.app/api/glm/migrate \
    # Test login API
    curl -X POST https://saanify-workspace.vercel.app/api/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"email": "superadmin@saanify.com", "password": "admin123"}'
+     -d '{"email": "ADMIN@saanify.com", "password": "admin123"}'
    ```
 
 ## 📊 System Status
@@ -321,5 +321,5 @@ npm run deploy:glm
 The Saanify Management System is now fully integrated with Supabase and ready for automatic deployment on Vercel. All database migrations, seeding, and verification happen automatically without any manual commands.
 
 **🌐 Live URL**: https://saanify-workspace.vercel.app  
-**🔑 Super Admin**: superadmin@saanify.com / admin123  
+**🔑 ADMIN**: ADMIN@saanify.com / admin123  
 **👤 Demo Client**: client@saanify.com / client123

@@ -5,7 +5,7 @@ A comprehensive authentication and authorization system for the Saanify financia
 ## 🎯 Features
 
 ### ✅ Core Authentication
-- **Dual Role System**: Super Admin and Client roles with distinct permissions
+- **Dual Role System**: ADMIN and Client roles with distinct permissions
 - **Secure Login**: Password hashing with bcrypt, JWT tokens with expiration
 - **Refresh Tokens**: Automatic token refresh for extended sessions
 - **Session Management**: Secure cookie-based session handling with localStorage fallback
@@ -46,7 +46,7 @@ model User {
 }
 
 enum UserRole {
-  SUPER_ADMIN
+  ADMIN
   CLIENT
 }
 ```
@@ -59,7 +59,7 @@ enum UserRole {
 - `POST /api/auth/refresh` - Refresh access token
 - `GET /api/auth/check-session` - Validate current session
 
-### Admin Only (SUPER_ADMIN)
+### Admin Only (ADMIN)
 - `GET /api/admin/users` - List all users with pagination
 - `PATCH /api/admin/users` - Update user status/role
 - `GET /api/admin/analytics` - System analytics and statistics
@@ -90,7 +90,7 @@ enum UserRole {
 const protectedRoutes = ['/dashboard/admin', '/dashboard/client', '/dashboard']
 
 // Role-based access
-if (pathname.startsWith('/dashboard/admin') && decoded.role !== 'SUPER_ADMIN') {
+if (pathname.startsWith('/dashboard/admin') && decoded.role !== 'ADMIN') {
   return NextResponse.redirect(new URL('/', request.url))
 }
 ```
@@ -145,7 +145,7 @@ const data = await response.json()
 import { checkSession } from '@/lib/auth'
 
 const { authenticated, user } = await checkSession()
-if (authenticated && user.role === 'SUPER_ADMIN') {
+if (authenticated && user.role === 'ADMIN') {
   // User is authenticated admin
 }
 ```
@@ -169,7 +169,7 @@ if (authenticated && user.role === 'SUPER_ADMIN') {
 
 ## 🎯 Role Permissions
 
-### Super Admin
+### ADMIN
 - ✅ View all users and societies
 - ✅ Manage user accounts (activate/deactivate)
 - ✅ Access system analytics
@@ -188,7 +188,7 @@ if (authenticated && user.role === 'SUPER_ADMIN') {
 
 ### Test Credentials
 ```
-Admin: superadmin@saanify.com / admin123
+Admin: ADMIN@saanify.com / admin123
 Client: client@saanify.com / client123
 ```
 

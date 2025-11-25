@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         id: true,
         email: true,
         name: true,
-        role: true,            // ✅ Correct Role (SUPER_ADMIN) yahan se aayega
+        role: true,            // ✅ Correct Role (ADMIN) yahan se aayega
         societyAccountId: true,
         lastLoginAt: true
       }
@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
     let normalizedRole = user.role?.toUpperCase();
     
     // Normalize role names for consistency
-    if (normalizedRole === 'SUPER_ADMIN') {
-      normalizedRole = 'SUPERADMIN';
+    if (normalizedRole === 'ADMIN') {
+      normalizedRole = 'ADMIN';
     }
     
     return NextResponse.json({
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: normalizedRole, // Always return 'SUPERADMIN' for consistency
+        role: normalizedRole, // Always return 'ADMIN' for consistency
         societyAccountId: user.societyAccountId
       }
     });

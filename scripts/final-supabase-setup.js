@@ -20,7 +20,7 @@ const finalSetup = async () => {
     
     const testUsers = [
       { email: 'demo.client.saanify@gmail.com', password: 'client123', role: 'CLIENT' },
-      { email: 'demo.admin.saanify@gmail.com', password: 'admin123', role: 'SUPER_ADMIN' }
+      { email: 'demo.admin.saanify@gmail.com', password: 'admin123', role: 'ADMIN' }
     ]
     
     for (const user of testUsers) {
@@ -46,7 +46,7 @@ const finalSetup = async () => {
           .upsert({
             id: signInData.user.id,
             email: signInData.user.email,
-            name: user.role === 'CLIENT' ? 'Demo Client' : 'Super Admin',
+            name: user.role === 'CLIENT' ? 'Demo Client' : 'ADMIN',
             role: user.role,
             is_active: true
           })

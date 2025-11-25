@@ -62,13 +62,13 @@ try {
   console.log(`✅ Users: ${userCount}`);
   console.log(`✅ Societies: ${societyCount}`);
   
-  // Check for Super Admin
-  const superAdmin = await prisma.user.findUnique({
-    where: { email: 'superadmin@saanify.com' }
+  // Check for ADMIN
+  const ADMIN = await prisma.user.findUnique({
+    where: { email: 'ADMIN@saanify.com' }
   });
   
-  if (superAdmin) {
-    console.log('✅ Super Admin found: superadmin@saanify.com');
+  if (ADMIN) {
+    console.log('✅ ADMIN found: ADMIN@saanify.com');
   }
   
   await prisma.$disconnect();
@@ -87,13 +87,13 @@ The Saanify Management System is now working with SQLite database and is fully f
 
 ## 📊 Current Database Status:
 - **Database**: SQLite (./dev.db)
-- **Users**: 6 (including Super Admin)
+- **Users**: 6 (including ADMIN)
 - **Societies**: 4
 - **Status**: ✅ Fully Functional
 
 ## 🌐 Access the Application:
 - **URL**: http://localhost:3000 (development)
-- **Super Admin**: superadmin@saanify.com / admin123
+- **ADMIN**: ADMIN@saanify.com / admin123
 - **Demo Client**: client@saanify.com / client123
 
 ## 🔄 To Migrate to Supabase:
@@ -148,7 +148,7 @@ console.log('✅ API Endpoints: Ready');
 console.log('\n🎉 Database Setup Complete!');
 console.log('=====================================');
 console.log('✅ Status: SQLite database working and fully functional');
-console.log('✅ Users: 6 created (including Super Admin)');
+console.log('✅ Users: 6 created (including ADMIN)');
 console.log('✅ Societies: 4 created');
 console.log('✅ Authentication: Ready');
 console.log('✅ Dashboards: Ready');
@@ -157,7 +157,7 @@ console.log('🌐 Start the application:');
 console.log('   npm run dev');
 console.log('');
 console.log('🔑 Login credentials:');
-console.log('   Super Admin: superadmin@saanify.com / admin123');
+console.log('   ADMIN: ADMIN@saanify.com / admin123');
 console.log('   Demo Client: client@saanify.com / client123');
 console.log('');
 console.log('📚 For Supabase migration, see: SUPABASE_MIGRATION_GUIDE.md');

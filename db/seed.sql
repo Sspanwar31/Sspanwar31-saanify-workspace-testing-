@@ -2,15 +2,15 @@
 -- TODO: Replace with actual seed data for production
 -- This is a scaffold file
 
--- Insert super admin user
+-- Insert ADMIN user
 INSERT INTO users (id, email, name, password, role, is_active)
 VALUES (
     'admin-001',
-    'superadmin@saanify.com',
-    'Super Admin',
+    'ADMIN@saanify.com',
+    'ADMIN',
     -- TODO: Replace with hashed password using bcrypt
     '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6hsxq9w5KS', -- 'admin123' hashed
-    'SUPER_ADMIN',
+    'ADMIN',
     true
 ) ON CONFLICT (email) DO NOTHING;
 

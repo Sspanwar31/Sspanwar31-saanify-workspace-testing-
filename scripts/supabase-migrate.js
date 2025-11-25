@@ -205,8 +205,8 @@ class SupabaseMigrator {
     const prisma = new PrismaClient();
     
     try {
-      // Create Super Admin
-      const superAdminEmail = 'superadmin@saanify.com';
+      // Create ADMIN
+      const superAdminEmail = 'ADMIN@saanify.com';
       const existingAdmin = await prisma.user.findUnique({
         where: { email: superAdminEmail }
       });
@@ -216,13 +216,13 @@ class SupabaseMigrator {
         await prisma.user.create({
           data: {
             email: superAdminEmail,
-            name: 'Super Admin',
+            name: 'ADMIN',
             password: hashedPassword,
-            role: 'SUPER_ADMIN',
+            role: 'ADMIN',
             isActive: true
           }
         });
-        info('✅ Super Admin created');
+        info('✅ ADMIN created');
       }
 
       // Create Demo Society

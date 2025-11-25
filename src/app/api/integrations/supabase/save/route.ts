@@ -53,7 +53,7 @@ CREATE POLICY "Society admins can update their account" ON society_accounts
       SELECT 1 FROM users 
       WHERE users.society_account_id = society_accounts.id 
       AND auth.uid()::text = users.id 
-      AND users.role IN ('ADMIN', 'SUPERADMIN')
+      AND users.role IN ('ADMIN', 'ADMIN')
     )
   );
 
@@ -72,7 +72,7 @@ CREATE POLICY "Society admins can manage societies" ON societies
       SELECT 1 FROM users 
       WHERE users.society_account_id = societies.society_account_id 
       AND auth.uid()::text = users.id 
-      AND users.role IN ('ADMIN', 'SUPERADMIN')
+      AND users.role IN ('ADMIN', 'ADMIN')
     )
   );
 
@@ -150,7 +150,7 @@ BEGIN
     sa.id as society_id,
     sa.name as society_name,
     u.role as user_role,
-    u.role IN ('ADMIN', 'SUPERADMIN') as is_admin
+    u.role IN ('ADMIN', 'ADMIN') as is_admin
   FROM users u
   JOIN society_accounts sa ON u.society_account_id = sa.id
   WHERE u.id = user_id_param;
@@ -222,7 +222,7 @@ model User {
   email             String    @unique
   name              String?
   password          String
-  role              String    @default("CLIENT") // CLIENT, SUPERADMIN
+  role              String    @default("CLIENT") // CLIENT, ADMIN
   isActive          Boolean   @default(true)
   lastLoginAt       DateTime?
   societyAccountId  String?

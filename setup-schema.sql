@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS roles (
 
 -- Insert default roles
 INSERT INTO roles (name, permissions) VALUES 
-    ('superadmin', '{"all": true}'),
+    ('ADMIN', '{"all": true}'),
     ('admin', '{"manage_users": true, "manage_society": true, "view_reports": true}'),
     ('treasurer', '{"manage_finances": true, "view_reports": true}'),
     ('user', '{"view_profile": true}')

@@ -23,7 +23,7 @@ const setupSupabase = async () => {
     console.log('SQL Script loaded. You need to run this manually in Supabase SQL Editor.')
     console.log('Here are the demo users that will be created:')
     console.log('1. client@saanify.com (password: client123)')
-    console.log('2. superadmin@saanify.com (password: admin123)')
+    console.log('2. ADMIN@saanify.com (password: admin123)')
     console.log('\nPlease follow these steps:')
     console.log('1. Go to your Supabase project: https://oyxfyovoqtcmpgazckcl.supabase.co')
     console.log('2. Navigate to SQL Editor')
@@ -67,8 +67,8 @@ const setupSupabase = async () => {
       password: 'admin123',
       options: {
         data: {
-          name: 'Super Admin',
-          role: 'SUPER_ADMIN'
+          name: 'ADMIN',
+          role: 'ADMIN'
         }
       }
     })

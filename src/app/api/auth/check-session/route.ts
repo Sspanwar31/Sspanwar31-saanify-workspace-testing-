@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
         name: true,
         role: true,            // ✅ Correct Role (ADMIN) yahan se aayega
         societyAccountId: true,
+        trialEndsAt: true,
+        subscriptionEndsAt: true,
         lastLoginAt: true
       }
     });
@@ -84,7 +86,9 @@ export async function GET(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: normalizedRole, // Always return 'ADMIN' for consistency
-        societyAccountId: user.societyAccountId
+        societyAccountId: user.societyAccountId,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionEndsAt: user.subscriptionEndsAt
       }
     });
 

@@ -10,6 +10,8 @@ interface User {
   name: string
   role: string
   societyAccountId?: string
+  trialEndsAt?: string
+  subscriptionEndsAt?: string
 }
 
 interface AuthContextType {
@@ -128,8 +130,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    // Then verify with server
-    checkAuth()
+    // Then verify with server (with a small delay to ensure cookies are set)
+    const timer = setTimeout(() => {
+      checkAuth()
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [pathname])
 
   // Set up periodic session refresh (every 5 minutes)

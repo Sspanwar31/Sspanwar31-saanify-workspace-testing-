@@ -20,12 +20,15 @@ model User {
   isActive         Boolean         @default(true)
   lastLoginAt      DateTime?
   societyAccountId String?
+  trialEndsAt      DateTime?
+  subscriptionEndsAt DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   accounts         Account[]
   posts            Post[]
   sessions         Session[]
   societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
+  paymentProofs    PaymentProof[]
 
   @@map("users")
   @@index([role])
@@ -137,6 +140,25 @@ model AutomationTask {
   created_at      DateTime? @default(now())
 
   @@map("automation_tasks")
+}
+
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+model PaymentProof {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  plan          String
+  txnId         String   @unique
+  screenshotUrl String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_proofs")
+  @@index([userId])
+  @@index([status])
 }
 
 /// /////////////////////////////////////////////////

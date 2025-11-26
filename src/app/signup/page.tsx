@@ -2,24 +2,20 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Building, CheckCircle, AlertCircle, Github, Chrome, Sparkles, Zap, Shield, Crown } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle, Github, Chrome, Sparkles, Zap, Shield, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
-    company: '',
-    role: '',
     password: '',
     confirmPassword: '',
     agreeToTerms: false
@@ -32,26 +28,14 @@ export default function SignUpPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required'
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required'
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required'
     }
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required'
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid'
-    }
-
-    if (!formData.company.trim()) {
-      newErrors.company = 'Company name is required'
-    }
-
-    if (!formData.role) {
-      newErrors.role = 'Please select your role'
     }
 
     if (!formData.password) {
@@ -86,21 +70,38 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          password: formData.password
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed')
+      }
       
       toast.success('🎉 Account created successfully!', {
-        description: 'Welcome to Saanify! Redirecting to login...',
+        description: `Welcome to Saanify! Your 15-day trial has started. Redirecting to dashboard...`,
         duration: 3000,
       })
 
+      // Wait a bit for cookie to be set, then redirect
       setTimeout(() => {
-        window.location.href = '/login'
-      }, 2000)
+        window.location.href = data.redirectUrl || '/dashboard'
+      }, 3000)
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Signup error:', error)
       toast.error('❌ Registration failed', {
-        description: 'Something went wrong. Please try again.',
+        description: error.message || 'Something went wrong. Please try again.',
         duration: 3000,
       })
     } finally {
@@ -117,22 +118,27 @@ export default function SignUpPage() {
 
   const handleGoogleSignup = () => {
     toast.info('🔍 Google Sign Up', {
-      description: 'Redirecting to Google for authentication...',
+      description: 'Google authentication coming soon!',
       duration: 2000,
     })
-    // Implement Google OAuth logic here
   }
 
   const handleGitHubSignup = () => {
     toast.info('🔗 GitHub Sign Up', {
-      description: 'Redirecting to GitHub for authentication...',
+      description: 'GitHub authentication coming soon!',
       duration: 2000,
     })
-    // Implement GitHub OAuth logic here
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+      </div>
+
       {/* Back to Home Button - Bottom Left */}
       <Link href="/" className="absolute bottom-6 left-6 z-20">
         <motion.div
@@ -152,20 +158,13 @@ export default function SignUpPage() {
         </motion.div>
       </Link>
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
-      </div>
-
       {/* Floating Elements */}
       <div className="absolute top-10 left-10">
         <motion.div
           animate={{ y: [0, -20, 0], rotate: [0, 5, -5, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Sparkles className="w-6 h-6 text-blue-400 opacity-60" />
+          <Sparkles className="w-6 h-6 text-purple-400 opacity-60" />
         </motion.div>
       </div>
       <div className="absolute top-32 right-16">
@@ -173,7 +172,7 @@ export default function SignUpPage() {
           animate={{ y: [0, 15, 0], rotate: [0, -5, 5, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
-          <Zap className="w-5 h-5 text-cyan-400 opacity-60" />
+          <Zap className="w-5 h-5 text-blue-400 opacity-60" />
         </motion.div>
       </div>
       <div className="absolute bottom-20 right-32">
@@ -181,7 +180,7 @@ export default function SignUpPage() {
           animate={{ y: [0, -25, 0], rotate: [0, 10, -10, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         >
-          <Shield className="w-6 h-6 text-indigo-400 opacity-60" />
+          <Crown className="w-6 h-6 text-amber-400 opacity-60" />
         </motion.div>
       </div>
 
@@ -205,17 +204,17 @@ export default function SignUpPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.4, type: "spring" }}
-                className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-6 shadow-2xl"
+                className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mb-6 shadow-2xl"
               >
                 <span className="text-2xl font-bold text-white">S</span>
               </motion.div>
               
-              <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+              <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
                 Join Saanify Today
               </h1>
               
-              <p className="text-xl text-blue-200 mb-8 leading-relaxed">
-                Transform your society management with our premium platform. Get started in minutes and experience the future of community living.
+              <p className="text-xl text-purple-200 mb-8 leading-relaxed">
+                Start your 15-day free trial and experience premium finance society management.
               </p>
             </div>
 
@@ -223,7 +222,7 @@ export default function SignUpPage() {
             <div className="space-y-4 mb-8">
               {[
                 { icon: Zap, text: "15-day free trial, no credit card required" },
-                { icon: Shield, text: "Enterprise-grade security & data protection" },
+                { icon: Shield, text: "UPI-based manual verification system" },
                 { icon: Crown, text: "Premium features from day one" }
               ].map((benefit, index) => (
                 <motion.div
@@ -231,9 +230,9 @@ export default function SignUpPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                  className="flex items-center gap-3 text-blue-200"
+                  className="flex items-center gap-3 text-purple-200"
                 >
-                  <benefit.icon className="w-5 h-5 text-blue-400" />
+                  <benefit.icon className="w-5 h-5 text-purple-400" />
                   <span>{benefit.text}</span>
                 </motion.div>
               ))}
@@ -247,21 +246,21 @@ export default function SignUpPage() {
               className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
             >
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-400" />
-                Trusted by Communities
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                Trusted by Finance Societies
               </h3>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-300">12+</div>
-                  <div className="text-xs text-blue-200">Societies</div>
+                  <div className="text-2xl font-bold text-purple-300">50+</div>
+                  <div className="text-xs text-purple-200">Societies</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-300">45K+</div>
-                  <div className="text-xs text-blue-200">Members</div>
+                  <div className="text-2xl font-bold text-purple-300">10K+</div>
+                  <div className="text-xs text-purple-200">Members</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-300">2.4M</div>
-                  <div className="text-xs text-blue-200">Revenue</div>
+                  <div className="text-2xl font-bold text-purple-300">₹5M</div>
+                  <div className="text-xs text-purple-200">Transactions</div>
                 </div>
               </div>
             </motion.div>
@@ -278,84 +277,56 @@ export default function SignUpPage() {
                 <CardTitle className="text-3xl font-bold text-white">
                   Create Account
                 </CardTitle>
-                <CardDescription className="text-blue-200">
+                <CardDescription className="text-purple-200">
                   Start your 15-day free trial today
                 </CardDescription>
               </CardHeader>
 
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Name Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.1 }}
-                    >
-                      <Label htmlFor="firstName" className="text-blue-200">First Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
-                        <Input
-                          id="firstName"
-                          type="text"
-                          placeholder="John"
-                          value={formData.firstName}
-                          onChange={(e) => handleInputChange('firstName', e.target.value)}
-                          className={`pl-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.firstName ? 'border-red-500' : ''}`}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {errors.firstName && (
-                        <p className="text-sm text-red-400 mt-1 flex items-center">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          {errors.firstName}
-                        </p>
-                      )}
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                    >
-                      <Label htmlFor="lastName" className="text-blue-200">Last Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
-                        <Input
-                          id="lastName"
-                          type="text"
-                          placeholder="Doe"
-                          value={formData.lastName}
-                          onChange={(e) => handleInputChange('lastName', e.target.value)}
-                          className={`pl-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.lastName ? 'border-red-500' : ''}`}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {errors.lastName && (
-                        <p className="text-sm text-red-400 mt-1 flex items-center">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          {errors.lastName}
-                        </p>
-                      )}
-                    </motion.div>
-                  </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Full Name */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                  >
+                    <Label htmlFor="fullName" className="text-purple-200 font-medium">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="Enter your full name"
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        className={`pl-10 bg-white/10 border-white/20 text-white placeholder-purple-300 ${errors.fullName ? 'border-red-500' : ''}`}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    {errors.fullName && (
+                      <p className="text-sm text-red-400 mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {errors.fullName}
+                      </p>
+                    )}
+                  </motion.div>
 
                   {/* Email */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
                   >
-                    <Label htmlFor="email" className="text-blue-200">Email Address</Label>
+                    <Label htmlFor="email" className="text-purple-200 font-medium">Email Address</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
                       <Input
                         id="email"
                         type="email"
-                        placeholder="john.doe@company.com"
+                        placeholder="Enter your email address"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
-                        className={`pl-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.email ? 'border-red-500' : ''}`}
+                        className={`pl-10 bg-white/10 border-white/20 text-white placeholder-purple-300 ${errors.email ? 'border-red-500' : ''}`}
                         disabled={isLoading}
                       />
                     </div>
@@ -367,86 +338,34 @@ export default function SignUpPage() {
                     )}
                   </motion.div>
 
-                  {/* Company and Role */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.4 }}
-                    >
-                      <Label htmlFor="company" className="text-blue-200">Company</Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
-                        <Input
-                          id="company"
-                          type="text"
-                          placeholder="Acme Corp"
-                          value={formData.company}
-                          onChange={(e) => handleInputChange('company', e.target.value)}
-                          className={`pl-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.company ? 'border-red-500' : ''}`}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {errors.company && (
-                        <p className="text-sm text-red-400 mt-1 flex items-center">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          {errors.company}
-                        </p>
-                      )}
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.5 }}
-                    >
-                      <Label htmlFor="role" className="text-blue-200">Role</Label>
-                      <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                        <SelectTrigger className={`bg-white/10 border-white/20 text-white ${errors.role ? 'border-red-500' : ''}`}>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700">
-                          <SelectItem value="developer" className="text-white">Developer</SelectItem>
-                          <SelectItem value="designer" className="text-white">Designer</SelectItem>
-                          <SelectItem value="manager" className="text-white">Project Manager</SelectItem>
-                          <SelectItem value="founder" className="text-white">Founder/CEO</SelectItem>
-                          <SelectItem value="other" className="text-white">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.role && (
-                        <p className="text-sm text-red-400 mt-1 flex items-center">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          {errors.role}
-                        </p>
-                      )}
-                    </motion.div>
-                  </div>
-
                   {/* Password */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
                   >
-                    <Label htmlFor="password" className="text-blue-200">Password</Label>
+                    <Label htmlFor="password" className="text-purple-200 font-medium">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
                       <Input
                         id="password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="Create a strong password"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        className={`pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.password ? 'border-red-500' : ''}`}
+                        className={`pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder-purple-300 ${errors.password ? 'border-red-500' : ''}`}
                         disabled={isLoading}
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-purple-300"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-blue-400 hover:text-blue-300"
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                      </Button>
                     </div>
                     {errors.password && (
                       <p className="text-sm text-red-400 mt-1 flex items-center">
@@ -460,27 +379,30 @@ export default function SignUpPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.7 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
                   >
-                    <Label htmlFor="confirmPassword" className="text-blue-200">Confirm Password</Label>
+                    <Label htmlFor="confirmPassword" className="text-purple-200 font-medium">Confirm Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-blue-400" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
                       <Input
                         id="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className={`pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder-blue-300 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                        className={`pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder-purple-300 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                         disabled={isLoading}
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-purple-300"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-3 text-blue-400 hover:text-blue-300"
+                        disabled={isLoading}
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                      </Button>
                     </div>
                     {errors.confirmPassword && (
                       <p className="text-sm text-red-400 mt-1 flex items-center">
@@ -494,7 +416,7 @@ export default function SignUpPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
                     className="flex items-start space-x-2"
                   >
                     <Checkbox
@@ -502,104 +424,79 @@ export default function SignUpPage() {
                       checked={formData.agreeToTerms}
                       onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked as boolean)}
                       disabled={isLoading}
-                      className="border-blue-400 bg-white/10"
+                      className="mt-1 border-purple-300 data-[state=checked]:bg-purple-500"
                     />
-                    <Label htmlFor="agreeToTerms" className="text-sm text-blue-200">
-                      I agree to the{' '}
-                      <Link href="/terms" className="text-blue-300 hover:text-white underline">
-                        Terms and Conditions
-                      </Link>
-                      {' '}and{' '}
-                      <Link href="/privacy" className="text-blue-300 hover:text-white underline">
-                        Privacy Policy
-                      </Link>
-                    </Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="agreeToTerms" className="text-sm text-purple-200 font-normal cursor-pointer">
+                        I agree to the Terms of Service and Privacy Policy
+                      </Label>
+                      {errors.agreeToTerms && (
+                        <p className="text-sm text-red-400 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {errors.agreeToTerms}
+                        </p>
+                      )}
+                    </div>
                   </motion.div>
-                  {errors.agreeToTerms && (
-                    <p className="text-sm text-red-400 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {errors.agreeToTerms}
-                    </p>
-                  )}
 
                   {/* Submit Button */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.9 }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
                   >
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
                       disabled={isLoading}
                     >
                       {isLoading ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                           Creating Account...
                         </div>
                       ) : (
-                        <div className="flex items-center">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Create Account
-                        </div>
+                        'Create Account'
                       )}
                     </Button>
                   </motion.div>
                 </form>
 
-                {/* Divider */}
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full bg-white/20" />
+                <div className="mt-6">
+                  <Separator className="bg-white/20" />
+                  <div className="mt-6">
+                    <p className="text-center text-purple-200 text-sm mb-4">Or continue with</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleGoogleSignup}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
+                        disabled={isLoading}
+                      >
+                        <Chrome className="w-4 h-4 mr-2" />
+                        Google
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleGitHubSignup}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
+                        disabled={isLoading}
+                      >
+                        <Github className="w-4 h-4 mr-2" />
+                        GitHub
+                      </Button>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-transparent px-2 text-blue-300">
-                      Or sign up with
-                    </span>
-                  </div>
-                </div>
-
-                {/* Social Signup Buttons */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    onClick={handleGoogleSignup}
-                    variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
-                    disabled={isLoading}
-                  >
-                    <Chrome className="h-4 w-4 mr-2" />
-                    Google
-                  </Button>
-                  <Button
-                    onClick={handleGitHubSignup}
-                    variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
-                    disabled={isLoading}
-                  >
-                    <Github className="h-4 w-4 mr-2" />
-                    GitHub
-                  </Button>
                 </div>
               </CardContent>
 
-              <CardFooter className="flex flex-col space-y-4">
-                <div className="text-center text-sm text-blue-300">
+              <CardFooter className="text-center">
+                <p className="text-purple-200 text-sm">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-blue-200 hover:text-white font-medium transition-colors">
-                    Sign in here
+                  <Link href="/login" className="text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                    Sign in
                   </Link>
-                </div>
-                
-                <div className="text-center">
-                  <Link 
-                    href="/"
-                    className="inline-flex items-center text-sm text-blue-300 hover:text-blue-200 transition-colors"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Home
-                  </Link>
-                </div>
+                </p>
               </CardFooter>
             </Card>
           </motion.div>

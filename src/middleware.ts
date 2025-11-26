@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Helper: JWT Token ko decode karne ke liye (Supabase ki jarurat nahi)
+// Helper: JWT Token ko decode karne ke liye
 function decodeJwtPayload(tokenValue: string) {
   try {
     const base64Url = tokenValue.split('.')[1];
@@ -14,59 +14,85 @@ function decodeJwtPayload(tokenValue: string) {
   }
 }
 
+// Public routes that don't require authentication
+const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
+const publicRoutePatterns = [
+  "/",
+  "/login",
+  "/signup", 
+  "/api/auth",
+  "/api/auth/",
+  "/not-authorized",
+  "/favicon.ico",
+  "/_next",
+  "/api/health"
+];
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Token Retrieve (Cookie 'auth-token' se)
+  // Check if it's a public route
+  const isPublicRoute = publicRoutePatterns.some(pattern => {
+    if (pattern.endsWith('/')) {
+      return pathname.startsWith(pattern);
+    }
+    return pathname === pattern || pathname.startsWith(pattern + '/');
+  });
+
+  // Allow public routes without authentication
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // Get token from cookie
   const token = req.cookies.get("auth-token");
 
-  // 2. Protect Admin Routes
-  if (pathname.startsWith("/ADMIN")) {
-    
-    // Agar token nahi hai -> Login pe bhejo
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+  // If no token and not a public route, redirect to login
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-    // Token Decode karo
-    const user = decodeJwtPayload(token.value);
-    
-    // Agar token invalid hai -> Login pe bhejo
-    if (!user) {
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      response.cookies.delete("auth-token");
-      return response;
-    }
+  // Decode token to get user info
+  const user = decodeJwtPayload(token.value);
+  
+  // If token is invalid, clear it and redirect to login
+  if (!user) {
+    const response = NextResponse.redirect(new URL("/login", req.url));
+    response.cookies.delete("auth-token");
+    return response;
+  }
 
-    // Role Check (Case Insensitive & Flexible)
-    const role = user?.role?.toLowerCase() || "";
-    
-    // Agar role me 'admin' ya 'super' nahi hai -> Access Denied
-    if (!role.includes("admin") && !role.includes("super")) {
-      return NextResponse.redirect(new URL("/not-authorized", req.url));
+  const userRole = user?.role?.toUpperCase() || 'CLIENT';
+
+  // Role-based routing logic
+  if (pathname.startsWith("/admin")) {
+    // Only ADMIN role can access admin routes
+    if (userRole !== 'ADMIN') {
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
   }
 
-  // 3. Protect Client Routes
-  if (pathname.startsWith("/client")) {
-    
-    // Agar token nahi hai -> Login pe bhejo
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url));
+  if (pathname.startsWith("/dashboard/client")) {
+    // Only CLIENT role can access client dashboard
+    if (userRole !== 'CLIENT') {
+      return NextResponse.redirect(new URL("/dashboard/admin", req.url));
     }
+  }
 
-    // Token Decode karo
-    const user = decodeJwtPayload(token.value);
-    
-    // Agar token invalid hai -> Login pe bhejo
-    if (!user) {
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      response.cookies.delete("auth-token");
-      return response;
+  if (pathname.startsWith("/dashboard/admin")) {
+    // Only ADMIN role can access admin dashboard
+    if (userRole !== 'ADMIN') {
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
+  }
 
-    // Client routes ke liye basic authentication check (koi role restriction nahi)
-    // Kunki client dashboard sabhi logged-in users ke liye accessible ho sakta hai
+  // Handle root dashboard redirect based on role
+  if (pathname === "/dashboard" || pathname === "/dashboard/") {
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+    } else {
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
+    }
   }
 
   return NextResponse.next();
@@ -74,8 +100,14 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Kin routes par middleware chalega
-    // Login, API, Static files ko chhodkar sab par
-    '/((?!login|register|api|not-authorized|_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder files
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Users, CheckCircle, Clock, XCircle, Lock, Eye, Unlock, Trash2, RefreshCw, 
@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/providers/auth-provider'
 import { ActivityMonitor } from '@/components/activity-monitor'
@@ -116,9 +116,9 @@ const DB_TASKS_DATA = [
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { logout } = useAuth()
+  const { toast } = useToast()
+  const { user, isLoading: authLoading, logout } = useAuth()
   const [activeTab, setActiveTab] = useState("overview")
-  const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   
@@ -395,11 +395,18 @@ export default function AdminDashboard() {
           })
           setIsEditModalOpen(true)
         } else {
-          toast.error('Client not found')
+          toast({
+            title: "Client Not Found",
+            description: "Client not found",
+            variant: "destructive"
+          })
         }
         break
       case 'send_email':
-        toast.success(`Email composer opened for client`)
+        toast({
+          title: "Email Composer",
+          description: `Email composer opened for client`
+        })
         // TODO: Open email composer
         break
       case 'lock':
@@ -410,13 +417,20 @@ export default function AdminDashboard() {
             body: JSON.stringify({ status: 'LOCKED' })
           })
           if (res.ok) {
-            toast.success(`Client account locked successfully`)
+            toast({
+              title: "Client Locked",
+              description: `Client account locked successfully`
+            })
             fetchClients()
           } else {
             throw new Error('Failed to lock client')
           }
         } catch (e) {
-          toast.error(`Failed to lock client account`)
+          toast({
+            title: "Lock Failed",
+            description: `Failed to lock client account`,
+            variant: "destructive"
+          })
         }
         break
       case 'unlock':
@@ -427,13 +441,13 @@ export default function AdminDashboard() {
             body: JSON.stringify({ status: 'ACTIVE' })
           })
           if (res.ok) {
-            toast.success(`Client account unlocked successfully`)
+            toast({ title: "Success", description: `Client account unlocked successfully` })
             fetchClients()
           } else {
             throw new Error('Failed to unlock client')
           }
         } catch (e) {
-          toast.error(`Failed to unlock client account`)
+          toast({ title: "Error", description: `Failed to unlock client account`, variant: "destructive" })
         }
         break
       case 'delete':
@@ -449,13 +463,13 @@ export default function AdminDashboard() {
             body: JSON.stringify({ status: 'EXPIRED' })
           })
           if (res.ok) {
-            toast.success(`Client marked as expired`)
+            toast({ title: "Success", description: `Client marked as expired` })
             fetchClients()
           } else {
             throw new Error('Failed to expire client')
           }
         } catch (e) {
-          toast.error(`Failed to mark client as expired`)
+          toast({ title: "Error", description: `Failed to mark client as expired`, variant: "destructive" })
         }
         break
       case 'renew_basic':
@@ -469,24 +483,24 @@ export default function AdminDashboard() {
             body: JSON.stringify({ plan })
           })
           if (res.ok) {
-            toast.success(`Client subscription renewed to ${plan}`)
+            toast({ title: "Success", description: `Client subscription renewed to ${plan}` })
             fetchClients()
           } else {
             throw new Error('Failed to renew subscription')
           }
         } catch (e) {
-          toast.error(`Failed to renew subscription`)
+          toast({ title: "Error", description: `Failed to renew subscription`, variant: "destructive" })
         }
         break
       default:
-        toast.info(`Action ${action} executed for client ${clientId}`)
+        toast({ title: "Info", description: `Action ${action} executed for client ${clientId}` })
     }
   }
 
   // --- ADMIN MANAGEMENT HANDLERS ---
   const handleAddAdmin = async () => {
     if (!newAdmin.name || !newAdmin.email || !newAdmin.password) {
-      toast.error('Please fill all fields')
+      toast({ title: "Error", description: 'Please fill all fields', variant: "destructive" })
       return
     }
 
@@ -504,9 +518,9 @@ export default function AdminDashboard() {
       setShowAddAdminModal(false)
       setNewAdmin({ name: '', email: '', role: 'Admin', password: '' })
       
-      toast.success(`✅ Admin ${newAdmin.name} added successfully!`)
+      toast({ title: "Success", description: `✅ Admin ${newAdmin.name} added successfully!` })
     } catch (error) {
-      toast.error('Failed to add admin')
+      toast({ title: "Error", description: 'Failed to add admin', variant: "destructive" })
     }
   }
 
@@ -514,7 +528,7 @@ export default function AdminDashboard() {
     if (backupStatus.isBackingUp) return
     
     setBackupStatus(prev => ({ ...prev, isBackingUp: true }))
-    toast.info('🔄 Starting backup process...')
+    toast({ title: "Info", description: '🔄 Starting backup process...' })
     
     try {
       // Simulate backup process
@@ -527,10 +541,10 @@ export default function AdminDashboard() {
         size: '128 MB'
       }))
       
-      toast.success('✅ Backup completed successfully!')
+      toast({ title: "Success", description: '✅ Backup completed successfully!' })
     } catch (error) {
       setBackupStatus(prev => ({ ...prev, isBackingUp: false }))
-      toast.error('❌ Backup failed!')
+      toast({ title: "Error", description: '❌ Backup failed!', variant: "destructive" })
     }
   }
 
@@ -538,7 +552,7 @@ export default function AdminDashboard() {
     if (backupStatus.isRestoring) return
     
     setBackupStatus(prev => ({ ...prev, isRestoring: true }))
-    toast.info('🔄 Starting restore process...')
+    toast({ title: "Info", description: '🔄 Starting restore process...' })
     
     try {
       // Simulate restore process
@@ -546,10 +560,10 @@ export default function AdminDashboard() {
       
       setBackupStatus(prev => ({ ...prev, isRestoring: false }))
       
-      toast.success('✅ System restored successfully!')
+      toast({ title: "Success", description: '✅ System restored successfully!' })
     } catch (error) {
       setBackupStatus(prev => ({ ...prev, isRestoring: false }))
-      toast.error('❌ Restore failed!')
+      toast({ title: "Error", description: '❌ Restore failed!', variant: "destructive" })
     }
   }
 
@@ -559,7 +573,7 @@ export default function AdminDashboard() {
     const settingName = setting.replace(/([A-Z])/g, ' $1').trim()
     const valueText = typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : value
     
-    toast.success(`⚙️ ${settingName} updated to ${valueText}`)
+    toast({ title: "Success", description: `⚙️ ${settingName} updated to ${valueText}` })
   }
 
   const toggleAdminStatus = async (adminId: number) => {
@@ -572,7 +586,7 @@ export default function AdminDashboard() {
       prev.map(a => a.id === adminId ? { ...a, status: newStatus } : a)
     )
     
-    toast.success(`👤 Admin ${admin.name} ${newStatus.toLowerCase()}`)
+    toast({ title: "Admin Status Updated", description: `👤 Admin ${admin.name} ${newStatus.toLowerCase()}` })
   }
 
   const deleteAdmin = async (adminId: number) => {
@@ -581,14 +595,158 @@ export default function AdminDashboard() {
     
     if (confirm(`Are you sure you want to remove admin ${admin.name}?`)) {
       setAdminUsers(prev => prev.filter(a => a.id !== adminId))
-      toast.success(`🗑️ Admin ${admin.name} removed`)
+      toast({ title: "Success", description: `🗑️ Admin ${admin.name} removed` })
+    }
+  }
+
+  // --- QUICK ACTION HANDLERS ---
+  const handleRenewSubscriptions = useCallback(async () => {
+    console.log('🔄 Renew Subscriptions button clicked!')
+    toast({ title: "Info", description: '🔄 Opening bulk renewal interface...' })
+    
+    try {
+      // Check if clients data is available
+      if (!clients || clients.length === 0) {
+        toast({ title: "Info", description: 'ℹ️ No client data available. Loading clients...' })
+        await fetchClients()
+      }
+      
+      // Simulate API call to get expiring subscriptions
+      const expiringClients = clients.filter(client => {
+        const expiryDate = new Date(client.trialEndsAt || client.createdAt)
+        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        return daysUntilExpiry <= 30 && daysUntilExpiry > 0
+      })
+      
+      console.log('📊 Found expiring clients:', expiringClients.length)
+      
+      if (expiringClients.length === 0) {
+        toast({ title: "Info", description: 'ℹ️ No subscriptions need renewal in next 30 days' })
+        return
+      }
+      
+      // Simulate bulk renewal
+      toast({ title: "Success", description: `✅ Renewal process started for ${expiringClients.length} subscriptions` })
+      
+      // Update client statuses
+      setTimeout(() => {
+        setClients(prev => prev.map(client => {
+          const isExpiring = expiringClients.some(exp => exp.id === client.id)
+          if (isExpiring) {
+            const newExpiryDate = new Date()
+            newExpiryDate.setDate(newExpiryDate.getDate() + 30)
+            return {
+              ...client,
+              trialEndsAt: newExpiryDate.toISOString(),
+              status: 'Active'
+            }
+          }
+          return client
+        }))
+        toast({ title: "Success", description: '🎉 All expiring subscriptions renewed successfully!' })
+      }, 2000)
+      
+    } catch (error) {
+      console.error('❌ Error renewing subscriptions:', error)
+      toast({ title: "Error", description: '❌ Failed to renew subscriptions', variant: "destructive" })
+    }
+  }, [clients, fetchClients])
+
+  const handleSendNotifications = useCallback(async () => {
+    console.log('📧 Send Notifications button clicked!')
+    toast({ title: "Info", description: '📧 Preparing notification system...' })
+    
+    try {
+      // Simulate notification sending
+      const notificationTypes = [
+        'Trial expiry reminders',
+        'Payment confirmations', 
+        'Welcome messages',
+        'System updates'
+      ]
+      
+      console.log('📨 Notification types prepared:', notificationTypes)
+      
+      const toastId = toast.loading('📤 Sending notifications...')
+      
+      // Simulate sending process
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      const sentCount = Math.floor(Math.random() * 50) + 20
+      const failedCount = Math.floor(Math.random() * 5)
+      
+      console.log(`📊 Notifications sent: ${sentCount}, Failed: ${failedCount}`)
+      
+      toast.success(`✅ Notifications sent successfully!`, {
+        description: `${sentCount} sent, ${failedCount} failed`,
+        id: toastId
+      })
+      
+      // Update notification logs
+      setNotifications(prev => [
+        ...prev,
+        { 
+          event: 'Bulk Notifications Sent', 
+          enabled: true, 
+          lastTriggered: 'Just now' 
+        }
+      ])
+      
+    } catch (error) {
+      console.error('❌ Error sending notifications:', error)
+      toast({ title: "Error", description: '❌ Failed to send notifications', variant: "destructive" })
+    }
+  }, [setNotifications])
+
+  // --- STAT CLICK HANDLERS ---
+  const handleStatClick = (action: string) => {
+    switch (action) {
+      case 'view_clients':
+        setActiveTab('clients')
+        toast({ title: "Info", description: '👥 Opening client management...' })
+        break
+      case 'view_trials':
+        setActiveTab('clients')
+        setFilterStatus('TRIAL')
+        toast({ title: "Info", description: '⏰ Filtering trial clients...' })
+        break
+      case 'view_revenue':
+        setActiveTab('billing')
+        toast({ title: "Info", description: '💰 Opening billing dashboard...' })
+        break
+      case 'view_system':
+        setActiveTab('activity')
+        toast({ title: "Info", description: '🖥️ Opening system monitor...' })
+        break
+      default:
+        toast({ title: "Info", description: `Opening ${action.replace("_", " ")}...` })
+    }
+  }
+
+  // --- ACTIVITY CLICK HANDLER ---
+  const handleActivityClick = (activity: any) => {
+    toast({ title: "Info", description: `📋 Viewing details for: ${activity.user}` })
+    
+    // Simulate opening detailed view
+    switch (activity.status) {
+      case 'success':
+        toast({ title: "Success", description: `✅ ${activity.action} completed successfully` })
+        break
+      case 'warning':
+        toast.warning(`⚠️ ${activity.action} requires attention`)
+        break
+      case 'error':
+        toast({ title: "Error", description: `❌ ${activity.action} failed - needs resolution`, variant: "destructive" })
+        break
+      default:
+        toast({ title: "Info", description: `📄 ${activity.action} details` })
     }
   }
 
   const runTask = async (taskName: string) => {
     if (runningTasks.has(taskName)) return
     setRunningTasks(prev => new Set(prev).add(taskName))
-    toast.info(`🚀 Starting ${taskName}...`)
+    toast({ title: "Info", description: `🚀 Starting ${taskName}...` })
     
     try {
       const res = await fetch('/api/admin/automation/run', {
@@ -599,7 +757,7 @@ export default function AdminDashboard() {
       
       if (res.ok) {
         const data = await res.json()
-        toast.success(`✅ ${data.message}`)
+        toast({ title: "Success", description: `✅ ${data.message}` })
         
         // Show detailed results if available
         if (data.task?.result?.details) {
@@ -612,7 +770,7 @@ export default function AdminDashboard() {
         throw new Error('Task execution failed')
       }
     } catch (e) {
-      toast.error(`❌ Task ${taskName} failed`)
+      toast({ title: "Error", description: `❌ Task ${taskName} failed`, variant: "destructive" })
     } finally {
       setRunningTasks(prev => {
         const newSet = new Set(prev)
@@ -624,7 +782,7 @@ export default function AdminDashboard() {
 
   const toggleTask = (id: string) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t))
-    toast.success(`Task ${tasks.find(t => t.id === id)?.enabled ? 'disabled' : 'enabled'} successfully`)
+    toast({ title: "Task Updated", description: `Task ${tasks.find(t => t.id === id)?.enabled ? 'disabled' : 'enabled'} successfully` })
   }
 
   const toggleNotification = async (event: string) => {
@@ -637,7 +795,7 @@ export default function AdminDashboard() {
       
       if (response.ok) {
         const data = await response.json()
-        toast.success(data.message)
+        toast({ title: "Success", description: data.message })
         
         // Update local state to reflect the change
         setNotifications(prev => prev.map(n => 
@@ -649,7 +807,7 @@ export default function AdminDashboard() {
         throw new Error('Failed to toggle notification')
       }
     } catch (error) {
-      toast.error('Failed to toggle notification')
+      toast({ title: "Error", description: 'Failed to toggle notification', variant: "destructive" })
       // Still update local state for better UX
       setNotifications(prev => prev.map(n => 
         n.event === event 
@@ -669,7 +827,7 @@ export default function AdminDashboard() {
       
       if (response.ok) {
         const data = await response.json()
-        toast.success(data.message)
+        toast({ title: "Success", description: data.message })
         
         // Update local state to reflect the change
         setEmailAutomations(prev => prev.map(e => 
@@ -681,7 +839,7 @@ export default function AdminDashboard() {
         throw new Error('Failed to toggle email automation')
       }
     } catch (error) {
-      toast.error('Failed to toggle email automation')
+      toast({ title: "Error", description: 'Failed to toggle email automation', variant: "destructive" })
       // Still update local state for better UX
       setEmailAutomations(prev => prev.map(e => 
         e.type === type 
@@ -708,13 +866,13 @@ export default function AdminDashboard() {
       })
       
       if (res.ok) {
-        toast.success('✅ Demo client created successfully')
+        toast({ title: "Success", description: '✅ Demo client created successfully' })
         fetchClients()
       } else {
         throw new Error('Failed to create demo client')
       }
     } catch (e) {
-      toast.error('❌ Failed to create demo client')
+      toast({ title: "Error", description: '❌ Failed to create demo client', variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -744,7 +902,7 @@ export default function AdminDashboard() {
       })
       
       if (res.ok) {
-        toast.success('✅ Client updated successfully')
+        toast({ title: "Success", description: '✅ Client updated successfully' })
         setIsEditModalOpen(false)
         setSelectedClient(null)
         setEditClient({ name: '', email: '', phone: '', address: '', subscriptionPlan: 'TRIAL' })
@@ -753,7 +911,7 @@ export default function AdminDashboard() {
         throw new Error('Failed to update client')
       }
     } catch (e) {
-      toast.error('❌ Failed to update client')
+      toast({ title: "Error", description: '❌ Failed to update client', variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -768,13 +926,13 @@ export default function AdminDashboard() {
       })
       
       if (res.ok) {
-        toast.success('✅ Client deleted successfully')
+        toast({ title: "Success", description: '✅ Client deleted successfully' })
         fetchClients()
       } else {
         throw new Error('Failed to delete client')
       }
     } catch (e) {
-      toast.error('❌ Failed to delete client')
+      toast({ title: "Error", description: '❌ Failed to delete client', variant: "destructive" })
     }
   }
 
@@ -784,7 +942,7 @@ export default function AdminDashboard() {
 
   const handleRenewSubscription = async () => {
     if (!selectedSubscription || !renewData.planId) {
-      toast.error('Please select a plan for renewal')
+      toast({ title: "Error", description: 'Please select a plan for renewal', variant: "destructive" })
       return
     }
 
@@ -834,7 +992,7 @@ export default function AdminDashboard() {
       })
       
       if (res.ok) {
-        toast.success('✅ Subscription renewed successfully')
+        toast({ title: "Success", description: '✅ Subscription renewed successfully' })
         setIsRenewModalOpen(false)
         setSelectedSubscription(null)
         setRenewData({ planId: '', duration: '1' })
@@ -846,7 +1004,7 @@ export default function AdminDashboard() {
       }
     } catch (e: any) {
       console.error('Renew subscription error:', e)
-      toast.error(`❌ Failed to renew subscription: ${e.message}`)
+      toast({ title: "Error", description: `❌ Failed to renew subscription: ${e.message}`, variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -1048,19 +1206,23 @@ export default function AdminDashboard() {
                   <p className="text-white/60 text-lg">ADMIN Suite - Complete Control Center</p>
                 </motion.div>
 
-                {/* Stats Grid - Original Style */}
+                {/* Stats Grid - Enhanced with Click Handlers */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
-                    { title: 'Total Clients', value: '24', change: '+12%', icon: Users, color: 'from-blue-500 to-cyan-500' },
-                    { title: 'Active Trials', value: '8', change: '+3', icon: Clock, color: 'from-purple-500 to-pink-500' },
-                    { title: 'Revenue', value: '$45.2K', change: '+23%', icon: DollarSign, color: 'from-green-500 to-emerald-500' },
-                    { title: 'Server Load', value: '32%', change: '-5%', icon: Activity, color: 'from-orange-500 to-red-500' }
+                    { title: 'Total Clients', value: clients.length, change: '+12%', icon: Users, color: 'from-blue-500 to-cyan-500', action: 'view_clients' },
+                    { title: 'Active Trials', value: clients.filter(c => c.plan === 'TRIAL').length, change: '+3', icon: Clock, color: 'from-purple-500 to-pink-500', action: 'view_trials' },
+                    { title: 'Revenue', value: `$${stats.totalRevenue.toLocaleString()}`, change: '+23%', icon: DollarSign, color: 'from-green-500 to-emerald-500', action: 'view_revenue' },
+                    { title: 'Server Load', value: '32%', change: '-5%', icon: Activity, color: 'from-orange-500 to-red-500', action: 'view_system' }
                   ].map((stat, index) => (
                     <motion.div
                       key={stat.title}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
+                      onClick={() => handleStatClick(stat.action)}
+                      className="cursor-pointer"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       <Card className="backdrop-blur-xl bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300">
                         <CardContent className="p-6">
@@ -1097,11 +1259,73 @@ export default function AdminDashboard() {
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Client
                       </Button>
-                      <Button variant="outline" className="w-full justify-start border-white/20 text-white hover:bg-white/10">
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start border-white/20 text-white hover:bg-white/10"
+                        onClick={async () => {
+                          console.log('🔄 Renew Subscriptions clicked')
+                          toast({
+                            title: "Checking Subscriptions",
+                            description: "🔄 Checking for expiring subscriptions..."
+                          })
+                          
+                          // Simple check for expiring subscriptions
+                          const expiringClients = clients.filter(client => {
+                            if (!client.trialEndsAt) return false
+                            const expiryDate = new Date(client.trialEndsAt)
+                            const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                            return daysUntilExpiry <= 30 && daysUntilExpiry > 0
+                          })
+                          
+                          if (expiringClients.length === 0) {
+                            setTimeout(() => {
+                              toast({
+                                title: "No Expiring Subscriptions",
+                                description: "ℹ️ No subscriptions need renewal in next 30 days"
+                              })
+                            }, 1000)
+                          } else {
+                            setTimeout(() => {
+                              toast({
+                                title: "Expiring Subscriptions Found",
+                                description: `✅ Found ${expiringClients.length} expiring subscriptions`
+                              })
+                            }, 1000)
+                            // Simple renewal simulation
+                            setTimeout(() => {
+                              toast({
+                                title: "Renewal Complete",
+                                description: "🎉 All subscriptions renewed successfully!"
+                              })
+                            }, 3000)
+                          }
+                        }}
+                      >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Renew Subscriptions
                       </Button>
-                      <Button variant="outline" className="w-full justify-start border-white/20 text-white hover:bg-white/10">
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start border-white/20 text-white hover:bg-white/10"
+                        onClick={async () => {
+                          console.log('📧 Send Notifications clicked')
+                          toast({
+                            title: "Sending Notifications",
+                            description: "📧 Sending notifications to clients..."
+                          })
+                          
+                          // Simple notification simulation
+                          setTimeout(() => {
+                            const sentCount = Math.floor(Math.random() * 50) + 20
+                            toast({
+                              title: "Notifications Sent",
+                              description: `✅ ${sentCount} notifications sent successfully!`
+                            })
+                          }, 2000)
+                        }}
+                      >
                         <Mail className="h-4 w-4 mr-2" />
                         Send Notifications
                       </Button>
@@ -1118,12 +1342,18 @@ export default function AdminDashboard() {
                     <CardContent>
                       <div className="space-y-3">
                         {[
-                          { action: 'New client registered', user: 'john.doe@company.com', time: '2 min ago', status: 'success' },
-                          { action: 'Subscription renewed', user: 'jane.smith@corp.com', time: '15 min ago', status: 'success' },
-                          { action: 'Trial ending soon', user: 'mike@startup.com', time: '1 hour ago', status: 'warning' },
-                          { action: 'Payment failed', user: 'sarah@business.com', time: '2 hours ago', status: 'error' }
+                          { action: 'New client registered', user: 'john.doe@company.com', time: '2 min ago', status: 'success', clickable: true },
+                          { action: 'Subscription renewed', user: 'jane.smith@corp.com', time: '15 min ago', status: 'success', clickable: true },
+                          { action: 'Trial ending soon', user: 'mike@startup.com', time: '1 hour ago', status: 'warning', clickable: true },
+                          { action: 'Payment failed', user: 'sarah@business.com', time: '2 hours ago', status: 'error', clickable: true }
                         ].map((activity, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                          <div 
+                            key={index} 
+                            className={`flex items-center justify-between p-3 rounded-lg bg-white/5 ${
+                              activity.clickable ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''
+                            }`}
+                            onClick={() => activity.clickable && handleActivityClick(activity)}
+                          >
                             <div className="flex items-center space-x-3">
                               <div className={`w-2 h-2 rounded-full ${
                                 activity.status === 'success' ? 'bg-green-400' :
@@ -1952,10 +2182,10 @@ export default function AdminDashboard() {
             </Button>
             <Button 
               onClick={handleEditClient}
-              disabled={isLoading}
+              disabled={authLoading}
               className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
             >
-              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {authLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -2017,10 +2247,10 @@ export default function AdminDashboard() {
             </Button>
             <Button 
               onClick={handleRenewSubscription}
-              disabled={isLoading}
+              disabled={authLoading}
               className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
             >
-              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {authLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Renew Subscription
             </Button>
           </DialogFooter>

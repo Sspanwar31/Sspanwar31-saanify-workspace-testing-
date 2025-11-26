@@ -14,6 +14,7 @@ echo "📁 Backup directory created: $BACKUP_DIR"
 # 1. Backup Database
 echo "📊 Backing up database..."
 if [ -f "/home/z/my-project/prisma/dev.db" ]; then
+    mkdir -p "$BACKUP_DIR/database"
     cp "/home/z/my-project/prisma/dev.db" "$BACKUP_DIR/database/"
     echo "✅ Database backed up successfully"
 else
@@ -61,7 +62,8 @@ echo "✅ Package configuration backed up successfully"
 # 6. Backup Public Assets
 echo "🖼 Backing up public assets..."
 if [ -d "/home/z/my-project/public" ]; then
-    cp -r "/home/z/my-project/public/"* "$BACKUPUP_PUBLIC/" 2>/dev/null
+    mkdir -p "$BACKUP_DIR/public"
+    cp -r "/home/z/my-project/public/"* "$BACKUP_DIR/public/" 2>/dev/null
     echo "✅ Public assets backed up successfully"
 fi
 
@@ -79,7 +81,26 @@ cat > "$BACKUP_DIR/backup-manifest.json" << EOF
     "env": ".env",
     "env_local": ".env.local",
     "package_json": "package.json",
-    "package_lock": "package_lock.json",
-    "public_dir": "src_dir": "src/"
+    "package_lock": "package-lock.json",
+    "public_dir": "public/",
+    "src_dir": "src/"
   }
 }
+EOF
+
+echo "✅ Backup manifest created successfully"
+
+# 8. Display backup summary
+echo ""
+echo "🎉 Backup completed successfully!"
+echo "📍 Location: $BACKUP_DIR"
+echo "📊 Files backed up:"
+echo "   • Database (if exists)"
+echo "   • Prisma Schema"
+echo "   • Environment Files"
+echo "   • Source Code"
+echo "   • Package Configuration"
+echo "   • Public Assets"
+echo "   • Backup Manifest"
+echo ""
+echo "💡 To restore, use the restore script or copy files back as needed"

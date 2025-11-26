@@ -29,7 +29,13 @@ const publicApiRoutes = [
   "/api/auth",
   "/api/health",
   "/api/check-supabase",
-  "/api/setup"
+  "/api/setup",
+  "/api/github/backup",
+  "/api/github/restore",
+  "/api/github/history",
+  "/api/github/push",
+  "/api/integrations/supabase/status",
+  "/api/admin/automation/run"
 ];
 
 export async function middleware(req: NextRequest) {

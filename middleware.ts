@@ -1,97 +1,138 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtDecode } from 'jwt-decode';
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+// Helper: JWT Token ko decode karne ke liye
+function decodeJwtPayload(tokenValue: string) {
+  try {
+    const base64Url = tokenValue.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(atob(base64).split("").map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    return null;
+  }
+}
 
-export function middleware(req: NextRequest) {
+// Public routes that don't require authentication
+const publicRoutes = [
+  "/",
+  "/login",
+  "/signup", 
+  "/not-authorized",
+  "/favicon.ico",
+  "/_next"
+];
+
+// API routes that don't require authentication
+const publicApiRoutes = [
+  "/api/auth",
+  "/api/health",
+  "/api/check-supabase",
+  "/api/setup"
+];
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/signup", "/api/auth"];
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
+  console.log(`🔐 Middleware: Processing ${pathname}`);
 
-  // Static files and assets
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/public")) {
+  // Check if it's a public route
+  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+  
+  // Check if it's a public API route
+  const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
+
+  // Allow public routes without authentication
+  if (isPublicRoute || isPublicApiRoute) {
+    console.log(`🔐 Middleware: Public route, allowing access to ${pathname}`);
     return NextResponse.next();
   }
 
   // Get token from cookie
-  const token = req.cookies.get("auth-token")?.value;
-  
+  const token = req.cookies.get("auth-token");
+
+  // If no token and not a public route, redirect to login
   if (!token) {
-    // Redirect to login if no token
+    console.log(`🔐 Middleware: No token, redirecting to login from ${pathname}`);
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Use jwt-decode for Edge Runtime compatibility (no verification)
-  let decoded: any = null;
-  try {
-    decoded = jwtDecode(token);
-  } catch (error) {
-    // Token is invalid, clear it and redirect to login
-    const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.delete("auth-token");
-    return res;
+  // Decode token to get user info
+  const user = decodeJwtPayload(token.value);
+  
+  // If token is invalid, clear it and redirect to login
+  if (!user) {
+    console.log(`🔐 Middleware: Invalid token, clearing and redirecting to login`);
+    const response = NextResponse.redirect(new URL("/login", req.url));
+    response.cookies.delete("auth-token");
+    response.cookies.delete("refresh-token");
+    return response;
   }
 
-  const role = decoded.role?.toUpperCase() || "";
+  const userRole = user?.role?.toUpperCase() || 'CLIENT';
+  console.log(`🔐 Middleware: User role detected as ${userRole} for ${pathname}`);
 
-  // Protect ADMIN routes
-  if (pathname.startsWith("/ADMIN")) {
-    if (role !== "ADMIN") {
-      // If user is not ADMIN, redirect to appropriate dashboard
-      if (role === "CLIENT") {
-        return NextResponse.redirect(new URL("/dashboard/client", req.url));
-      } else if (role === "ADMIN") {
-        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      } else {
-        // Fallback to login for unknown roles
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
+  // API Route Protection
+  if (pathname.startsWith("/api/admin")) {
+    // Only ADMIN role can access admin API routes
+    if (userRole !== 'ADMIN') {
+      console.log(`🔐 Middleware: Non-admin trying to access admin API: ${userRole}`);
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
   }
 
-  // Protect ADMIN API routes
-  if (pathname.startsWith("/api/ADMIN")) {
-    if (role !== "ADMIN") {
-      return new NextResponse(
-        JSON.stringify({ error: 'Access denied - ADMIN privileges required' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+  if (pathname.startsWith("/api/dashboard/client")) {
+    // Only CLIENT role (and ADMIN for support) can access client API routes
+    if (userRole !== 'CLIENT' && userRole !== 'ADMIN') {
+      console.log(`🔐 Middleware: Non-client trying to access client API: ${userRole}`);
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
   }
 
-  // Protect Admin routes
+  // Page Route Protection
   if (pathname.startsWith("/admin")) {
-    if (role !== "ADMIN" && role !== "ADMIN") {
-      if (role === "CLIENT") {
-        return NextResponse.redirect(new URL("/dashboard/client", req.url));
-      } else {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
+    // Only ADMIN role can access admin pages
+    if (userRole !== 'ADMIN') {
+      console.log(`🔐 Middleware: Non-admin trying to access admin page: ${userRole}, redirecting to /dashboard/client`);
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
+    console.log(`🔐 Middleware: Admin access granted for ${userRole} to ${pathname}`);
   }
 
-  // Protect Client dashboard routes
   if (pathname.startsWith("/dashboard/client")) {
-    if (role !== "CLIENT" && role !== "ADMIN") {
-      if (role === "ADMIN") {
-        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      } else {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
+    // Only CLIENT role (and ADMIN for support) can access client dashboard
+    if (userRole !== 'CLIENT' && userRole !== 'ADMIN') {
+      console.log(`🔐 Middleware: Non-client trying to access client dashboard: ${userRole}, redirecting to /not-authorized`);
+      return NextResponse.redirect(new URL("/not-authorized", req.url));
+    }
+    console.log(`🔐 Middleware: Client access granted for ${userRole} to ${pathname}`);
+  }
+
+  // Handle root dashboard redirect based on role
+  if (pathname === "/dashboard" || pathname === "/dashboard/") {
+    if (userRole === 'ADMIN') {
+      console.log(`🔐 Middleware: Admin at root dashboard, redirecting to /admin`);
+      return NextResponse.redirect(new URL("/admin", req.url));
+    } else {
+      console.log(`🔐 Middleware: Client at root dashboard, redirecting to /dashboard/client`);
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
   }
 
-  // Allow access to other routes
+  console.log(`🔐 Middleware: Access granted to ${pathname} for ${userRole}`);
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    /*
+     * Match all request paths except for ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder files
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

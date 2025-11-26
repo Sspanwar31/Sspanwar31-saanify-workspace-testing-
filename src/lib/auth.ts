@@ -12,15 +12,16 @@ export interface UserInfo {
   societyAccountId?: string
 }
 
+type RequestCredentials = 'include' | 'omit' | 'same-origin'
+
 export const setAuthTokens = (tokens: AuthTokens) => {
-  // Set access token cookie via document.cookie (fallback)
-  document.cookie = `auth-token=${tokens.accessToken}; path=/; max-age=900; samesite=lax` // 15 minutes
+  // Note: httpOnly cookies are set by the server, so we don't need to set them via document.cookie
+  // The server will set httpOnly cookies, we just need to store refresh token in localStorage as backup
   
-  // Set refresh token cookie
-  document.cookie = `refresh-token=${tokens.refreshToken}; path=/; max-age=604800; samesite=lax` // 7 days
-  
-  // Store refresh token in localStorage as backup
+  // Store refresh token in localStorage as backup for refresh operations
   localStorage.setItem('refresh-token', tokens.refreshToken)
+  
+  console.log('✅ [DEBUG] Auth tokens set - refresh token stored in localStorage')
 }
 
 export const getAccessToken = () => {
@@ -92,40 +93,58 @@ export const makeAuthenticatedRequest = async (
   url: string,
   options: RequestInit = {}
 ): Promise<Response> => {
-  let accessToken = getAccessToken()
+  console.log(`🔐 [DEBUG] makeAuthenticatedRequest called for: ${url}`)
+  console.log(`  - Using httpOnly cookies for authentication`)
 
-  // If no access token, try to refresh
-  if (!accessToken) {
-    accessToken = await refreshAccessToken()
-    
-    if (!accessToken) {
-      throw new Error('No valid authentication token')
+  // For httpOnly cookies, we don't need to manually add Authorization header
+  // The browser will automatically send the httpOnly cookies
+  const requestOptions = {
+    ...options,
+    credentials: 'include' as RequestCredentials,
+    // Don't set Authorization header when using httpOnly cookies
+    headers: {
+      ...options.headers
+      // Authorization header removed - cookies will be sent automatically
     }
   }
 
-  // Make the request with the access token
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      'Authorization': `Bearer ${accessToken}`
-    }
-  })
+  console.log(`📡 [DEBUG] Making request with httpOnly cookies to: ${url}`)
 
-  // If the response is 401, try to refresh the token and retry once
+  const response = await fetch(url, requestOptions)
+
+  console.log(`📡 [DEBUG] Response status: ${response.status}`)
+
+  // If the response is 401, we need to refresh the token
   if (response.status === 401) {
-    const newAccessToken = await refreshAccessToken()
+    console.log('🔄 [DEBUG] Got 401, attempting token refresh...')
     
-    if (newAccessToken) {
-      // Retry the request with the new token
-      return fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Authorization': `Bearer ${newAccessToken}`
-        }
+    try {
+      // Get refresh token from localStorage (should be available from login)
+      const refreshToken = localStorage.getItem('refresh-token')
+      
+      if (!refreshToken) {
+        console.log('❌ [DEBUG] No refresh token available')
+        throw new Error('No refresh token available')
+      }
+
+      // Call refresh endpoint
+      const refreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ refreshToken })
       })
-    } else {
+
+      if (refreshResponse.ok) {
+        console.log('✅ [DEBUG] Token refresh successful, retrying request...')
+        // Retry the original request - new httpOnly cookie will be sent automatically
+        return fetch(url, requestOptions)
+      } else {
+        console.log('❌ [DEBUG] Token refresh failed')
+        throw new Error('Authentication failed')
+      }
+    } catch (refreshError) {
+      console.log('❌ [DEBUG] Refresh error:', refreshError.message)
       throw new Error('Authentication failed')
     }
   }

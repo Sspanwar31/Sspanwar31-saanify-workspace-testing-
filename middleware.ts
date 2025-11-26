@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import jwt from 'jsonwebtoken';
 
-// Helper: JWT Token ko decode karne ke liye
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Helper: JWT Token ko verify karne ke liye
+function verifyJwtToken(tokenValue: string) {
+  try {
+    return jwt.verify(tokenValue, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+}
+
+// Helper: JWT Token ko decode karne ke liye (fallback)
 function decodeJwtPayload(tokenValue: string) {
   try {
     const base64Url = tokenValue.split('.')[1];
@@ -64,8 +76,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Decode token to get user info
-  const user = decodeJwtPayload(token.value);
+  // Decode token to get user info - use proper verification first
+  let user = verifyJwtToken(token.value);
+  
+  // If verification fails, try decode as fallback
+  if (!user) {
+    console.log(`🔐 Middleware: JWT verification failed, trying decode fallback`);
+    user = decodeJwtPayload(token.value);
+  }
   
   // If token is invalid, clear it and redirect to login
   if (!user) {

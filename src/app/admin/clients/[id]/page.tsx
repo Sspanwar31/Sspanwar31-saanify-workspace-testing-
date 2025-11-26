@@ -35,6 +35,7 @@ import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { makeAuthenticatedRequest } from '@/lib/auth'
 
 interface Client {
   id: string
@@ -75,7 +76,9 @@ export default function ClientDetailPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/auth/check-session')
+      const response = await fetch('/api/auth/check-session', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         setIsAdmin(data.user?.role === 'ADMIN')
@@ -96,7 +99,9 @@ export default function ClientDetailPage() {
 
   const fetchClient = async () => {
     try {
-      const response = await fetch(`/api/admin/clients/${params.id}`)
+      const response = await fetch(`/api/admin/clients/${params.id}`, {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
         setClient(data.client)
@@ -111,34 +116,48 @@ export default function ClientDetailPage() {
 
   const handleAction = async (action: string) => {
     try {
-      const response = await fetch(`/api/admin/clients/${params.id}`, {
+      console.log(`🔧 [DEBUG] handleAction called with action: ${action}`)
+      
+      const response = await makeAuthenticatedRequest(`/api/admin/clients/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
       })
 
+      console.log(`📡 [DEBUG] PATCH response status: ${response.status}`)
+
       if (response.ok) {
+        const result = await response.json()
+        console.log('✅ [DEBUG] Action successful:', result)
         toast.success(`Client ${action} successfully`)
         fetchClient()
       } else {
-        toast.error(`Failed to ${action} client`)
+        const errorData = await response.json()
+        console.log('❌ [DEBUG] Action failed:', errorData)
+        toast.error(`Failed to ${action} client: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
-      toast.error('An error occurred')
+      console.log('💥 [DEBUG] Action error:', error)
+      toast.error(`An error occurred: ${error.message}`)
     }
   }
 
   const handleRenewal = async (plan: string) => {
     try {
-      const response = await fetch(`/api/admin/clients/${params.id}`, {
+      console.log(`🔧 [DEBUG] handleRenewal called with plan: ${plan}`)
+      
+      const response = await makeAuthenticatedRequest(`/api/admin/clients/${params.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'renew', plan })
       })
 
+      console.log(`📡 [DEBUG] PATCH renewal response status: ${response.status}`)
+
       if (response.ok) {
         const result = await response.json()
         const newEndDate = result.client.subscriptionEndsAt
+        console.log('✅ [DEBUG] Renewal successful:', result)
         
         toast.success('✅ Subscription renewed successfully', {
           description: `Subscription renewed till ${new Date(newEndDate).toLocaleDateString()}`,
@@ -148,10 +167,13 @@ export default function ClientDetailPage() {
         setRenewDialog(false)
         fetchClient() // Instant refresh
       } else {
-        toast.error('Failed to renew subscription')
+        const errorData = await response.json()
+        console.log('❌ [DEBUG] Renewal failed:', errorData)
+        toast.error(`Failed to renew subscription: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
-      toast.error('An error occurred')
+      console.log('💥 [DEBUG] Renewal error:', error)
+      toast.error(`An error occurred: ${error.message}`)
     }
   }
 

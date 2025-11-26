@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { withAdmin } from '@/lib/auth-middleware'
 
 // GET /api/admin/clients/[id] - Get a single client
 export async function GET(
@@ -55,10 +56,10 @@ export async function GET(
 }
 
 // PATCH /api/admin/clients/[id] - Update client status or other properties
-export async function PATCH(
+export const PATCH = withAdmin(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params
     const body = await request.json()
@@ -200,7 +201,7 @@ export async function PATCH(
       { status: 500 }
     )
   }
-}
+})
 
 export async function PUT(
   request: NextRequest,

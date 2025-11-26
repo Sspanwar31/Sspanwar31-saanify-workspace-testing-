@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key'
 
 // Simple token refresh function (replaces the deleted tokens library)
 const refreshAccessToken = async (refreshToken: string) => {
   try {
-    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as any
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as any
     
     // Get user from database to ensure they still exist and are active
     // For now, we'll just generate a new access token
@@ -55,7 +54,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60 // 15 minutes
+      maxAge: 15 * 60, // 15 minutes
+      path: '/'
     })
 
     return response

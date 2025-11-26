@@ -110,8 +110,8 @@ export function withSecurity(handler: (req: NextRequest, ...args: any[]) => Prom
 /**
  * Wrapper for API routes that require client authentication
  */
-export function withClient(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
+export function withClient(handler: (req: AuthenticatedRequest, ...args: any[]) => Promise<NextResponse>) {
+  return async (req: NextRequest, ...args: any[]) => {
     // Authenticate and authorize user
     const authResult = await authenticateAndAuthorize(req, 'CLIENT');
     
@@ -126,16 +126,16 @@ export function withClient(handler: (req: AuthenticatedRequest) => Promise<NextR
     const authenticatedReq = req as AuthenticatedRequest;
     authenticatedReq.user = authResult.user;
 
-    // Continue with the original handler
-    return handler(authenticatedReq);
+    // Continue with the original handler with all arguments
+    return handler(authenticatedReq, ...args);
   };
 }
 
 /**
  * Wrapper for API routes that require admin authentication
  */
-export function withAdmin(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
+export function withAdmin(handler: (req: AuthenticatedRequest, ...args: any[]) => Promise<NextResponse>) {
+  return async (req: NextRequest, ...args: any[]) => {
     // Authenticate and authorize user
     const authResult = await authenticateAndAuthorize(req, 'ADMIN');
     
@@ -150,7 +150,7 @@ export function withAdmin(handler: (req: AuthenticatedRequest) => Promise<NextRe
     const authenticatedReq = req as AuthenticatedRequest;
     authenticatedReq.user = authResult.user;
 
-    // Continue with the original handler
-    return handler(authenticatedReq);
+    // Continue with the original handler with all arguments
+    return handler(authenticatedReq, ...args);
   };
 }

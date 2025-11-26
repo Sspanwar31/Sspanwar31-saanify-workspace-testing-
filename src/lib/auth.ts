@@ -96,6 +96,10 @@ export const makeAuthenticatedRequest = async (
   console.log(`🔐 [DEBUG] makeAuthenticatedRequest called for: ${url}`)
   console.log(`  - Using httpOnly cookies for authentication`)
 
+  // Check if we have a refresh token before making request
+  const refreshToken = getRefreshToken()
+  console.log(`🔑 [DEBUG] Refresh token available: ${!!refreshToken}`)
+
   // For httpOnly cookies, we don't need to manually add Authorization header
   // The browser will automatically send the httpOnly cookies
   const requestOptions = {
@@ -109,10 +113,12 @@ export const makeAuthenticatedRequest = async (
   }
 
   console.log(`📡 [DEBUG] Making request with httpOnly cookies to: ${url}`)
+  console.log(`📡 [DEBUG] Request method: ${options.method || 'GET'}`)
 
   const response = await fetch(url, requestOptions)
 
   console.log(`📡 [DEBUG] Response status: ${response.status}`)
+  console.log(`📡 [DEBUG] Response ok: ${response.ok}`)
 
   // If the response is 401, we need to refresh the token
   if (response.status === 401) {
@@ -123,9 +129,11 @@ export const makeAuthenticatedRequest = async (
       const refreshToken = localStorage.getItem('refresh-token')
       
       if (!refreshToken) {
-        console.log('❌ [DEBUG] No refresh token available')
+        console.log('❌ [DEBUG] No refresh token available for token refresh')
         throw new Error('No refresh token available')
       }
+
+      console.log('🔄 [DEBUG] Calling refresh endpoint...')
 
       // Call refresh endpoint
       const refreshResponse = await fetch('/api/auth/refresh', {
@@ -135,17 +143,39 @@ export const makeAuthenticatedRequest = async (
         body: JSON.stringify({ refreshToken })
       })
 
+      console.log(`🔄 [DEBUG] Refresh response status: ${refreshResponse.status}`)
+
       if (refreshResponse.ok) {
-        console.log('✅ [DEBUG] Token refresh successful, retrying request...')
+        const refreshData = await refreshResponse.json()
+        console.log('✅ [DEBUG] Token refresh successful, new token received')
+        console.log('✅ [DEBUG] Retrying original request...')
+        
         // Retry the original request - new httpOnly cookie will be sent automatically
-        return fetch(url, requestOptions)
+        const retryResponse = await fetch(url, requestOptions)
+        console.log(`🔄 [DEBUG] Retry response status: ${retryResponse.status}`)
+        return retryResponse
       } else {
-        console.log('❌ [DEBUG] Token refresh failed')
+        console.log('❌ [DEBUG] Token refresh failed with status:', refreshResponse.status)
+        const errorData = await refreshResponse.json().catch(() => ({}))
+        console.log('❌ [DEBUG] Refresh error:', errorData)
         throw new Error('Authentication failed')
       }
     } catch (refreshError) {
       console.log('❌ [DEBUG] Refresh error:', refreshError.message)
-      throw new Error('Authentication failed')
+      // If refresh fails completely, clear tokens and redirect to login
+      removeAuthTokens()
+      throw new Error('Authentication failed - please login again')
+    }
+  }
+
+  // Handle 403 Forbidden errors specifically
+  if (response.status === 403) {
+    console.log('🚫 [DEBUG] Got 403 Forbidden - checking role permissions...')
+    try {
+      const errorData = await response.json()
+      console.log('🚫 [DEBUG] 403 Error details:', errorData)
+    } catch (e) {
+      console.log('🚫 [DEBUG] 403 Error - could not parse error details')
     }
   }
 

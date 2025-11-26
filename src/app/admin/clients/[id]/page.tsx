@@ -76,7 +76,7 @@ export default function ClientDetailPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/auth/check-session', {
+      const response = await makeAuthenticatedRequest('/api/auth/check-session', {
         credentials: 'include'
       })
       if (response.ok) {
@@ -85,7 +85,12 @@ export default function ClientDetailPage() {
         
         // Load revenue preference for admins
         if (data.user?.role === 'ADMIN') {
-          const savedPreference = localStorage.getItem('revenue-visibility')
+          // ✅ Safe localStorage check
+          let savedPreference: string | null = null
+          if (typeof window !== 'undefined') {
+            savedPreference = localStorage.getItem('revenue-visibility')
+          }
+          
           if (savedPreference) {
             const preference = JSON.parse(savedPreference)
             setShowRevenue(preference.showRevenue)
@@ -99,7 +104,7 @@ export default function ClientDetailPage() {
 
   const fetchClient = async () => {
     try {
-      const response = await fetch(`/api/admin/clients/${params.id}`, {
+      const response = await makeAuthenticatedRequest(`/api/admin/clients/${params.id}`, {
         credentials: 'include'
       })
       if (response.ok) {
@@ -189,11 +194,14 @@ export default function ClientDetailPage() {
     setShowRevenue(show)
     
     // Save preference
-    localStorage.setItem('revenue-visibility', JSON.stringify({
-      showRevenue: show,
-      requiresAdmin: true,
-      lastUpdated: new Date().toISOString()
-    }))
+    // ✅ Safe localStorage write
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('revenue-visibility', JSON.stringify({
+        showRevenue: show,
+        requiresAdmin: true,
+        lastUpdated: new Date().toISOString()
+      }))
+    }
   }
 
   const getStatusBadge = (status: string) => {

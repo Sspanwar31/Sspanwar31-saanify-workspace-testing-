@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { makeAuthenticatedRequest } from '@/lib/auth'
 import Image from 'next/image'
 
 interface PaymentProof {
@@ -47,7 +48,7 @@ export default function AdminSubscriptionVerifyPage() {
 
   const fetchPaymentProofs = async () => {
     try {
-      const response = await fetch('/api/admin/subscriptions/payment-proofs')
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions/payment-proofs')
       const data = await response.json()
 
       if (response.ok) {
@@ -94,7 +95,7 @@ export default function AdminSubscriptionVerifyPage() {
   const handleApprove = async (proofId: string) => {
     setIsProcessing(true)
     try {
-      const response = await fetch(`/api/admin/subscriptions/approve-payment`, {
+      const response = await makeAuthenticatedRequest(`/api/admin/subscriptions/approve-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ export default function AdminSubscriptionVerifyPage() {
   const handleReject = async (proofId: string) => {
     setIsProcessing(true)
     try {
-      const response = await fetch(`/api/admin/subscriptions/reject-payment`, {
+      const response = await makeAuthenticatedRequest(`/api/admin/subscriptions/reject-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

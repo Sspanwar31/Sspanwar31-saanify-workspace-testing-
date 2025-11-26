@@ -57,7 +57,7 @@ export async function middleware(req: NextRequest) {
 
   // Check if it's a public route
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
-  
+
   // Check if it's a public API route
   const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
 
@@ -67,8 +67,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get token from cookie
-  const token = req.cookies.get("auth-token");
+  // Get token from httpOnly cookie (Next.js 15 API)
+  const cookies = req.cookies.getAll()
+  const authCookie = cookies.find(cookie => cookie.name === 'auth-token')
+  const token = authCookie?.value
 
   // If no token and not a public route, redirect to login
   if (!token) {
@@ -77,21 +79,12 @@ export async function middleware(req: NextRequest) {
   }
 
   // Decode token to get user info - use proper verification first
-  let user = verifyJwtToken(token.value);
+  let user = verifyJwtToken(token);
   
   // If verification fails, try decode as fallback
   if (!user) {
     console.log(`🔐 Middleware: JWT verification failed, trying decode fallback`);
-    user = decodeJwtPayload(token.value);
-  }
-  
-  // If token is invalid, clear it and redirect to login
-  if (!user) {
-    console.log(`🔐 Middleware: Invalid token, clearing and redirecting to login`);
-    const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.delete("auth-token");
-    response.cookies.delete("refresh-token");
-    return response;
+    user = decodeJwtPayload(token);
   }
 
   const userRole = user?.role?.toUpperCase() || 'CLIENT';
@@ -121,7 +114,6 @@ export async function middleware(req: NextRequest) {
       console.log(`🔐 Middleware: Non-admin trying to access admin page: ${userRole}, redirecting to /dashboard/client`);
       return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
-    console.log(`🔐 Middleware: Admin access granted for ${userRole} to ${pathname}`);
   }
 
   if (pathname.startsWith("/dashboard/client")) {
@@ -130,7 +122,6 @@ export async function middleware(req: NextRequest) {
       console.log(`🔐 Middleware: Non-client trying to access client dashboard: ${userRole}, redirecting to /not-authorized`);
       return NextResponse.redirect(new URL("/not-authorized", req.url));
     }
-    console.log(`🔐 Middleware: Client access granted for ${userRole} to ${pathname}`);
   }
 
   // Handle root dashboard redirect based on role
@@ -149,6 +140,14 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  /*
+   * Match all request paths except for ones starting with:
+   * - _next/static (static files)
+   * - _next/image (image optimization files)
+   * - favicon.ico (favicon file)
+   * - public folder files
+   * - api routes (handled separately)
+   */
   matcher: [
     /*
      * Match all request paths except for ones starting with:

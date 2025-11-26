@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, Users, IndianRupee, Plus, Edit, Trash2, Check, X, Search, ChevronDown, Building, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { makeAuthenticatedRequest } from "@/lib/auth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface SubscriptionPlan {
@@ -127,7 +128,7 @@ export default function SubscriptionPlansPage() {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch('/api/admin/clients');
+      const response = await makeAuthenticatedRequest('/api/admin/clients');
       const result = await response.json();
       if (result.success) {
         setClients(result.clients);
@@ -141,7 +142,7 @@ export default function SubscriptionPlansPage() {
   const fetchSubscriptionPlans = async () => {
     console.log('fetchSubscriptionPlans called');
     try {
-      const response = await fetch('/api/admin/subscription-plans');
+      const response = await makeAuthenticatedRequest('/api/admin/subscription-plans');
       const result = await response.json();
       if (result.success) {
         setPlans(result.data);
@@ -205,7 +206,7 @@ export default function SubscriptionPlansPage() {
   const fetchClientSubscriptions = async () => {
     console.log('fetchClientSubscriptions called');
     try {
-      const response = await fetch('/api/admin/client-subscriptions');
+      const response = await makeAuthenticatedRequest('/api/admin/client-subscriptions');
       const result = await response.json();
       if (result.success) {
         setClientSubscriptions(result.data);
@@ -263,7 +264,7 @@ export default function SubscriptionPlansPage() {
       const method = editingPlan ? 'PUT' : 'POST';
       const body = editingPlan ? { ...planData, id: editingPlan.id } : planData;
 
-      const response = await fetch(url, {
+      const response = await makeAuthenticatedRequest(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -393,7 +394,7 @@ export default function SubscriptionPlansPage() {
 
       console.log('Sending subscription activation request:', data);
 
-      const response = await fetch('/api/admin/client-subscriptions', {
+      const response = await makeAuthenticatedRequest('/api/admin/client-subscriptions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

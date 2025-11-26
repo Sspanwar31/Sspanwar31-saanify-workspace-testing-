@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { makeAuthenticatedRequest } from '@/lib/auth'
 
 interface AddClientModalProps {
   onClose: () => void
@@ -57,7 +58,7 @@ export function AddClientModal({ onClose, onSuccess }: AddClientModalProps) {
         plan: formData.subscriptionPlan
       }
 
-      const response = await fetch('/api/admin/clients', {
+      const response = await makeAuthenticatedRequest('/api/admin/clients', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

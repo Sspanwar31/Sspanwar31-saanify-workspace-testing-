@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/providers/auth-provider'
+import { makeAuthenticatedRequest } from '@/lib/auth'
 import { ActivityMonitor } from '@/components/activity-monitor'
 import { DataCharts } from '@/components/data-charts'
 import { AddClientModal } from '@/components/admin/AddClientModal'
@@ -237,10 +238,12 @@ export default function AdminDashboard() {
   // --- FETCH DATA ---
   const fetchClients = async () => {
     try {
-      const res = await fetch('/api/admin/clients', { cache: 'no-store' })
+      const res = await makeAuthenticatedRequest('/api/admin/clients', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setClients(data.clients || [])
+      } else {
+        console.error('Failed to fetch clients:', res.status, res.statusText)
       }
     } catch (e) {
       console.error('Failed to fetch clients:', e)
@@ -268,10 +271,12 @@ export default function AdminDashboard() {
 
   const fetchSubscriptionPlans = async () => {
     try {
-      const response = await fetch('/api/admin/subscription-plans');
+      const response = await makeAuthenticatedRequest('/api/admin/subscription-plans');
       const result = await response.json();
       if (result.success) {
         setSubscriptionPlans(result.data);
+      } else {
+        console.error('Failed to fetch subscription plans:', result);
       }
     } catch (error) {
       console.error('Failed to fetch subscription plans:', error);
@@ -307,7 +312,7 @@ export default function AdminDashboard() {
 
   const fetchSubscriptions = async () => {
     try {
-      const response = await fetch('/api/admin/subscriptions');
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions');
       const result = await response.json();
       if (result.success) {
         // Map the API response to match the frontend interface
@@ -324,6 +329,8 @@ export default function AdminDashboard() {
           memberCount: item.memberCount
         }));
         setSubscriptions(mappedSubscriptions);
+      } else {
+        console.error('Failed to fetch subscriptions:', result);
       }
     } catch (error) {
       console.error('Failed to fetch subscriptions:', error);
@@ -414,7 +421,7 @@ export default function AdminDashboard() {
         break
       case 'lock':
         try {
-          const res = await fetch(`/api/admin/clients/${clientId}`, {
+          const res = await makeAuthenticatedRequest(`/api/admin/clients/${clientId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'LOCKED' })
@@ -438,7 +445,7 @@ export default function AdminDashboard() {
         break
       case 'unlock':
         try {
-          const res = await fetch(`/api/admin/clients/${clientId}`, {
+          const res = await makeAuthenticatedRequest(`/api/admin/clients/${clientId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'ACTIVE' })
@@ -460,7 +467,7 @@ export default function AdminDashboard() {
         break
       case 'expire':
         try {
-          const res = await fetch(`/api/admin/clients/${clientId}`, {
+          const res = await makeAuthenticatedRequest(`/api/admin/clients/${clientId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'EXPIRED' })
@@ -480,7 +487,7 @@ export default function AdminDashboard() {
       case 'renew_enterprise':
         const plan = action.replace('renew_', '').toUpperCase()
         try {
-          const res = await fetch(`/api/admin/clients/${clientId}/renew`, {
+          const res = await makeAuthenticatedRequest(`/api/admin/clients/${clientId}/renew`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plan })
@@ -752,7 +759,7 @@ export default function AdminDashboard() {
     toast({ title: "Info", description: `🚀 Starting ${taskName}...` })
     
     try {
-      const res = await fetch('/api/admin/automation/run', {
+      const res = await makeAuthenticatedRequest('/api/admin/automation/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskName })
@@ -790,7 +797,7 @@ export default function AdminDashboard() {
 
   const toggleNotification = async (event: string) => {
     try {
-      const response = await fetch('/api/admin/automation', {
+      const response = await makeAuthenticatedRequest('/api/admin/automation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggleNotification', event })
@@ -822,7 +829,7 @@ export default function AdminDashboard() {
 
   const toggleEmailAutomation = async (type: string) => {
     try {
-      const response = await fetch('/api/admin/automation', {
+      const response = await makeAuthenticatedRequest('/api/admin/automation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggleEmail', type })
@@ -855,7 +862,7 @@ export default function AdminDashboard() {
   const handleCreateDemoClient = async () => {
     setIsCreatingClient(true)
     try {
-      const res = await fetch('/api/admin/clients', {
+      const res = await makeAuthenticatedRequest('/api/admin/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -892,7 +899,7 @@ export default function AdminDashboard() {
     
     setIsUpdatingClient(true)
     try {
-      const res = await fetch(`/api/admin/clients/${selectedClient.id}`, {
+      const res = await makeAuthenticatedRequest(`/api/admin/clients/${selectedClient.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -924,7 +931,7 @@ export default function AdminDashboard() {
     if (!confirm('Are you sure you want to delete this client?')) return
     
     try {
-      const res = await fetch(`/api/admin/clients/${clientId}`, {
+      const res = await makeAuthenticatedRequest(`/api/admin/clients/${clientId}`, {
         method: 'DELETE'
       })
       
@@ -986,7 +993,7 @@ export default function AdminDashboard() {
         backendPlan
       })
 
-      const res = await fetch(`/api/admin/clients/${selectedSubscription.clientId}/renew`, {
+      const res = await makeAuthenticatedRequest(`/api/admin/clients/${selectedSubscription.clientId}/renew`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

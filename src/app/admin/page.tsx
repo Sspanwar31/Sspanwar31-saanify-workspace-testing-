@@ -165,6 +165,7 @@ export default function AdminDashboard() {
     planId: '',
     duration: '1'
   })
+  const [isRenewing, setIsRenewing] = useState(false)
   
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -177,6 +178,8 @@ export default function AdminDashboard() {
     address: '',
     subscriptionPlan: 'TRIAL'
   })
+  const [isCreatingClient, setIsCreatingClient] = useState(false)
+  const [isUpdatingClient, setIsUpdatingClient] = useState(false)
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
@@ -850,7 +853,7 @@ export default function AdminDashboard() {
   }
 
   const handleCreateDemoClient = async () => {
-    setIsLoading(true)
+    setIsCreatingClient(true)
     try {
       const res = await fetch('/api/admin/clients', {
         method: 'POST',
@@ -874,7 +877,7 @@ export default function AdminDashboard() {
     } catch (e) {
       toast({ title: "Error", description: '❌ Failed to create demo client', variant: "destructive" })
     } finally {
-      setIsLoading(false)
+      setIsCreatingClient(false)
     }
   }
 
@@ -887,7 +890,7 @@ export default function AdminDashboard() {
   const handleEditClient = async () => {
     if (!selectedClient || !editClient.name || !editClient.email) return
     
-    setIsLoading(true)
+    setIsUpdatingClient(true)
     try {
       const res = await fetch(`/api/admin/clients/${selectedClient.id}`, {
         method: 'PUT',
@@ -913,7 +916,7 @@ export default function AdminDashboard() {
     } catch (e) {
       toast({ title: "Error", description: '❌ Failed to update client', variant: "destructive" })
     } finally {
-      setIsLoading(false)
+      setIsUpdatingClient(false)
     }
   }
 
@@ -946,7 +949,7 @@ export default function AdminDashboard() {
       return
     }
 
-    setIsLoading(true)
+    setIsRenewing(true)
     try {
       // Map plan names to backend expected values
       const planMapping: { [key: string]: string } = {
@@ -1006,7 +1009,7 @@ export default function AdminDashboard() {
       console.error('Renew subscription error:', e)
       toast({ title: "Error", description: `❌ Failed to renew subscription: ${e.message}`, variant: "destructive" })
     } finally {
-      setIsLoading(false)
+      setIsRenewing(false)
     }
   }
 
@@ -2182,10 +2185,10 @@ export default function AdminDashboard() {
             </Button>
             <Button 
               onClick={handleEditClient}
-              disabled={authLoading}
+              disabled={isUpdatingClient}
               className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
             >
-              {authLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {isUpdatingClient ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -2247,10 +2250,10 @@ export default function AdminDashboard() {
             </Button>
             <Button 
               onClick={handleRenewSubscription}
-              disabled={authLoading}
+              disabled={isRenewing}
               className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
             >
-              {authLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {isRenewing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
               Renew Subscription
             </Button>
           </DialogFooter>

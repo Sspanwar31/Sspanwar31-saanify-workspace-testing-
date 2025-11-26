@@ -1,5 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Enhanced automation configuration with migrated cloud APIs
+const automationTasksConfig = [
+  {
+    id: 'schema-sync',
+    name: 'Schema Sync',
+    description: 'Automatically sync database schema changes',
+    schedule: '0 */6 * * *', // Every 6 hours
+    endpoint: '/api/admin/automation/schema-sync'
+  },
+  {
+    id: 'auto-sync',
+    name: 'Auto-Sync',
+    description: 'Automatically sync data to Supabase',
+    schedule: '0 */2 * * *', // Every 2 hours
+    endpoint: '/api/admin/automation/auto-sync'
+  },
+  {
+    id: 'backup-now',
+    name: 'Backup Now',
+    description: 'Create immediate backup to Supabase storage',
+    schedule: 'manual', // Manual trigger only
+    endpoint: '/api/admin/automation/backup'
+  },
+  {
+    id: 'database-backup',
+    name: 'Database Backup',
+    description: 'Scheduled database backups',
+    schedule: '0 2 * * *', // Daily at 2 AM
+    endpoint: '/api/admin/automation/backup'
+  },
+  {
+    id: 'database-restore',
+    name: 'Database Restore',
+    description: 'Restore database from backup files',
+    schedule: 'manual', // Manual trigger only
+    endpoint: '/api/admin/automation/restore'
+  },
+  {
+    id: 'health-check',
+    name: 'Health Check',
+    description: 'Monitor system health and performance metrics',
+    schedule: '*/5 * * * *', // Every 5 minutes
+    endpoint: '/api/admin/automation/health-check'
+  },
+  {
+    id: 'log-rotation',
+    name: 'Log Rotation',
+    description: 'Clean and archive old logs',
+    schedule: '0 0 * * 0', // Weekly on Sunday
+    endpoint: '/api/admin/automation/log-rotation'
+  },
+  {
+    id: 'ai-optimization',
+    name: 'AI Optimization',
+    description: 'Analyze and optimize AI usage patterns',
+    schedule: '0 */4 * * *', // Every 4 hours
+    endpoint: '/api/admin/automation/ai-optimization'
+  },
+  {
+    id: 'security-scan',
+    name: 'Security Scan',
+    description: 'Run security and permission checks',
+    schedule: '0 3 * * 1', // Weekly on Monday at 3 AM
+    endpoint: '/api/admin/automation/security-scan'
+  }
+]
+
 // Mock data storage (in production, this would be in a database)
 let notifications = [
   { event: 'New Client Signup', enabled: true, lastTriggered: '2 hours ago' },
@@ -20,6 +87,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
+        automationTasks: automationTasksConfig,
         notifications,
         emailAutomations
       }

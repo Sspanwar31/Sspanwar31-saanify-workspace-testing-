@@ -17,7 +17,7 @@ export function withDevBypass(handler: (req: AuthenticatedRequest) => Promise<Ne
   return async (req: NextRequest) => {
     // Check if we're in development mode and this is an automation endpoint
     const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
-    const isAutomationEndpoint = req.url?.includes('/api/cloud/automation/')
+    const isAutomationEndpoint = req.url?.includes('/api/admin/automation/')
     
     console.log('Auth check:', { isDev, isAutomationEndpoint, url: req.url })
     

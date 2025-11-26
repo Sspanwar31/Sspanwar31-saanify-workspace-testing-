@@ -3,14 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 // Mock task execution - in production, this would trigger actual system tasks
 const taskExecutors = {
   'schema-sync': async () => {
-    // Simulate schema sync
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    return {
-      success: true,
-      message: 'Database schema synchronized successfully',
-      details: 'No schema changes detected',
-      tables_synced: 12
-    }
+    // Call the migrated schema-sync API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/schema-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const result = await response.json()
+    return result
   },
   'auto-sync': async () => {
     // Simulate data sync
@@ -22,60 +21,61 @@ const taskExecutors = {
       records_synced: 245
     }
   },
+  'backup-now': async () => {
+    // Call the migrated backup API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/backup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'full', includeSecrets: false })
+    })
+    const result = await response.json()
+    return result
+  },
   'database-backup': async () => {
-    // Simulate database backup
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    return {
-      success: true,
-      message: 'Database backup completed',
-      details: 'Backup stored in cloud storage',
-      backup_size: '45.2 MB',
-      records_backed_up: 1250
-    }
+    // Call the migrated backup API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/backup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'incremental', includeSecrets: false })
+    })
+    const result = await response.json()
+    return result
   },
   'database-restore': async () => {
-    // Simulate database restore
-    await new Promise(resolve => setTimeout(resolve, 4000))
-    return {
-      success: true,
-      message: 'Database restored successfully',
-      details: 'Database restored from latest backup',
-      records_restored: 1250
-    }
+    // Call the migrated restore API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const result = await response.json()
+    return result
   },
   'health-check': async () => {
-    // Simulate health check
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    return {
-      success: true,
-      message: 'System health check completed',
-      details: 'All systems operational',
-      health_score: 98,
-      checks_passed: 15,
-      checks_failed: 0
-    }
+    // Call the migrated health-check API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/health-check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const result = await response.json()
+    return result
   },
   'log-rotation': async () => {
-    // Simulate log rotation
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    return {
-      success: true,
-      message: 'Log rotation completed',
-      details: 'Old logs archived',
-      logs_rotated: 25,
-      space_freed: '128 MB'
-    }
+    // Call the migrated log-rotation API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/log-rotation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const result = await response.json()
+    return result
   },
   'security-scan': async () => {
-    // Simulate security scan
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    return {
-      success: true,
-      message: 'Security scan completed',
-      details: 'No security threats detected',
-      security_score: 95,
-      vulnerabilities_found: 0
-    }
+    // Call the migrated security-scan API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/automation/security-scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    const result = await response.json()
+    return result
   },
   'ai-optimization': async () => {
     // Simulate AI optimization

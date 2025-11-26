@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { withAdmin, AuthenticatedRequest } from '@/lib/auth-middleware'
+import { securityMiddleware, isBlockedRole } from '@/lib/auth-middleware'
 
 // Get all users (Admin only)
 export const GET = withAdmin(async (req: AuthenticatedRequest) => {
@@ -95,6 +96,17 @@ export const PATCH = withAdmin(async (req: AuthenticatedRequest) => {
       return NextResponse.json(
         { error: 'Cannot modify your own account' },
         { status: 400 }
+      )
+    }
+
+    // SECURITY: Check if role is blocked before proceeding
+    if (role && isBlockedRole(role)) {
+      return NextResponse.json(
+        { 
+          error: "Superadmin role is permanently disabled for security reasons.",
+          code: "SUPERADMIN_BLOCKED"
+        },
+        { status: 403 }
       )
     }
 

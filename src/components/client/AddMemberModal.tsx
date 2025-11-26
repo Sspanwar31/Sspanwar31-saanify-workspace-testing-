@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge'
 import { User, Mail, Phone, MapPin, Calendar, Building, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { isBlockedRole } from '@/lib/auth-middleware'
 
 interface Member {
   id?: string
@@ -100,6 +101,11 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
       newErrors.address = 'Address must be at least 10 characters'
     }
 
+    // SECURITY: Validate role is not blocked
+    if (isBlockedRole(formData.role)) {
+      newErrors.role = 'Superadmin role is not allowed'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -139,6 +145,15 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
   }
 
   const handleInputChange = (field: keyof Member, value: string) => {
+    // SECURITY: Block superadmin role assignment at UI level
+    if (field === 'role' && isBlockedRole(value)) {
+      toast.error('🚫 SUPERADMIN CREATION BLOCKED', {
+        description: 'Superadmin role cannot be assigned for security reasons.',
+        duration: 4000
+      })
+      return // Prevent the blocked role from being set
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
@@ -276,7 +291,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
                       handleInputChange('role', value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.role ? 'border-red-500' : ''}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -285,6 +300,12 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
                       <SelectItem value="TREASURER">Treasurer</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.role && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.role}
+                    </p>
+                  )}
                 </div>
 
                 {/* Status */}

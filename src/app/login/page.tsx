@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Eye, EyeOff, Mail, Lock, Shield, Users, AlertCircle, CheckCircle, Sparkles, Zap, Crown, Database, ArrowRight, Github, Chrome } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, Shield, Users, AlertCircle, CheckCircle, Sparkles, Zap, Crown, Database, ArrowRight, Github, Chrome, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -189,6 +189,46 @@ export default function UnifiedLoginPage() {
       description: 'Google authentication coming soon!',
       duration: 2000,
     })
+  }
+
+  const handleForgotPassword = async () => {
+    if (!loginData.email) {
+      toast.error('📧 Email Required', {
+        description: 'Please enter your email address first.',
+        duration: 3000,
+      })
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: loginData.email }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('🔑 Reset Email Sent', {
+          description: data.message,
+          duration: 5000,
+        })
+      } else {
+        toast.error('❌ Request Failed', {
+          description: data.error || 'Failed to send reset email. Please try again.',
+          duration: 3000,
+        })
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error)
+      toast.error('❌ Network Error', {
+        description: 'Please check your connection and try again.',
+        duration: 3000,
+      })
+    }
   }
 
   return (
@@ -406,9 +446,21 @@ export default function UnifiedLoginPage() {
 
                   {/* Password Field */}
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white font-medium">
-                      Password
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-white font-medium">
+                        Password
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleForgotPassword}
+                        className="text-purple-300 hover:text-purple-200 text-sm p-0 h-auto font-normal"
+                      >
+                        <HelpCircle className="w-3 h-3 mr-1" />
+                        Forgot Password?
+                      </Button>
+                    </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-300" />
                       <Input

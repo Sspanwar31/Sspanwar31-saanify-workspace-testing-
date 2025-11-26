@@ -1,108 +1,156 @@
-import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { NextRequest, NextResponse } from 'next/server';
+import { authenticateAndAuthorize, AuthenticatedUser } from '@/lib/auth-helpers';
 
 export interface AuthenticatedRequest extends NextRequest {
-  user?: {
-    userId: string
-    email: string
-    role: 'ADMIN' | 'CLIENT'
-    societyAccountId?: string
-  }
+  user?: AuthenticatedUser;
 }
 
-// Development bypass function for automation tasks
-export function withDevBypass(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
-    // Check if we're in development mode and this is an automation endpoint
-    const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
-    const isAutomationEndpoint = req.url?.includes('/api/admin/automation/')
-    
-    console.log('Auth check:', { isDev, isAutomationEndpoint, url: req.url })
-    
-    if (isDev && isAutomationEndpoint) {
-      // Bypass authentication for development automation testing
-      const mockUser = {
-        userId: 'dev-admin-user',
-        email: 'admin@saanify.com',
-        role: 'ADMIN' as const,
-        societyAccountId: 'dev-society-123'
-      }
-      
-      const authenticatedReq = req as AuthenticatedRequest
-      authenticatedReq.user = mockUser
-      
-      console.log('Development bypass applied for automation')
-      return await handler(authenticatedReq)
-    }
-    
-    // Otherwise, proceed with normal authentication
-    return withAuth(handler)(req)
-  }
-}
+/**
+ * Security middleware to prevent superadmin role creation/assignment
+ * This provides an additional layer of protection beyond database constraints
+ */
+export function securityMiddleware(req: NextRequest) {
+  const url = req.nextUrl;
+  const method = req.method;
 
-export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
+  // Only apply to user creation/modification endpoints
+  const protectedEndpoints = [
+    '/api/users',
+    '/api/admin/users',
+    '/api/auth/register',
+    '/api/admin/create-user'
+  ];
+
+  const isProtectedEndpoint = protectedEndpoints.some(endpoint => 
+    url.pathname.startsWith(endpoint)
+  );
+
+  if (!isProtectedEndpoint) {
+    return NextResponse.next();
+  }
+
+  // Parse request body for POST/PUT requests
+  if (['POST', 'PUT', 'PATCH'].includes(method)) {
     try {
-      // Get token from cookie or Authorization header
-      const token = req.cookies.get('auth-token')?.value || 
-                   req.headers.get('authorization')?.replace('Bearer ', '')
-
-      if (!token) {
-        return NextResponse.json(
-          { error: 'Authentication required' },
-          { status: 401 }
-        )
-      }
-
-      // Verify token
-      const decoded = jwt.verify(token, JWT_SECRET) as any
+      const body = req.body ? JSON.parse(req.body as any) : {};
       
-      // Add user info to request
-      const authenticatedReq = req as AuthenticatedRequest
-      authenticatedReq.user = {
-        userId: decoded.userId,
-        email: decoded.email,
-        role: decoded.role,
-        societyAccountId: decoded.societyAccountId
-      }
-
-      return await handler(authenticatedReq)
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-  }
-}
-
-export function withRole(allowedRoles: ('ADMIN' | 'CLIENT')[]) {
-  return function(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-    return async (req: AuthenticatedRequest) => {
-      console.log('Role check:', { user: req.user, allowedRoles })
+      // Block any request containing superadmin role
+      const roleToCheck = body?.role || body?.user?.role;
       
-      if (!req.user || !allowedRoles.includes(req.user.role)) {
+      if (roleToCheck && (
+        roleToCheck === 'superadmin' || 
+        roleToCheck.toLowerCase() === 'superadmin' ||
+        roleToCheck.toUpperCase() === 'SUPERADMIN'
+      )) {
         return NextResponse.json(
-          { error: 'Access denied' },
+          { 
+            error: "Superadmin role is permanently disabled for security reasons.",
+            code: "SUPERADMIN_BLOCKED"
+          }, 
           { status: 403 }
-        )
+        );
       }
 
-      return await handler(req)
+      // Additional check for role updates in nested objects
+      if (body?.updates?.role || body?.data?.role) {
+        const updateRole = body.updates?.role || body.data?.role;
+        
+        if (updateRole && (
+          updateRole === 'superadmin' || 
+          updateRole.toLowerCase() === 'superadmin' ||
+          updateRole.toUpperCase() === 'SUPERADMIN'
+        )) {
+          return NextResponse.json(
+            { 
+              error: "Superadmin role assignment is permanently disabled.",
+              code: "SUPERADMIN_UPDATE_BLOCKED"
+            }, 
+            { status: 403 }
+          );
+        }
+      }
+
+    } catch (error) {
+      // If we can't parse the body, let it continue to other middleware
+      console.warn('Security middleware: Could not parse request body');
     }
   }
+
+  return NextResponse.next();
 }
 
-export function withAdmin(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withDevBypass(withRole(['ADMIN'])(handler))
+/**
+ * Helper function to check if a role is blocked
+ */
+export function isBlockedRole(role: string): boolean {
+  if (!role) return false;
+  
+  const blockedVariations = ['superadmin', 'Superadmin', 'SUPERADMIN'];
+  return blockedVariations.includes(role);
 }
 
+/**
+ * Wrapper for API routes to include security check
+ */
+export function withSecurity(handler: (req: NextRequest, ...args: any[]) => Promise<NextResponse>) {
+  return async (req: NextRequest, ...args: any[]) => {
+    // Apply security middleware
+    const securityResult = securityMiddleware(req);
+    
+    // If security middleware returns a response, it means the request was blocked
+    if (securityResult.status !== 200) {
+      return securityResult;
+    }
+
+    // Continue with the original handler
+    return handler(req, ...args);
+  };
+}
+
+/**
+ * Wrapper for API routes that require client authentication
+ */
 export function withClient(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withDevBypass(withRole(['CLIENT'])(handler))
+  return async (req: NextRequest) => {
+    // Authenticate and authorize user
+    const authResult = await authenticateAndAuthorize(req, 'CLIENT');
+    
+    if (authResult.error) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.error.includes('token') ? 401 : 403 }
+      );
+    }
+
+    // Add user to request object
+    const authenticatedReq = req as AuthenticatedRequest;
+    authenticatedReq.user = authResult.user;
+
+    // Continue with the original handler
+    return handler(authenticatedReq);
+  };
 }
 
-export function withAnyRole(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withDevBypass(withRole(['ADMIN', 'CLIENT'])(handler))
+/**
+ * Wrapper for API routes that require admin authentication
+ */
+export function withAdmin(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
+  return async (req: NextRequest) => {
+    // Authenticate and authorize user
+    const authResult = await authenticateAndAuthorize(req, 'ADMIN');
+    
+    if (authResult.error) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.error.includes('token') ? 401 : 403 }
+      );
+    }
+
+    // Add user to request object
+    const authenticatedReq = req as AuthenticatedRequest;
+    authenticatedReq.user = authResult.user;
+
+    // Continue with the original handler
+    return handler(authenticatedReq);
+  };
 }

@@ -28,6 +28,8 @@ model User {
   societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
 
   @@map("users")
+  @@index([role])
+  @@index([isActive])
 }
 
 model Account {

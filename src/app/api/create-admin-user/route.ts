@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { isBlockedRole } from '@/lib/auth-middleware'
 
 export async function POST() {
   try {
     console.log("🔧 Creating ADMIN@saanify.com user...")
+    
+    // SECURITY: Check if ADMIN role is blocked (should not be, but we check)
+    const adminRole = 'ADMIN'
+    if (isBlockedRole(adminRole)) {
+      console.error("🚫 SECURITY: ADMIN role is blocked!")
+      return NextResponse.json({
+        error: 'ADMIN role is blocked for security reasons',
+        code: 'ADMIN_ROLE_BLOCKED'
+      }, { status: 403 })
+    }
     
     // Check if user already exists
     const existingUser = await db.user.findUnique({

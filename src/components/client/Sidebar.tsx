@@ -15,7 +15,8 @@ import {
   X,
   Building2,
   Shield,
-  Receipt
+  Receipt,
+  Crown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -31,6 +32,12 @@ const navigationItems = [
     href: '/client/dashboard',
     icon: LayoutDashboard,
     description: 'Overview and analytics'
+  },
+  {
+    title: 'Subscription',
+    href: '/client/subscription',
+    icon: Crown,
+    description: 'Manage subscription'
   },
   {
     title: 'Members',

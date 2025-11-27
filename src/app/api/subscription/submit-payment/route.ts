@@ -1,28 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 import jwt from 'jsonwebtoken'
+
+// Validation schema
+const paymentSubmissionSchema = z.object({
+  plan: z.enum(['basic', 'pro', 'enterprise']),
+  amount: z.number().positive(),
+  transactionId: z.string().min(1, 'Transaction ID is required'),
+  paymentMethod: z.string().default('UPI'),
+  notes: z.string().optional(),
+  screenshot: z.string().optional()
+})
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
+// Helper function to verify JWT token
+function verifyToken(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
+                request.headers.get('Authorization')?.replace('Bearer ', '')
 
   if (!token) {
     return null
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
-    const user = await db.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, name: true, email: true }
-    })
-    
-    return user
+    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
   } catch (error) {
     return null
   }
@@ -30,90 +33,133 @@ async function getUserFromToken(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const user = await getUserFromToken(request)
-    
+    // Verify user authentication
+    const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized - Please login to submit payment' },
         { status: 401 }
       )
     }
 
-    const formData = await request.formData()
+    const body = await request.json()
     
-    const plan = formData.get('plan') as string
-    const amount = parseFloat(formData.get('amount') as string)
-    const transactionId = formData.get('transactionId') as string
-    const screenshot = formData.get('screenshot') as File
-
-    // Validate required fields
-    if (!plan || !amount || !transactionId || !screenshot) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
-    }
+    // Validate input
+    const validatedData = paymentSubmissionSchema.parse(body)
 
     // Check if transaction ID already exists
-    const existingTransaction = await db.paymentProof.findUnique({
-      where: { txnId: transactionId }
+    const existingPayment = await db.paymentProof.findFirst({
+      where: { 
+        txnId: validatedData.transactionId,
+        status: { not: 'rejected' }
+      }
     })
 
-    if (existingTransaction) {
+    if (existingPayment) {
       return NextResponse.json(
-        { error: 'Transaction ID already exists' },
+        { error: 'Transaction ID already exists or was previously rejected' },
         { status: 400 }
       )
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'payment-proofs')
-    try {
-      await mkdir(uploadsDir, { recursive: true })
-    } catch (error) {
-      // Directory might already exist
+    // Get user details
+    const userDetails = await db.user.findUnique({
+      where: { id: user.userId },
+      include: { societyAccount: true }
+    })
+
+    if (!userDetails) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
     }
-
-    // Generate unique filename
-    const timestamp = Date.now()
-    const filename = `${timestamp}_${screenshot.name}`
-    const filepath = path.join(uploadsDir, filename)
-
-    // Save screenshot
-    const bytes = await screenshot.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
 
     // Create payment proof record
     const paymentProof = await db.paymentProof.create({
       data: {
-        userId: user.id,
-        amount,
-        plan,
-        txnId: transactionId,
-        screenshotUrl: `/uploads/payment-proofs/${filename}`,
+        userId: user.userId,
+        amount: validatedData.amount,
+        plan: validatedData.plan.toUpperCase(),
+        txnId: validatedData.transactionId,
+        screenshotUrl: validatedData.screenshot,
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date()
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
       }
     })
 
+    // Update society account status
+    if (userDetails.societyAccount) {
+      await db.societyAccount.update({
+        where: { id: userDetails.societyAccount.id },
+        data: {
+          subscriptionPlan: validatedData.plan.toUpperCase(),
+          status: 'PENDING_PAYMENT',
+          updatedAt: new Date()
+        }
+      })
+    }
+
+    // Create notification for user
+    await db.notification.create({
+      data: {
+        userId: user.userId,
+        title: 'Payment Submitted',
+        message: `Your payment of ₹${validatedData.amount} for ${validatedData.plan.toUpperCase()} plan has been submitted for review.`,
+        type: 'info',
+        isRead: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    })
+
+    // Create notification for admin
+    const adminUsers = await db.user.findMany({
+      where: { role: { in: ['ADMIN', 'SUPERADMIN'] } }
+    })
+
+    for (const admin of adminUsers) {
+      await db.notification.create({
+        data: {
+          userId: admin.id,
+          title: 'New Payment Approval Required',
+          message: `${userDetails.name} has submitted payment of ₹${validatedData.amount} for ${validatedData.plan.toUpperCase()} plan.`,
+          type: 'payment',
+          isRead: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Payment proof submitted successfully',
-      paymentProof
+      message: 'Payment submitted successfully. Your payment is now under review.',
+      paymentProof: {
+        id: paymentProof.id,
+        amount: paymentProof.amount,
+        plan: paymentProof.plan,
+        transactionId: paymentProof.txnId,
+        status: paymentProof.status,
+        createdAt: paymentProof.createdAt
+      }
     })
 
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+
     console.error('Payment submission error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

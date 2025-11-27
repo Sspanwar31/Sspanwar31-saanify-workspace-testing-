@@ -241,7 +241,7 @@ export default function UnifiedLoginPage() {
       </div>
 
       {/* Back to Home Button - Bottom Left */}
-      <Link href="/" className="absolute bottom-6 left-6 z-20">
+      <Link href="/subscription/select-plan" className="absolute bottom-6 left-6 z-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -557,7 +557,7 @@ export default function UnifiedLoginPage() {
               <CardFooter className="text-center">
                 <p className="text-purple-200 text-sm">
                   Don't have an account?{' '}
-                  <Link href="/signup" className="text-purple-400 hover:text-purple-300 underline">
+                  <Link href="/auth/signup" className="text-purple-400 hover:text-purple-300 underline">
                     Sign up
                   </Link>
                 </p>

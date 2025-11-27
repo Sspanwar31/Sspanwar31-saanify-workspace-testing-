@@ -87,7 +87,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [backupProgress, setBackupProgress] = useState<string>('')
 
   // Load config from localStorage
   useEffect(() => {
@@ -232,31 +231,8 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       return
     }
 
-    // Show warning for large projects
-    if (!silent) {
-      const userConfirmed = window.confirm(
-        '⚠️ Note: This backup process may take several minutes for large projects (788+ files detected). ' +
-        'The page will show progress indicators. Please do not close this window during backup. ' +
-        'Continue with backup?'
-      )
-      if (!userConfirmed) return
-    }
-
-    if (!silent) {
-      setIsLoading(true)
-      setBackupProgress('Starting backup...')
-    }
-    
+    if (!silent) setIsLoading(true)
     try {
-      // Add timeout to the fetch request
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes timeout (increased)
-
-      // Add progress polling
-      const progressInterval = setInterval(() => {
-        setBackupProgress(prev => prev + '.')
-      }, 2000)
-
       const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,24 +240,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
           action: 'backup', 
           config,
           message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
-        }),
-        signal: controller.signal
+        })
       })
 
-      clearInterval(progressInterval)
-      clearTimeout(timeoutId)
-
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error')
-        
-        // Handle specific 502 Bad Gateway error
-        if (response.status === 502) {
-          console.error('502 Bad Gateway - Server timeout or infrastructure issue')
-          throw new Error('Server timeout (502). The backup is taking too long. Please try with a smaller project or check your GitHub credentials.')
-        }
-        
-        console.error('API Response Error:', response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
@@ -292,7 +255,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         localStorage.setItem('github-last-backup', now)
         
         if (!silent) {
-          setBackupProgress('')
           setMessage({ 
             type: 'success', 
             text: `✅ Backup complete! ${data.filesCount || 0} files uploaded to GitHub` 
@@ -302,28 +264,13 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
           loadBackupHistory()
         }
       } else {
-        if (!silent) {
-          setBackupProgress('')
-          setMessage({ type: 'error', text: data.error || '❌ Backup failed' })
-        }
+        if (!silent) setMessage({ type: 'error', text: data.error || '❌ Backup failed' })
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Backup error:', error)
-      if (!silent) {
-        setBackupProgress('')
-        let errorMessage = '❌ Error creating backup'
-        if (error.name === 'AbortError') {
-          errorMessage = '⏰ Backup timed out (5 minutes). The project might be too large. Please try again or exclude large files.'
-        } else if (error.message) {
-          errorMessage = `❌ ${error.message}`
-        }
-        setMessage({ type: 'error', text: errorMessage })
-      }
+      if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
     } finally {
-      if (!silent) {
-        setIsLoading(false)
-        setBackupProgress('')
-      }
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -340,33 +287,17 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     setIsRestoring(true)
     try {
-      // Add timeout to the fetch request
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes timeout
-
       const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'restore', 
           config 
-        }),
-        signal: controller.signal
+        })
       })
 
-      clearTimeout(timeoutId)
-
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error')
-        
-        // Handle specific 502 Bad Gateway error
-        if (response.status === 502) {
-          console.error('502 Bad Gateway - Server timeout or infrastructure issue')
-          throw new Error('Server timeout (502). The restore is taking too long. Please try again.')
-        }
-        
-        console.error('API Response Error:', response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
@@ -382,15 +313,9 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       } else {
         setMessage({ type: 'error', text: data.error || '❌ Restore failed' })
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Restore error:', error)
-      let errorMessage = '❌ Error restoring from backup'
-      if (error.name === 'AbortError') {
-        errorMessage = '⏰ Restore timed out (5 minutes). Please try again.'
-      } else if (error.message) {
-        errorMessage = `❌ ${error.message}`
-      }
-      setMessage({ type: 'error', text: errorMessage })
+      setMessage({ type: 'error', text: '❌ Error restoring from backup' })
     } finally {
       setIsRestoring(false)
     }
@@ -401,10 +326,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
     if (!isConfigured) return
 
     try {
-      // Add timeout to the fetch request
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout for history
-
       const response = await fetch('/api/github/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,23 +334,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
           repo: config.repo,
           token: config.token,
           branch: config.branch
-        }),
-        signal: controller.signal
+        })
       })
 
-      clearTimeout(timeoutId)
-
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error')
-        
-        // Handle specific 502 Bad Gateway error
-        if (response.status === 502) {
-          console.error('502 Bad Gateway - Server timeout or infrastructure issue')
-          throw new Error('Server timeout (502). Could not load backup history. Please try again.')
-        }
-        
-        console.error('History API Response Error:', response.status, errorText)
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
@@ -439,15 +348,9 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to load history' })
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Load backup history error:', error)
-      let errorMessage = 'Failed to load backup history'
-      if (error.name === 'AbortError') {
-        errorMessage = '⏰ History request timed out. Please try again.'
-      } else if (error.message) {
-        errorMessage = `❌ ${error.message}`
-      }
-      setMessage({ type: 'error', text: errorMessage })
+      setMessage({ type: 'error', text: 'Failed to load backup history' })
     }
   }
 
@@ -633,7 +536,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                       {isLoading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          {backupProgress || 'Creating Backup...'}
+                          Creating Backup...
                         </>
                       ) : (
                         <>
@@ -642,13 +545,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                         </>
                       )}
                     </Button>
-
-                    {/* Progress Indicator */}
-                    {backupProgress && (
-                      <div className="text-sm text-blue-600 text-center animate-pulse">
-                        {backupProgress}
-                      </div>
-                    )}
 
                     <Button
                       onClick={restoreFromBackup}

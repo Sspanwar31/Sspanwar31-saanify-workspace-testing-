@@ -52,6 +52,20 @@ const dashboardRoutes = ["/dashboard", "/dashboard/admin", "/dashboard/client"];
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // --- GitHub API passthrough fix (SAFE, minimal) ---
+  // Place this block at the very top of your middleware function, BEFORE any auth/redirect checks.
+  if (req.nextUrl && req.nextUrl.pathname && req.nextUrl.pathname.startsWith('/api/github')) {
+    // Allow all github API routes to pass through untouched.
+    // This prevents middleware from redirecting, stripping cookies, or returning HTML error pages.
+    return NextResponse.next();
+  }
+
+  // Additionally allow the specific backup/restore endpoints' OPTIONS preflight through
+  // (useful if client does CORS/preflight from dev or embedded previews).
+  if (req.method === 'OPTIONS' && req.nextUrl.pathname.startsWith('/api/github')) {
+    return NextResponse.next();
+  }
+
   // Skip API routes entirely - GitHub backup API should work without authentication
   if (pathname.startsWith("/api")) {
     return NextResponse.next();

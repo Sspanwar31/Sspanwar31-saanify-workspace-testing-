@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, useSpring, useInView } from 'framer-motion'
 import { Play, ArrowRight, TrendingUp, Users, Shield, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 
 interface CounterProps {
   value: number
@@ -194,10 +193,7 @@ function FeatureCard({ icon, title, description, gradient, shadowColor, floatDur
 
 export default function Hero() {
   const handleStartTrial = () => {
-    toast.success("🎉 Choose Your Plan!", {
-      description: "Welcome to Saanify! Select the perfect plan for your society.",
-      duration: 5000,
-    })
+    console.log("🎉 Choose Your Plan!")
     // Redirect to subscription page
     setTimeout(() => {
       window.location.href = '/subscription'
@@ -205,10 +201,7 @@ export default function Hero() {
   }
 
   const handleWatchDemo = () => {
-    toast.info("🎥 Demo Video", {
-      description: "Demo video will start playing in a new window.",
-      duration: 3000,
-    })
+    console.log("🎥 Demo Video")
     // In a real app, this would open a modal or navigate to demo page
     setTimeout(() => {
       window.open('#demo', '_blank')
@@ -216,10 +209,7 @@ export default function Hero() {
   }
 
   const handleFeatureClick = (featureName: string) => {
-    toast.success(`✨ ${featureName}`, {
-      description: "Learn more about this feature in our dashboard.",
-      duration: 3000,
-    })
+    console.log(`✨ ${featureName}`)
     // Redirect to signup to explore features
     setTimeout(() => {
       window.location.href = '/signup'

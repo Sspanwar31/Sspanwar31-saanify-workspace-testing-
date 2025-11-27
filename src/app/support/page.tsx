@@ -150,7 +150,7 @@ export default function Support() {
             >
               <Button
                 variant="ghost"
-                onClick={() => window.location.href = '/subscription/select-plan'}
+                onClick={() => window.location.href = '/'}
                 className="text-muted-foreground hover:text-foreground"
               >
                 ← Back to Home

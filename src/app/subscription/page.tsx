@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CreditCard, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react'
+import { CreditCard, CheckCircle, ArrowRight, Star, Shield, Zap, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface SubscriptionPlan {
   id: string
@@ -109,14 +110,30 @@ export default function SubscriptionPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="mb-8"
         >
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Choose Your Perfect Plan
-          </h1>
-          <p className="text-xl text-blue-200 mb-2">
-            Select the subscription that best fits your society needs
-          </p>
+          {/* Back to Home Button */}
+          <div className="flex justify-start mb-4">
+            <Button
+              variant="outline"
+              asChild
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+            >
+              <Link href="/">
+                <Home className="w-4 h-4 mr-2" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Choose Your Perfect Plan
+            </h1>
+            <p className="text-xl text-blue-200 mb-2">
+              Select the subscription that best fits your society needs
+            </p>
+          </div>
         </motion.div>
 
         {/* Plans Section */}

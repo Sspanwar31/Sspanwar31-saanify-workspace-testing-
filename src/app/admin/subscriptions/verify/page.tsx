@@ -54,6 +54,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { makeAuthenticatedRequest } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 interface PaymentProof {
   id: string
@@ -78,6 +79,7 @@ export default function AdminPaymentsPage() {
   const [selectedProof, setSelectedProof] = useState<PaymentProof | null>(null)
   const [adminNotes, setAdminNotes] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     fetchPaymentProofs()
@@ -208,6 +210,18 @@ export default function AdminPaymentsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
+          {/* Back to Home Button */}
+          <div className="flex justify-start mb-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </div>
+          
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Payment Approval Dashboard
           </h1>

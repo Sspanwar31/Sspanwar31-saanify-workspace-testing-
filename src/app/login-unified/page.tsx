@@ -194,7 +194,7 @@ export default function UnifiedLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Back to Home Button - Bottom Left */}
-      <Link href="/subscription/select-plan" className="absolute bottom-6 left-6 z-20">
+      <Link href="/" className="absolute bottom-6 left-6 z-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

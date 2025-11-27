@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Upload, CheckCircle, AlertCircle, CreditCard, FileText, AlertTriangle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Upload, CheckCircle, AlertCircle, CreditCard, FileText, AlertTriangle, Loader2, Home } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -434,6 +434,26 @@ export default function PaymentUploadPage() {
                       <span>For any issues, contact support at support@saanify.com</span>
                     </li>
                   </ul>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>
+                    Navigate to other pages
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href="/">
+                        <Home className="w-4 h-4 mr-2" />
+                        Back to Home
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

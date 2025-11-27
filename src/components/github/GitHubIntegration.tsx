@@ -233,9 +233,9 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     if (!silent) setIsLoading(true)
     try {
-      // Add timeout to the fetch request
+      // Add timeout to the fetch request with retry logic
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
+      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes timeout for large backups
 
       let requestBody: any = { 
         action: 'backup', 
@@ -251,18 +251,57 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         }
       }
 
-      const response = await fetch('/api/github/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      })
+      // Retry logic for 502 errors
+      let response: Response
+      let retryCount = 0
+      const maxRetries = 3
+
+      while (retryCount < maxRetries) {
+        try {
+          response = await fetch('/api/github/backup', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
+          })
+          
+          // If we get a successful response, break the retry loop
+          if (response.ok || response.status !== 502) {
+            break
+          }
+          
+          retryCount++
+          console.log(`Retry ${retryCount}/${maxRetries} for 502 error...`)
+          
+          // Wait before retrying (exponential backoff)
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
+          }
+          
+        } catch (error) {
+          retryCount++
+          if (retryCount >= maxRetries) {
+            throw error
+          }
+          console.log(`Retry ${retryCount}/${maxRetries} after error...`)
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
+        }
+      }
 
       clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error')
         console.error('API Response Error:', response.status, errorText)
+        
+        // Special handling for 502 errors
+        if (response.status === 502) {
+          throw new Error('Server is temporarily unavailable (502 Bad Gateway). Please try again in a few moments.')
+        }
+        
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
@@ -306,9 +345,28 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Backup error:', error)
-      if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
+      if (!silent) {
+        let errorMessage = '❌ Error creating backup'
+        
+        if (error.name === 'AbortError') {
+          errorMessage = '⏰ Backup timed out (3 minutes). Please try again.'
+        } else if (error.message) {
+          // Clean up common error messages
+          errorMessage = error.message
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/\n/g, ' ') // Replace newlines with spaces
+            .trim()
+          
+          // Truncate very long error messages
+          if (errorMessage.length > 200) {
+            errorMessage = errorMessage.substring(0, 200) + '...'
+          }
+        }
+        
+        setMessage({ type: 'error', text: errorMessage })
+      }
     } finally {
       if (!silent) setIsLoading(false)
     }

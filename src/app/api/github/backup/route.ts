@@ -376,6 +376,18 @@ async function restoreFromBackup(config: GitHubConfig, commitSha: string): Promi
 // Enhanced API route handler
 export async function POST(request: NextRequest) {
   try {
+    // Check request size to prevent 502 errors
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB limit
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Request too large. Please reduce backup size or try again.' 
+        },
+        { status: 413 }
+      )
+    }
+
     const { action, config, commitSha, useGit, pushToGitHub } = await request.json()
     
     // Check if we have valid GitHub configuration (not demo values) - DO THIS FIRST

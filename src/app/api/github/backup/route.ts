@@ -416,14 +416,21 @@ export async function POST(request: NextRequest) {
     // Skip validation for demo mode
     if (isDemoConfig) {
       return NextResponse.json(
-        { error: 'Demo mode: This action is not supported with demo credentials' },
+        { 
+          success: false,
+          error: 'Demo mode: This action is not supported with demo credentials',
+          demoMode: true
+        },
         { status: 400 }
       )
     }
     
     if (!config || !config.owner || !config.repo || !config.token) {
       return NextResponse.json(
-        { error: 'GitHub configuration is required (owner, repo, token)' },
+        { 
+          success: false,
+          error: 'GitHub configuration is required (owner, repo, token)' 
+        },
         { status: 400 }
       )
     }
@@ -434,7 +441,10 @@ export async function POST(request: NextRequest) {
       await github.getRepository()
     } catch (error) {
       return NextResponse.json(
-        { error: 'Invalid GitHub configuration or insufficient permissions' },
+        { 
+          success: false,
+          error: 'Invalid GitHub configuration or insufficient permissions' 
+        },
         { status: 400 }
       )
     }
@@ -458,7 +468,10 @@ export async function POST(request: NextRequest) {
         
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Supported actions: backup, restore' },
+          { 
+            success: false,
+            error: 'Invalid action. Supported actions: backup, restore' 
+          },
           { status: 400 }
         )
     }
@@ -467,7 +480,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result)
     } else {
       return NextResponse.json(
-        { error: result.error || 'Operation failed' },
+        { 
+          success: false,
+          error: result.error || 'Operation failed' 
+        },
         { status: 500 }
       )
     }
@@ -475,7 +491,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('GitHub API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error during GitHub operation' },
+      { 
+        success: false,
+        error: 'Internal server error during GitHub operation' 
+      },
       { status: 500 }
     )
   }

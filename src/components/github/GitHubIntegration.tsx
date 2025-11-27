@@ -233,21 +233,41 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     if (!silent) setIsLoading(true)
     try {
+      // Add timeout to the fetch request
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
+
+      let requestBody: any = { 
+        action: 'backup', 
+        config,
+        message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
+      }
+
+      // If using demo credentials, use quick backup instead
+      if (config.token === 'demo-token' || config.owner === 'demo-user' || config.repo === 'demo-repo') {
+        requestBody = { 
+          action: 'quick-backup', 
+          useGit: true 
+        }
+      }
+
       const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'backup', 
-          config,
-          message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
-        })
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('API Response Error:', response.status, errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('Backup API Response:', data) // Debug log
       
       if (data.success) {
         const now = new Date().toISOString()
@@ -255,16 +275,36 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         localStorage.setItem('github-last-backup', now)
         
         if (!silent) {
+          const backupType = requestBody.action === 'quick-backup' ? 'Local Git Backup' : 'GitHub Backup'
+          const filesCount = data.filesCount || (data.details?.addOutput?.match(/(\d+) files changed/) ? data.details.addOutput.match(/(\d+) files changed/)[1] : 0)
           setMessage({ 
             type: 'success', 
-            text: `✅ Backup complete! ${data.filesCount || 0} files uploaded to GitHub` 
+            text: `✅ ${backupType} complete! ${filesCount} files backed up` 
           })
         }
         if (showHistory) {
           loadBackupHistory()
         }
       } else {
-        if (!silent) setMessage({ type: 'error', text: data.error || '❌ Backup failed' })
+        // Handle error responses properly
+        const errorMessage = data.error || data.message || '❌ Backup failed'
+        
+        // Special handling for demo mode
+        if (data.demoMode) {
+          if (!silent) {
+            setMessage({ 
+              type: 'info', 
+              text: '🔧 Using Local Git Backup - Configure GitHub credentials for cloud backup' 
+            })
+          }
+        } else {
+          if (!silent) {
+            setMessage({ 
+              type: 'error', 
+              text: errorMessage 
+            })
+          }
+        }
       }
     } catch (error) {
       console.error('Backup error:', error)

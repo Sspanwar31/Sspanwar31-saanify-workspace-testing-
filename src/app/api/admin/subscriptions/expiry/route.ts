@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       type, 
       userId, 
       societyAccountId, 
-      message 
+      message,
       daysLeft 
     } = body
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   }
 
 // CRON JOB - Runs every 12 hours
-export async function POST(request: NextRequest) {
+export async function CRON(request: NextRequest) {
   try {
     console.log('🔄 Running auto-expiry check...')
     

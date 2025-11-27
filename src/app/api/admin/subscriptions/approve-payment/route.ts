@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import jwt from 'jsonwebtoken'
+import { NotificationService } from '@/lib/notifications'
+import ZAI from 'z-ai-web-dev-sdk'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -26,6 +28,26 @@ async function getUserFromToken(request: NextRequest) {
   }
 }
 
+// Send email notification
+async function sendEmailNotification(userEmail: string, userName: string, plan: string, status: 'approved' | 'rejected') {
+  try {
+    const zai = await ZAI.create()
+    
+    const emailContent = status === 'approved' 
+      ? `Dear ${userName},\n\nGreat news! Your payment for the ${plan} plan has been approved.\n\nYour subscription is now active and you can complete your signup process.\n\nThank you for choosing Saanify!\n\nBest regards,\nSaanify Team`
+      : `Dear ${userName},\n\nWe regret to inform you that your payment for the ${plan} plan could not be verified.\n\nPlease contact our support team or reupload your payment proof.\n\nThank you for your understanding.\n\nBest regards,\nSaanify Team`
+
+    // Here you would integrate with your email service
+    // For now, we'll just log the email content
+    console.log(`Email to ${userEmail}: ${emailContent}`)
+    
+    return true
+  } catch (error) {
+    console.error('Failed to send email:', error)
+    return false
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user
@@ -47,80 +69,100 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { proofId, adminNotes } = body
+    const { paymentId, adminNotes } = body
 
-    if (!proofId) {
+    if (!paymentId) {
       return NextResponse.json(
-        { error: 'Payment proof ID is required' },
+        { error: 'Payment ID is required' },
         { status: 400 }
       )
     }
 
-    // Get payment proof with user details
-    const paymentProof = await db.paymentProof.findUnique({
-      where: { id: proofId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            societyAccountId: true
-          }
-        }
-      }
+    // Try to find in pending payments first
+    let payment = await db.pendingPayment.findUnique({
+      where: { id: paymentId }
     })
 
-    if (!paymentProof) {
+    let targetUser = null
+
+    if (payment) {
+      // Find user by email
+      targetUser = await db.user.findUnique({
+        where: { email: payment.userEmail }
+      })
+    } else {
+      // Try to find in payment proofs
+      payment = await db.paymentProof.findUnique({
+        where: { id: paymentId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              societyAccountId: true
+            }
+          }
+        }
+      })
+
+      if (payment) {
+        targetUser = payment.user
+      }
+    }
+
+    if (!payment || !targetUser) {
       return NextResponse.json(
-        { error: 'Payment proof not found' },
+        { error: 'Payment not found or user not associated' },
         { status: 404 }
       )
     }
 
-    if (paymentProof.status !== 'pending') {
-      return NextResponse.json(
-        { error: 'Payment proof has already been processed' },
-        { status: 400 }
-      )
+    // Calculate subscription end date (30 days from now)
+    const expiryDate = new Date()
+    expiryDate.setDate(expiryDate.getDate() + 30)
+
+    // Update payment status
+    if (payment.userEmail) {
+      // Pending payment update
+      await db.pendingPayment.update({
+        where: { id: paymentId },
+        data: {
+          status: 'APPROVED',
+          approvedAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+    } else {
+      // Payment proof update
+      await db.paymentProof.update({
+        where: { id: paymentId },
+        data: {
+          status: 'approved',
+          approvedAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
     }
 
-    // Calculate subscription end date based on plan
-    const subscriptionEndsAt = new Date()
-    const planDurationMonths = {
-      'BASIC': 1,
-      'PRO': 1,
-      'ENTERPRISE': 1
-    }
-    
-    const months = planDurationMonths[paymentProof.plan.toUpperCase()] || 1
-    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + months)
-
-    // Update payment proof status
-    const updatedPaymentProof = await db.paymentProof.update({
-      where: { id: proofId },
-      data: {
-        status: 'approved',
-        updatedAt: new Date()
-      }
-    })
-
-    // Update user's subscription
+    // Update user's subscription status
     await db.user.update({
-      where: { id: paymentProof.user.id },
+      where: { id: targetUser.id },
       data: {
-        subscriptionEndsAt,
+        subscriptionStatus: 'ACTIVE',
+        plan: payment.plan.toUpperCase(),
+        expiryDate,
         updatedAt: new Date()
       }
     })
 
     // Update society account subscription if exists
-    if (paymentProof.user.societyAccountId) {
+    if (targetUser.societyAccountId) {
       await db.societyAccount.update({
-        where: { id: paymentProof.user.societyAccountId },
+        where: { id: targetUser.societyAccountId },
         data: {
-          subscriptionPlan: paymentProof.plan.toUpperCase(),
-          subscriptionEndsAt,
+          subscriptionPlan: payment.plan.toUpperCase(),
+          subscriptionEndsAt: expiryDate,
           status: 'ACTIVE',
           updatedAt: new Date()
         }
@@ -131,9 +173,9 @@ export async function POST(request: NextRequest) {
     try {
       await db.notification.create({
         data: {
-          userId: paymentProof.user.id,
-          title: 'Payment Approved',
-          message: `Your payment for ${paymentProof.plan} plan has been approved. Your subscription is now active!`,
+          userId: targetUser.id,
+          title: 'Payment Approved! 🎉',
+          message: `Your payment for ${payment.plan} plan has been approved. Your subscription is now active! Please complete your signup to access the dashboard.`,
           type: 'success',
           isRead: false,
           createdAt: new Date()
@@ -144,14 +186,24 @@ export async function POST(request: NextRequest) {
       // Continue even if notification fails
     }
 
+    // Send notifications using the notification service
+    await NotificationService.notifyPaymentApproved(
+      targetUser.email || '',
+      targetUser.name || 'User',
+      payment.plan,
+      targetUser.id
+    )
+
     return NextResponse.json({
       success: true,
       message: 'Payment approved successfully',
-      paymentProof: updatedPaymentProof,
-      subscriptionData: {
-        plan: paymentProof.plan,
-        subscriptionEndsAt,
-        societyAccountId: paymentProof.user.societyAccountId
+      paymentId: paymentId,
+      userData: {
+        userId: targetUser.id,
+        email: targetUser.email,
+        plan: payment.plan,
+        subscriptionStatus: 'ACTIVE',
+        expiryDate
       }
     })
 

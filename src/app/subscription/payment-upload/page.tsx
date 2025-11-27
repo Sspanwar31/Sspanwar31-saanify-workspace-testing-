@@ -157,9 +157,9 @@ export default function PaymentUploadPage() {
         duration: 5000,
       })
 
-      // Redirect to subscription status page
+      // Redirect to waiting page
       setTimeout(() => {
-        router.push('/client/subscription/status')
+        router.push('/subscription/waiting')
       }, 2000)
 
     } catch (error: any) {

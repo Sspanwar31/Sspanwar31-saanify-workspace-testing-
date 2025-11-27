@@ -27,16 +27,14 @@ const publicRoutes = [
   "/", 
   "/about",
   "/contact",
+  "/subscription",
+  "/subscription/select-plan",
+  "/subscription/payment-upload",
+  "/subscription/waiting",
 
   // Auth routes must open even without login
   "/login",
-  "/signup",
-
-  // Subscription + Payment public
-  "/subscription/select-plan",
-  "/subscription/payment",
-  "/subscription/payment-status",
-
+  
   // GitHub backup should work without authentication
   "/api/github",
 ];
@@ -65,8 +63,28 @@ export async function middleware(req: NextRequest) {
   if (publicRoutes.some(r => pathname.startsWith(r))) return NextResponse.next();
 
   /* ────────────────────────────────────────────
-     If logged user exists
+     IF NO TOKEN
   ───────────────────────────────────────────── */
+
+  if (!token) {
+    // /login & /signup allowed
+    if (authRoutes.includes(pathname)) return NextResponse.next();
+    
+    // /subscription allowed
+    if (pathname.startsWith("/subscription")) return NextResponse.next();
+    
+    // /dashboard = redirect → subscription
+    if (dashboardRoutes.some(r => pathname.startsWith(r))) {
+      return NextResponse.redirect(new URL("/subscription", req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  /* ────────────────────────────────────────────
+     IF TOKEN EXISTS
+  ───────────────────────────────────────────── */
+  
   if (token) {
     const user = decodeJwtPayload(token);
     if (!user) {
@@ -76,42 +94,62 @@ export async function middleware(req: NextRequest) {
     }
 
     const role = user.role?.toUpperCase();
-    const subscriptionActive = user.subscriptionActive === true || user.subscriptionStatus === "ACTIVE";
+    const subscriptionStatus = user.subscriptionStatus?.toUpperCase();
+    const expiryDate = user.expiryDate ? new Date(user.expiryDate) : null;
+    const isExpired = expiryDate && expiryDate < new Date();
 
-    // Logged user opening /login or /signup → redirect dashboard
-    if (authRoutes.includes(pathname)) {
-      if (role === "ADMIN") return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      if (role === "CLIENT") return NextResponse.redirect(new URL("/dashboard/client", req.url));
+    // Existing Admin redirect logic must REMAIN unchanged
+    if (role === "ADMIN") {
+      // Allow admin to access home page
+      if (pathname === "/") {
+        return NextResponse.next();
+      }
+      // Admin can access everything else
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+      }
+      return NextResponse.next();
     }
 
-    // Dashboard Access Rules
-    if (pathname.startsWith("/dashboard")) {
-      if (role === "ADMIN") return NextResponse.next(); // Admin always allowed
-      if (role === "CLIENT") {
-        if (subscriptionActive) return NextResponse.next(); // Valid Subscription → Allowed
-        else return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+    // Check for PENDING payment
+    if (subscriptionStatus === "PENDING") {
+      // Block signup, dashboard → show waiting page
+      if (pathname === "/signup" || dashboardRoutes.some(r => pathname.startsWith(r))) {
+        return NextResponse.redirect(new URL("/subscription/waiting", req.url));
+      }
+    }
+
+    // If subscription ACTIVE = allow dashboard
+    if (subscriptionStatus === "ACTIVE" && !isExpired) {
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.redirect(new URL("/dashboard/client", req.url));
+      }
+      if (dashboardRoutes.some(r => pathname.startsWith(r))) {
+        return NextResponse.next();
+      }
+    }
+
+    // If subscription EXPIRED = redirect to subscription
+    if (subscriptionStatus === "EXPIRED" || isExpired) {
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.next(); // Allow expired users to signup again
+      }
+      if (dashboardRoutes.some(r => pathname.startsWith(r))) {
+        return NextResponse.redirect(new URL("/subscription", req.url));
+      }
+    }
+
+    // If NONE or TRIAL = redirect to subscription for dashboard access
+    if (subscriptionStatus === "NONE" || subscriptionStatus === "TRIAL") {
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.next(); // Allow signup
+      }
+      if (dashboardRoutes.some(r => pathname.startsWith(r))) {
+        return NextResponse.redirect(new URL("/subscription", req.url));
       }
     }
 
     return NextResponse.next();
-  }
-
-  /* ────────────────────────────────────────────
-     If NO Token → only signup requires subscription
-  ───────────────────────────────────────────── */
-
-  if (!token) {
-    // Direct signup not allowed → go to plans first
-    if (pathname.startsWith("/signup")) {
-      return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
-    }
-
-    // Trying to open dashboard without subscription → redirect to plans
-    if (dashboardRoutes.some(r => pathname.startsWith(r))) {
-      return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
-    }
-
-    return NextResponse.redirect(new URL("/", req.url)); // Default → Landing Page
   }
 
   return NextResponse.next();

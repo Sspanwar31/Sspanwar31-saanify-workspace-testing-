@@ -14,10 +14,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   // Increase body size limit for large backup operations
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
-  // Configure for large file uploads and long-running operations
   async rewrites() {
     return [];
   },

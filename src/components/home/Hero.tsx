@@ -194,13 +194,13 @@ function FeatureCard({ icon, title, description, gradient, shadowColor, floatDur
 
 export default function Hero() {
   const handleStartTrial = () => {
-    toast.success("🎉 Trial Started!", {
-      description: "Welcome to Effortless Society Management! Your 15-day free trial has begun.",
+    toast.success("🎉 Choose Your Plan!", {
+      description: "Welcome to Saanify! Select the perfect plan for your society.",
       duration: 5000,
     })
-    // Redirect to signup page for trial users
+    // Redirect to subscription page
     setTimeout(() => {
-      window.location.href = '/signup'
+      window.location.href = '/subscription'
     }, 1000)
   }
 
@@ -288,7 +288,7 @@ export default function Hero() {
                   size="lg" 
                   className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  Start Your 15-Day Free Trial
+                  Choose Your Plan
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>

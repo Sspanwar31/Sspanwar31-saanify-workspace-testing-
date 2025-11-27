@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import jwt from 'jsonwebtoken'
+import { NotificationService } from '@/lib/notifications'
 
 // Validation schema
 const paymentSubmissionSchema = z.object({
@@ -47,21 +48,6 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = paymentSubmissionSchema.parse(body)
 
-    // Check if transaction ID already exists
-    const existingPayment = await db.paymentProof.findFirst({
-      where: { 
-        txnId: validatedData.transactionId,
-        status: { not: 'rejected' }
-      }
-    })
-
-    if (existingPayment) {
-      return NextResponse.json(
-        { error: 'Transaction ID already exists or was previously rejected' },
-        { status: 400 }
-      )
-    }
-
     // Get user details
     const userDetails = await db.user.findUnique({
       where: { id: user.userId },
@@ -75,7 +61,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create payment proof record
+    // Check if transaction ID already exists in pending payments
+    const existingPendingPayment = await db.pendingPayment.findFirst({
+      where: { 
+        txnId: validatedData.transactionId,
+        status: { not: 'REJECTED' }
+      }
+    })
+
+    if (existingPendingPayment) {
+      return NextResponse.json(
+        { error: 'Transaction ID already exists or was previously rejected' },
+        { status: 400 }
+      )
+    }
+
+    // Set expiry date (24 hours from now)
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
+
+    // Create pending payment record
+    const pendingPayment = await db.pendingPayment.create({
+      data: {
+        userEmail: userDetails.email || user.email,
+        plan: validatedData.plan.toUpperCase(),
+        amount: validatedData.amount,
+        txnId: validatedData.transactionId,
+        proof_url: validatedData.screenshot,
+        status: 'PENDING',
+        expiresAt,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    })
+
+    // Update user's subscription status to PENDING
+    await db.user.update({
+      where: { id: user.userId },
+      data: {
+        subscriptionStatus: 'PENDING',
+        plan: validatedData.plan.toUpperCase(),
+        updatedAt: new Date()
+      }
+    })
+
+    // Also create payment proof record for backward compatibility
     const paymentProof = await db.paymentProof.create({
       data: {
         userId: user.userId,
@@ -101,48 +131,26 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create notification for user
-    await db.notification.create({
-      data: {
-        userId: user.userId,
-        title: 'Payment Submitted',
-        message: `Your payment of ₹${validatedData.amount} for ${validatedData.plan.toUpperCase()} plan has been submitted for review.`,
-        type: 'info',
-        isRead: false,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
-
-    // Create notification for admin
-    const adminUsers = await db.user.findMany({
-      where: { role: { in: ['ADMIN', 'SUPERADMIN'] } }
-    })
-
-    for (const admin of adminUsers) {
-      await db.notification.create({
-        data: {
-          userId: admin.id,
-          title: 'New Payment Approval Required',
-          message: `${userDetails.name} has submitted payment of ₹${validatedData.amount} for ${validatedData.plan.toUpperCase()} plan.`,
-          type: 'payment',
-          isRead: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      })
-    }
+    // Notify admins about new payment
+    await NotificationService.notifyPaymentUploaded(
+      userDetails.email || user.email,
+      userDetails.name || 'User',
+      validatedData.plan.toUpperCase(),
+      validatedData.amount
+    )
 
     return NextResponse.json({
       success: true,
       message: 'Payment submitted successfully. Your payment is now under review.',
-      paymentProof: {
-        id: paymentProof.id,
-        amount: paymentProof.amount,
-        plan: paymentProof.plan,
-        transactionId: paymentProof.txnId,
-        status: paymentProof.status,
-        createdAt: paymentProof.createdAt
+      paymentId: pendingPayment.id,
+      paymentData: {
+        id: pendingPayment.id,
+        amount: pendingPayment.amount,
+        plan: pendingPayment.plan,
+        transactionId: pendingPayment.txnId,
+        status: pendingPayment.status,
+        expiresAt: pendingPayment.expiresAt,
+        createdAt: pendingPayment.createdAt
       }
     })
 

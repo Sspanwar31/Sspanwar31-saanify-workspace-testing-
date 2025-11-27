@@ -42,6 +42,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 export default function AdminDashboard() {
@@ -49,6 +50,8 @@ export default function AdminDashboard() {
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPlan, setSelectedPlan] = useState('all')
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false)
 
   // Enhanced stats
   const stats = {
@@ -156,9 +159,13 @@ export default function AdminDashboard() {
   })
 
   const handleViewClient = (clientId: number) => {
-    // In real app, this would navigate to client details page
-    console.log(`Viewing client details for ID: ${clientId}`)
-    toast.success(`Opening client details for ${clients.find(c => c.id === clientId)?.name || 'Unknown Client'}`)
+    const client = clients.find(c => c.id === clientId)
+    if (client) {
+      setSelectedClient(client)
+      setIsClientDetailsOpen(true)
+      console.log(`Action: view for client: ${client.id}`)
+      toast.success(`Opening client details for ${client.name}`)
+    }
   }
 
   const handleEditClient = (clientId: number) => {
@@ -657,6 +664,169 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Client Details Modal */}
+      <Dialog open={isClientDetailsOpen} onOpenChange={setIsClientDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Client Details - {selectedClient?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedClient && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Basic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Client Name</label>
+                      <p className="text-gray-900 dark:text-white font-medium">{selectedClient.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email Address</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.address}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Subscription Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
+                      <div className="mt-1">
+                        <Badge className={
+                          selectedClient.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                          selectedClient.status === 'TRIAL' ? 'bg-blue-100 text-blue-800' :
+                          selectedClient.status === 'EXPIRED' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }>
+                          {selectedClient.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Plan</label>
+                      <div className="mt-1">
+                        <Badge className={
+                          selectedClient.plan === 'PRO' ? 'bg-purple-100 text-purple-800' :
+                          selectedClient.plan === 'ENTERPRISESE' ? 'bg-orange-100 text-orange-800' :
+                          selectedClient.plan === 'BASIC' ? 'bg-gray-100 text-gray-800' :
+                          'bg-blue-100 text-blue-800'
+                        }>
+                          {selectedClient.plan}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Join Date</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.joinDate}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Subscription Ends</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.subscriptionEndsAt}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Login</label>
+                      <p className="text-gray-900 dark:text-white">{selectedClient.lastLogin}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-8 w-8 text-blue-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Members</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedClient.members}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-8 w-8 text-green-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{selectedClient.revenue.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-8 w-8 text-orange-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Expenses</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{selectedClient.expenses.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-8 w-8 text-purple-500" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Loans</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{selectedClient.loans.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Button variant="outline" onClick={() => setIsClientDetailsOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setIsClientDetailsOpen(false)
+                  handleEditClient(selectedClient.id)
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Client
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsClientDetailsOpen(false)
+                    window.location.href = '/client/dashboard'
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Client Panel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

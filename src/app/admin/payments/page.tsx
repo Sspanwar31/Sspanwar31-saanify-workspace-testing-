@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { makeAuthenticatedRequest } from '@/lib/auth'
 
 interface PaymentProof {
   id: string
@@ -72,10 +73,10 @@ export default function AdminPaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch('/api/admin/payments')
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions/payment-proofs')
       if (response.ok) {
         const data = await response.json()
-        setPayments(data.payments || [])
+        setPayments(data.proofs || [])
         setStats(data.stats || stats)
       } else {
         throw new Error('Failed to fetch payments')
@@ -91,8 +92,13 @@ export default function AdminPaymentsPage() {
   const handleApprovePayment = async (paymentId: string) => {
     setIsProcessing(paymentId)
     try {
-      const response = await fetch(`/api/admin/payments/approve/${paymentId}`, {
-        method: 'POST'
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions/approve-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          paymentId,
+          adminNotes: 'Payment approved by admin'
+        })
       })
 
       if (response.ok) {
@@ -101,7 +107,8 @@ export default function AdminPaymentsPage() {
         })
         fetchPayments() // Refresh data
       } else {
-        throw new Error('Failed to approve payment')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to approve payment')
       }
     } catch (error) {
       console.error('Error approving payment:', error)
@@ -114,8 +121,13 @@ export default function AdminPaymentsPage() {
   const handleRejectPayment = async (paymentId: string) => {
     setIsProcessing(paymentId)
     try {
-      const response = await fetch(`/api/admin/payments/reject/${paymentId}`, {
-        method: 'POST'
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions/reject-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          paymentId,
+          adminNotes: 'Payment rejected by admin'
+        })
       })
 
       if (response.ok) {
@@ -124,7 +136,8 @@ export default function AdminPaymentsPage() {
         })
         fetchPayments() // Refresh data
       } else {
-        throw new Error('Failed to reject payment')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to reject payment')
       }
     } catch (error) {
       console.error('Error rejecting payment:', error)

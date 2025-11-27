@@ -1143,7 +1143,6 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'clients', label: 'Client Management', icon: Users },
-              { id: 'payments', label: 'Payments (Approval)', icon: CreditCard },
               { id: 'billing', label: 'Subscription & Billing', icon: CreditCard },
               { id: 'analytics', label: 'Analytics', icon: Activity },
               { id: 'activity', label: 'Activity Monitor', icon: Activity },
@@ -1501,54 +1500,6 @@ export default function AdminDashboard() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* ================= PAYMENTS TAB ================= */}
-            {activeTab === 'payments' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Payment Approvals</h2>
-                    <p className="text-white/60">Review and approve user payment submissions</p>
-                  </div>
-                  <Button 
-                    onClick={() => window.open('/admin/payments', '_blank')}
-                    className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Open Payments Page
-                  </Button>
-                </div>
-
-                <Card className="backdrop-blur-xl bg-white/5 border-white/10">
-                  <CardContent className="p-6">
-                    <div className="text-center py-8">
-                      <CreditCard className="w-16 h-16 mx-auto mb-4 text-cyan-400" />
-                      <h3 className="text-xl font-semibold text-white mb-2">Payment Management</h3>
-                      <p className="text-white/60 mb-4">
-                        Click the button above to open the dedicated payment approval page
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-                        <div className="bg-white/5 rounded-lg p-4">
-                          <Clock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                          <p className="text-white font-semibold">Pending</p>
-                          <p className="text-white/60 text-sm">Awaiting approval</p>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-4">
-                          <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                          <p className="text-white font-semibold">Approved</p>
-                          <p className="text-white/60 text-sm">Activated</p>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-4">
-                          <XCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-                          <p className="text-white font-semibold">Rejected</p>
-                          <p className="text-white/60 text-sm">Declined</p>
-                        </div>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

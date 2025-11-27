@@ -505,7 +505,7 @@ export default function UnifiedLoginPage() {
               <CardFooter className="text-center">
                 <p className="text-purple-200 text-sm">
                   Don't have an account?{' '}
-                  <Link href="/auth/signup" className="text-purple-400 hover:text-purple-300 underline">
+                  <Link href="/signup" className="text-purple-400 hover:text-purple-300 underline">
                     Sign up
                   </Link>
                 </p>

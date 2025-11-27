@@ -10,37 +10,29 @@ datasource db {
 /// /////////////////////////////////////////////////
 /// /////////////////////////////////////////////////
 model User {
-  id                  String           @id @default(cuid())
-  name                String?
-  email               String?          @unique
-  emailVerified       DateTime?
-  image               String?
-  password            String?
-  role                String           @default("CLIENT")
-  isActive            Boolean          @default(true)
-  lastLoginAt         DateTime?
-  societyAccountId    String?
-  trialEndsAt         DateTime?
-  subscriptionEndsAt  DateTime?
-  // New subscription fields
-  subscriptionStatus  String           @default("NONE") // ACTIVE | TRIAL | EXPIRED | NONE
-  plan                String           @default("TRIAL") // TRIAL | BASIC | PRO | ENTERPRISE
-  expiryDate          DateTime?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  accounts            Account[]
-  posts               Post[]
-  sessions            Session[]
-  societyAccount      SocietyAccount?  @relation(fields: [societyAccountId], references: [id])
-  paymentProofs       PaymentProof[]
-  pendingPayments     PendingPayment[]
-  notifications       Notification[]
+  id               String          @id @default(cuid())
+  name             String?
+  email            String?         @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  role             String          @default("CLIENT")
+  isActive         Boolean         @default(true)
+  lastLoginAt      DateTime?
+  societyAccountId String?
+  trialEndsAt      DateTime?
+  subscriptionEndsAt DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  accounts         Account[]
+  posts            Post[]
+  sessions         Session[]
+  societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
+  paymentProofs    PaymentProof[]
 
   @@map("users")
   @@index([role])
   @@index([isActive])
-  @@index([subscriptionStatus])
-  @@index([plan])
 }
 
 model Account {
@@ -152,28 +144,6 @@ model AutomationTask {
 
 /// /////////////////////////////////////////////////
 /// /////////////////////////////////////////////////
-model PendingPayment {
-  id         String    @id @default(cuid())
-  userEmail  String
-  plan       String    // TRIAL | BASIC | PRO | ENTERPRISE
-  amount     Float
-  txnId      String    @unique
-  proof_url  String?
-  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
-  approvedAt DateTime?
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User?     @relation(fields: [userEmail], references: [email])
-
-  @@map("pending_payments")
-  @@index([userEmail])
-  @@index([status])
-  @@index([txnId])
-}
-
-/// /////////////////////////////////////////////////
-/// /////////////////////////////////////////////////
 model PaymentProof {
   id            String   @id @default(cuid())
   userId        String
@@ -181,8 +151,7 @@ model PaymentProof {
   plan          String
   txnId         String   @unique
   screenshotUrl String?
-  status        String   @default("pending") // pending | approved | rejected
-  approvedAt    DateTime?
+  status        String   @default("pending")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -190,25 +159,6 @@ model PaymentProof {
   @@map("payment_proofs")
   @@index([userId])
   @@index([status])
-  @@index([txnId])
-}
-
-/// /////////////////////////////////////////////////
-/// /////////////////////////////////////////////////
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  message   String
-  type      String   @default("info")
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-  @@index([userId])
-  @@index([isRead])
 }
 
 /// /////////////////////////////////////////////////

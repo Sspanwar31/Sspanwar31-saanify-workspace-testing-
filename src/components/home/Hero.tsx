@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, useSpring, useInView } from 'framer-motion'
 import { Play, ArrowRight, TrendingUp, Users, Shield, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 interface CounterProps {
   value: number
@@ -193,15 +194,21 @@ function FeatureCard({ icon, title, description, gradient, shadowColor, floatDur
 
 export default function Hero() {
   const handleStartTrial = () => {
-    console.log("🎉 Choose Your Plan!")
-    // Redirect to subscription page
+    toast.success("🎉 Trial Started!", {
+      description: "Welcome to Effortless Society Management! Your 15-day free trial has begun.",
+      duration: 5000,
+    })
+    // Redirect to signup page for trial users
     setTimeout(() => {
-      window.location.href = '/subscription'
+      window.location.href = '/signup'
     }, 1000)
   }
 
   const handleWatchDemo = () => {
-    console.log("🎥 Demo Video")
+    toast.info("🎥 Demo Video", {
+      description: "Demo video will start playing in a new window.",
+      duration: 3000,
+    })
     // In a real app, this would open a modal or navigate to demo page
     setTimeout(() => {
       window.open('#demo', '_blank')
@@ -209,7 +216,10 @@ export default function Hero() {
   }
 
   const handleFeatureClick = (featureName: string) => {
-    console.log(`✨ ${featureName}`)
+    toast.success(`✨ ${featureName}`, {
+      description: "Learn more about this feature in our dashboard.",
+      duration: 3000,
+    })
     // Redirect to signup to explore features
     setTimeout(() => {
       window.location.href = '/signup'
@@ -278,7 +288,7 @@ export default function Hero() {
                   size="lg" 
                   className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  Choose Your Plan
+                  Start Your 15-Day Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>

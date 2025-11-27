@@ -24,6 +24,7 @@ import {
   BarChart3,
   TrendingUp,
   MoreHorizontal,
+  Menu,
   ChevronDown,
   Edit,
   Lock,
@@ -51,10 +52,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { makeAuthenticatedRequest } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
 
 interface PaymentProof {
   id: string
@@ -77,9 +78,7 @@ interface PaymentProof {
 export default function AdminPaymentsPage() {
   const [paymentProofs, setPaymentProofs] = useState<PaymentProof[]>([])
   const [selectedProof, setSelectedProof] = useState<PaymentProof | null>(null)
-  const [adminNotes, setAdminNotes] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     fetchPaymentProofs()
@@ -107,13 +106,11 @@ export default function AdminPaymentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           proofId,
-          adminNotes: adminNotes
+          adminNotes: ''
         })
       })
 
       if (response.ok) {
-        const data = await response.json()
-        
         setPaymentProofs(prev => 
           prev.map(proof => 
             proof.id === proofId 
@@ -145,7 +142,7 @@ export default function AdminPaymentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           proofId,
-          adminNotes: adminNotes
+          adminNotes: ''
         })
       })
 
@@ -210,18 +207,6 @@ export default function AdminPaymentsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          {/* Back to Home Button */}
-          <div className="flex justify-start mb-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/')}
-              className="flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              Back to Home
-            </Button>
-          </div>
-          
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Payment Approval Dashboard
           </h1>
@@ -314,7 +299,9 @@ export default function AdminPaymentsPage() {
                       <TableCell>{proof.plan.toUpperCase()}</TableCell>
                       <TableCell>₹{formatAmount(proof.amount)}</TableCell>
                       <TableCell>{proof.txnId}</TableCell>
-                      <TableCell>{getStatusBadge(proof.status)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(proof.status)}
+                      </TableCell>
                       <TableCell>{formatDate(proof.createdAt)}</TableCell>
                       <TableCell>
                         <Button
@@ -345,65 +332,62 @@ export default function AdminPaymentsPage() {
                 </DialogTitle>
               </DialogHeader>
               <DialogDescription>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Client Name</label>
-                      <p className="font-medium text-gray-700">{selectedProof.user.name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Client Email</label>
-                      <p className="font-medium text-gray-700">{selectedProof.user.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Society Name</label>
-                      <p className="font-medium text-gray-700">{selectedProof.user.societyName}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Plan</label>
-                      <p className="font-medium text-gray-700">{selectedProof.plan.toUpperCase()}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Amount</label>
-                      <p className="font-medium text-gray-700">₹{formatAmount(selectedProof.amount)}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Transaction ID</label>
-                      <p className="font-medium text-gray-700">{selectedProof.txnId}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Date</label>
-                      <p className="font-medium text-gray-700">{formatDate(selectedProof.createdAt)}</p>
-                    </div>
-                    <div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">Status</label>
+                        <Label>Client Name</Label>
+                        <p className="font-medium text-gray-700">{selectedProof.user.name}</p>
+                      </div>
+                      <div>
+                        <Label>Client Email</Label>
+                        <p className="font-medium text-gray-700">{selectedProof.user.email}</p>
+                      </div>
+                      <div>
+                        <Label>Society Name</Label>
+                        <p className="font-medium text-gray-700">{selectedProof.user.societyName}</p>
+                      </div>
+                      <div>
+                        <Label>Plan</Label>
+                        <p className="font-medium text-gray-700">{selectedProof.plan.toUpperCase()}</p>
+                      </div>
+                      <div>
+                        <Label>Amount</Label>
+                        <p className="font-medium text-gray-700">₹{formatAmount(selectedProof.amount)}</p>
+                      </div>
+                      <div>
+                        <Label>Transaction ID</Label>
+                        <p className="font-medium text-gray-700">{selectedProof.txnId}</p>
+                      </div>
+                      <div>
+                        <Label>Date</Label>
+                        <p className="font-medium text-gray-700">{formatDate(selectedProof.createdAt)}</p>
+                      </div>
+                      <div>
+                        <Label>Status</Label>
                         <p className="font-medium text-gray-700">
                           {getStatusBadge(selectedProof.status)}
                         </p>
                       </div>
                     </div>
+                    {selectedProof.screenshotUrl && (
+                      <div>
+                        <Label>Screenshot</Label>
+                        <p className="font-medium text-gray-700">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              window.open(selectedProof.screenshotUrl, '_blank')
+                            }}
+                          >
+                            View Full Size
+                          </Button>
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {selectedProof.screenshotUrl && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Screenshot</label>
-                      <p className="font-medium text-gray-700">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            window.open(selectedProof.screenshotUrl, '_blank')
-                          }}
-                        >
-                          View Full Size
-                        </Button>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </DialogDescription>
-              <DialogFooter>
-                <div className="flex gap-2">
+                </DialogDescription>
+                <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => setSelectedProof(null)}
@@ -417,20 +401,33 @@ export default function AdminPaymentsPage() {
                         onClick={() => handleReject(selectedProof.id)}
                         disabled={isProcessing}
                       >
-                        {isProcessing ? 'Processing...' : 'Reject'}
+                        {isProcessing ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Reject'
+                        )}
                       </Button>
                       <Button
                         onClick={() => handleApprove(selectedProof.id)}
                         disabled={isProcessing}
                       >
-                        {isProcessing ? 'Processing...' : 'Approve'}
+                        {isProcessing ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Approve'
+                        )}
                       </Button>
                     </>
                   )}
-                </div>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
         )}
       </div>
     </div>

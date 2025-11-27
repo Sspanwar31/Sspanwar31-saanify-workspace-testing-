@@ -253,54 +253,33 @@ async function createBackup(config: GitHubConfig): Promise<BackupResult> {
       throw new Error('No files found to backup')
     }
 
-    // If too many files, warn user
-    if (files.length > 1000) {
-      console.warn(`Large project detected: ${files.length} files. This may take a while...`)
-    }
-
     // Step 3: Create backup manifest
     console.log('Creating backup manifest...')
     const manifest = await FileSystemManager.createBackupManifest(files)
     
-    // Step 4: Create blobs for all files (with chunking to avoid overwhelming)
+    // Step 4: Create blobs for all files
     console.log(`Creating blobs for ${files.length} files...`)
-    const CHUNK_SIZE = 50 // Process files in chunks of 50
-    const fileObjects: any[] = []
-    
-    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
-      const chunk = files.slice(i, i + CHUNK_SIZE)
-      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(files.length / CHUNK_SIZE)} (${chunk.length} files)...`)
-      
-      const chunkPromises = chunk.map(async (file) => {
-        try {
-          const content = await fs.readFile(file, 'base64')
-          const blob = await github.createBlob(content)
-          return {
-            path: file.replace(projectRoot + '/', ''),
-            mode: '100644',
-            type: 'blob',
-            sha: blob.sha
-          }
-        } catch (error) {
-          console.warn(`Failed to process file ${file}:`, error)
-          return null
+    const filePromises = files.map(async (file) => {
+      try {
+        const content = await fs.readFile(file, 'base64')
+        const blob = await github.createBlob(content)
+        return {
+          path: file.replace(projectRoot + '/', ''),
+          mode: '100644',
+          type: 'blob',
+          sha: blob.sha
         }
-      })
-
-      const chunkResults = await Promise.all(chunkPromises)
-      fileObjects.push(...chunkResults.filter(obj => obj !== null))
-      
-      // Add small delay between chunks to avoid rate limiting
-      if (i + CHUNK_SIZE < files.length) {
-        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (error) {
+        console.warn(`Failed to process file ${file}:`, error)
+        return null
       }
-    }
+    })
+
+    const fileObjects = (await Promise.all(filePromises)).filter(obj => obj !== null)
     
     if (fileObjects.length === 0) {
       throw new Error('No files could be processed for backup')
     }
-
-    console.log(`Successfully processed ${fileObjects.length}/${files.length} files`)
 
     // Step 5: Create tree
     console.log('Creating git tree...')
@@ -376,29 +355,6 @@ async function restoreFromBackup(config: GitHubConfig, commitSha: string): Promi
 // Enhanced API route handler
 export async function POST(request: NextRequest) {
   try {
-    // Check request size to prevent 502 errors
-    const contentLength = request.headers.get('content-length')
-    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB limit
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Request too large. Please reduce backup size or try again.' 
-        },
-        { status: 413 }
-      )
-    }
-
-    // Set a longer timeout for this specific route
-    const MAX_EXECUTION_TIME = 300000 // 5 minutes
-    const startTime = Date.now()
-
-    // Check if we're approaching timeout
-    const checkTimeout = () => {
-      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
-        throw new Error('Operation timed out. Please try with a smaller dataset.')
-      }
-    }
-
     const { action, config, commitSha, useGit, pushToGitHub } = await request.json()
     
     // Check if we have valid GitHub configuration (not demo values) - DO THIS FIRST
@@ -439,21 +395,14 @@ export async function POST(request: NextRequest) {
     // Skip validation for demo mode
     if (isDemoConfig) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'Demo mode: This action is not supported with demo credentials',
-          demoMode: true
-        },
+        { error: 'Demo mode: This action is not supported with demo credentials' },
         { status: 400 }
       )
     }
     
     if (!config || !config.owner || !config.repo || !config.token) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'GitHub configuration is required (owner, repo, token)' 
-        },
+        { error: 'GitHub configuration is required (owner, repo, token)' },
         { status: 400 }
       )
     }
@@ -464,10 +413,7 @@ export async function POST(request: NextRequest) {
       await github.getRepository()
     } catch (error) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'Invalid GitHub configuration or insufficient permissions' 
-        },
+        { error: 'Invalid GitHub configuration or insufficient permissions' },
         { status: 400 }
       )
     }
@@ -491,10 +437,7 @@ export async function POST(request: NextRequest) {
         
       default:
         return NextResponse.json(
-          { 
-            success: false,
-            error: 'Invalid action. Supported actions: backup, restore' 
-          },
+          { error: 'Invalid action. Supported actions: backup, restore' },
           { status: 400 }
         )
     }
@@ -503,45 +446,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result)
     } else {
       return NextResponse.json(
-        { 
-          success: false,
-          error: result.error || 'Operation failed' 
-        },
+        { error: result.error || 'Operation failed' },
         { status: 500 }
       )
     }
     
   } catch (error) {
     console.error('GitHub API error:', error)
-    
-    // Check for timeout or gateway errors
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    
-    if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Request timed out. The backup operation took too long. Please try with fewer files or check your network connection.' 
-        },
-        { status: 504 } // Gateway Timeout
-      )
-    }
-    
-    if (errorMessage.includes('Operation timed out')) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Operation timed out. Please try with a smaller dataset.' 
-        },
-        { status: 504 } // Gateway Timeout
-      )
-    }
-    
     return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error during GitHub operation' 
-      },
+      { error: 'Internal server error during GitHub operation' },
       { status: 500 }
     )
   }

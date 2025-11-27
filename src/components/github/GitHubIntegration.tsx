@@ -233,80 +233,21 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     if (!silent) setIsLoading(true)
     try {
-      // Add timeout to the fetch request with retry logic
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes timeout for large backups
-
-      let requestBody: any = { 
-        action: 'backup', 
-        config,
-        message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
-      }
-
-      // If using demo credentials, use quick backup instead
-      if (config.token === 'demo-token' || config.owner === 'demo-user' || config.repo === 'demo-repo') {
-        requestBody = { 
-          action: 'quick-backup', 
-          useGit: true 
-        }
-      }
-
-      // Retry logic for 502 errors
-      let response: Response
-      let retryCount = 0
-      const maxRetries = 3
-
-      while (retryCount < maxRetries) {
-        try {
-          response = await fetch('/api/github/backup', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-cache'
-            },
-            body: JSON.stringify(requestBody),
-            signal: controller.signal
-          })
-          
-          // If we get a successful response, break the retry loop
-          if (response.ok || response.status !== 502) {
-            break
-          }
-          
-          retryCount++
-          console.log(`Retry ${retryCount}/${maxRetries} for 502 error...`)
-          
-          // Wait before retrying (exponential backoff)
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
-          }
-          
-        } catch (error) {
-          retryCount++
-          if (retryCount >= maxRetries) {
-            throw error
-          }
-          console.log(`Retry ${retryCount}/${maxRetries} after error...`)
-          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
-        }
-      }
-
-      clearTimeout(timeoutId)
+      const response = await fetch('/api/github/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'backup', 
+          config,
+          message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
+        })
+      })
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error')
-        console.error('API Response Error:', response.status, errorText)
-        
-        // Special handling for 502 errors
-        if (response.status === 502) {
-          throw new Error('Server is temporarily unavailable (502 Bad Gateway). Please try again in a few moments.')
-        }
-        
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log('Backup API Response:', data) // Debug log
       
       if (data.success) {
         const now = new Date().toISOString()
@@ -314,59 +255,20 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
         localStorage.setItem('github-last-backup', now)
         
         if (!silent) {
-          const backupType = requestBody.action === 'quick-backup' ? 'Local Git Backup' : 'GitHub Backup'
-          const filesCount = data.filesCount || (data.details?.addOutput?.match(/(\d+) files changed/) ? data.details.addOutput.match(/(\d+) files changed/)[1] : 0)
           setMessage({ 
             type: 'success', 
-            text: `✅ ${backupType} complete! ${filesCount} files backed up` 
+            text: `✅ Backup complete! ${data.filesCount || 0} files uploaded to GitHub` 
           })
         }
         if (showHistory) {
           loadBackupHistory()
         }
       } else {
-        // Handle error responses properly
-        const errorMessage = data.error || data.message || '❌ Backup failed'
-        
-        // Special handling for demo mode
-        if (data.demoMode) {
-          if (!silent) {
-            setMessage({ 
-              type: 'info', 
-              text: '🔧 Using Local Git Backup - Configure GitHub credentials for cloud backup' 
-            })
-          }
-        } else {
-          if (!silent) {
-            setMessage({ 
-              type: 'error', 
-              text: errorMessage 
-            })
-          }
-        }
+        if (!silent) setMessage({ type: 'error', text: data.error || '❌ Backup failed' })
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Backup error:', error)
-      if (!silent) {
-        let errorMessage = '❌ Error creating backup'
-        
-        if (error.name === 'AbortError') {
-          errorMessage = '⏰ Backup timed out (3 minutes). Please try again.'
-        } else if (error.message) {
-          // Clean up common error messages
-          errorMessage = error.message
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/\n/g, ' ') // Replace newlines with spaces
-            .trim()
-          
-          // Truncate very long error messages
-          if (errorMessage.length > 200) {
-            errorMessage = errorMessage.substring(0, 200) + '...'
-          }
-        }
-        
-        setMessage({ type: 'error', text: errorMessage })
-      }
+      if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
     } finally {
       if (!silent) setIsLoading(false)
     }

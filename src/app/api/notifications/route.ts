@@ -54,36 +54,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const unreadOnly = searchParams.get('unreadOnly') === 'true'
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
-    }
-
-    const notifications = await db.notification.findMany({
-      where: {
-        userId,
-        ...(unreadOnly && { isRead: false })
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      notifications
-    })
-  } catch (error) {
-    console.error('Notification fetch error:', error)
-    return NextResponse.json({
-      error: 'Failed to fetch notifications',
-      details: error.message
-    }, { status: 500 })
-  }
-}

@@ -9,8 +9,7 @@ const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number'),
-  plan: z.enum(['trial', 'basic', 'pro', 'enterprise']).default('trial')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number')
 })
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -37,21 +36,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 12)
 
-    // Calculate trial end date (15 days from now) for trial plans
-    let trialEndsAt = null
-    let subscriptionEndsAt = null
-    let subscriptionPlan = 'TRIAL'
+    // Calculate trial end date (15 days from now)
+    const trialEndsAt = new Date()
+    trialEndsAt.setDate(trialEndsAt.getDate() + 15)
 
-    if (validatedData.plan === 'trial') {
-      trialEndsAt = new Date()
-      trialEndsAt.setDate(trialEndsAt.getDate() + 15)
-      subscriptionPlan = 'TRIAL'
-    } else {
-      // For paid plans, set subscription plan but don't activate until payment is approved
-      subscriptionPlan = validatedData.plan.toUpperCase()
-    }
-
-    // Create user with appropriate plan settings
+    // Create user with trial
     const user = await db.user.create({
       data: {
         name: validatedData.name,
@@ -60,7 +49,6 @@ export async function POST(request: NextRequest) {
         role: 'CLIENT',
         isActive: true,
         trialEndsAt,
-        subscriptionEndsAt,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -74,27 +62,6 @@ export async function POST(request: NextRequest) {
         subscriptionEndsAt: true,
         createdAt: true
       }
-    })
-
-    // Create society account for the user
-    const societyAccount = await db.societyAccount.create({
-      data: {
-        name: `${validatedData.name}'s Society`,
-        email: validatedData.email.toLowerCase(),
-        subscriptionPlan,
-        status: validatedData.plan === 'trial' ? 'TRIAL' : 'PENDING_PAYMENT',
-        trialEndsAt,
-        subscriptionEndsAt,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
-
-    // Update user with society account reference
-    await db.user.update({
-      where: { id: user.id },
-      data: { societyAccountId: societyAccount.id }
     })
 
     // Create JWT token
@@ -111,14 +78,9 @@ export async function POST(request: NextRequest) {
     // Set HTTP-only cookie
     const response = NextResponse.json({
       success: true,
-      message: validatedData.plan === 'trial' 
-        ? 'Account created successfully with 15-day trial'
-        : `Account created successfully. Please complete payment for ${subscriptionPlan} plan.`,
+      message: 'Account created successfully with 15-day trial',
       user,
-      plan: validatedData.plan,
-      redirectUrl: validatedData.plan === 'trial' 
-        ? '/dashboard/client' 
-        : `/subscription/payment-upload?plan=${validatedData.plan}`
+      redirectUrl: '/dashboard/client'
     })
 
     // Set the token as an HTTP-only cookie

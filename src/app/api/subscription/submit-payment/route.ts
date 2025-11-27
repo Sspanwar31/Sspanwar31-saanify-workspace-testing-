@@ -1,32 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { db } from '@/lib/db'
+import { writeFile, mkdir } from 'fs/promises'
+import path from 'path'
 import jwt from 'jsonwebtoken'
-import { NotificationService } from '@/lib/notifications'
-
-// Validation schema
-const paymentSubmissionSchema = z.object({
-  plan: z.enum(['basic', 'pro', 'enterprise']),
-  amount: z.number().positive(),
-  transactionId: z.string().min(1, 'Transaction ID is required'),
-  paymentMethod: z.string().default('UPI'),
-  notes: z.string().optional(),
-  screenshot: z.string().optional()
-})
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
-// Helper function to verify JWT token
-function verifyToken(request: NextRequest) {
+// Helper function to get user from token
+async function getUserFromToken(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value || 
-                request.headers.get('Authorization')?.replace('Bearer ', '')
+                request.headers.get('authorization')?.replace('Bearer ', '')
 
   if (!token) {
     return null
   }
 
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const user = await db.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, name: true, email: true }
+    })
+    
+    return user
   } catch (error) {
     return null
   }
@@ -34,140 +30,90 @@ function verifyToken(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify user authentication
-    const user = verifyToken(request)
+    // Get authenticated user
+    const user = await getUserFromToken(request)
+    
     if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please login to submit payment' },
+        { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    const body = await request.json()
+    const formData = await request.formData()
     
-    // Validate input
-    const validatedData = paymentSubmissionSchema.parse(body)
+    const plan = formData.get('plan') as string
+    const amount = parseFloat(formData.get('amount') as string)
+    const transactionId = formData.get('transactionId') as string
+    const screenshot = formData.get('screenshot') as File
 
-    // Get user details
-    const userDetails = await db.user.findUnique({
-      where: { id: user.userId },
-      include: { societyAccount: true }
-    })
-
-    if (!userDetails) {
+    // Validate required fields
+    if (!plan || !amount || !transactionId || !screenshot) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if transaction ID already exists in pending payments
-    const existingPendingPayment = await db.pendingPayment.findFirst({
-      where: { 
-        txnId: validatedData.transactionId,
-        status: { not: 'REJECTED' }
-      }
-    })
-
-    if (existingPendingPayment) {
-      return NextResponse.json(
-        { error: 'Transaction ID already exists or was previously rejected' },
+        { error: 'All fields are required' },
         { status: 400 }
       )
     }
 
-    // Set expiry date (24 hours from now)
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
-
-    // Create pending payment record
-    const pendingPayment = await db.pendingPayment.create({
-      data: {
-        userEmail: userDetails.email || user.email,
-        plan: validatedData.plan.toUpperCase(),
-        amount: validatedData.amount,
-        txnId: validatedData.transactionId,
-        proof_url: validatedData.screenshot,
-        status: 'PENDING',
-        expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
+    // Check if transaction ID already exists
+    const existingTransaction = await db.paymentProof.findUnique({
+      where: { txnId: transactionId }
     })
 
-    // Update user's subscription status to PENDING
-    await db.user.update({
-      where: { id: user.userId },
-      data: {
-        subscriptionStatus: 'PENDING',
-        plan: validatedData.plan.toUpperCase(),
-        updatedAt: new Date()
-      }
-    })
+    if (existingTransaction) {
+      return NextResponse.json(
+        { error: 'Transaction ID already exists' },
+        { status: 400 }
+      )
+    }
 
-    // Also create payment proof record for backward compatibility
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'payment-proofs')
+    try {
+      await mkdir(uploadsDir, { recursive: true })
+    } catch (error) {
+      // Directory might already exist
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now()
+    const filename = `${timestamp}_${screenshot.name}`
+    const filepath = path.join(uploadsDir, filename)
+
+    // Save screenshot
+    const bytes = await screenshot.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    await writeFile(filepath, buffer)
+
+    // Create payment proof record
     const paymentProof = await db.paymentProof.create({
       data: {
-        userId: user.userId,
-        amount: validatedData.amount,
-        plan: validatedData.plan.toUpperCase(),
-        txnId: validatedData.transactionId,
-        screenshotUrl: validatedData.screenshot,
+        userId: user.id,
+        amount,
+        plan,
+        txnId: transactionId,
+        screenshotUrl: `/uploads/payment-proofs/${filename}`,
         status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       }
     })
-
-    // Update society account status
-    if (userDetails.societyAccount) {
-      await db.societyAccount.update({
-        where: { id: userDetails.societyAccount.id },
-        data: {
-          subscriptionPlan: validatedData.plan.toUpperCase(),
-          status: 'PENDING_PAYMENT',
-          updatedAt: new Date()
-        }
-      })
-    }
-
-    // Notify admins about new payment
-    await NotificationService.notifyPaymentUploaded(
-      userDetails.email || user.email,
-      userDetails.name || 'User',
-      validatedData.plan.toUpperCase(),
-      validatedData.amount
-    )
 
     return NextResponse.json({
       success: true,
-      message: 'Payment submitted successfully. Your payment is now under review.',
-      paymentId: pendingPayment.id,
-      paymentData: {
-        id: pendingPayment.id,
-        amount: pendingPayment.amount,
-        plan: pendingPayment.plan,
-        transactionId: pendingPayment.txnId,
-        status: pendingPayment.status,
-        expiresAt: pendingPayment.expiresAt,
-        createdAt: pendingPayment.createdAt
-      }
+      message: 'Payment proof submitted successfully',
+      paymentProof
     })
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
-        },
-        { status: 400 }
-      )
-    }
-
     console.error('Payment submission error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

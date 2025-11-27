@@ -52,5 +52,6 @@ export async function POST(request: NextRequest) {
       error: 'Failed to create notification',
       details: error.message
     }, { status: 500 })
+    }
   }
 }

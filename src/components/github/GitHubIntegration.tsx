@@ -95,34 +95,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       const parsed = JSON.parse(savedConfig)
       setConfig(parsed)
       setIsConfigured(true)
-      
-      // Check if the loaded config is demo/invalid and disable auto-backup
-      const isDemo = !parsed.token || 
-                     parsed.token === 'demo-token' || 
-                     parsed.owner === 'demo-user' || 
-                     parsed.repo === 'demo-repo' ||
-                     parsed.token.includes('your-personal-access-token') ||
-                     parsed.owner.includes('your-username') ||
-                     parsed.repo.includes('your-repo-name') ||
-                     !parsed.token?.trim() ||
-                     !parsed.owner?.trim() ||
-                     !parsed.repo?.trim() ||
-                     parsed.token?.length < 10
-      
-      if (isDemo) {
-        console.log('Demo/invalid config detected, disabling auto-backup')
-        setAutoBackup(false)
-        localStorage.setItem('github-auto-backup', JSON.stringify(false))
-      }
     }
     
     const savedAutoBackup = localStorage.getItem('github-auto-backup')
     if (savedAutoBackup) {
-      const autoBackupEnabled = JSON.parse(savedAutoBackup)
-      // Only set auto-backup if it's enabled and we don't have demo config
-      if (!autoBackupEnabled || (savedConfig && !isDemoConfig())) {
-        setAutoBackup(autoBackupEnabled)
-      }
+      setAutoBackup(JSON.parse(savedAutoBackup))
     }
     
     const savedLastBackup = localStorage.getItem('github-last-backup')
@@ -135,29 +112,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
     
-    // More aggressive demo mode check for auto-backup
-    const isDemo = isDemoConfig()
-    const hasEmptyFields = !config.token?.trim() || !config.owner?.trim() || !config.repo?.trim()
-    const hasPlaceholderText = 
-      config.token?.includes('your-') || 
-      config.owner?.includes('your-') || 
-      config.repo?.includes('your-') ||
-      config.token?.length < 10
-    
-    console.log('Auto-backup check:', { autoBackup, isConfigured, isDemo, hasEmptyFields, hasPlaceholderText })
-    
-    if (autoBackup && isConfigured && !isDemo && !hasEmptyFields && !hasPlaceholderText) {
-      console.log('Setting up auto-backup interval')
+    if (autoBackup && isConfigured) {
       interval = setInterval(() => {
         createBackup(true) // silent backup
       }, 5 * 60 * 1000) // Every 5 minutes
-    } else {
-      console.log('Auto-backup disabled due to demo mode or invalid config')
-      // Disable auto-backup if in demo mode or invalid config
-      if (autoBackup && (isDemo || hasEmptyFields || hasPlaceholderText)) {
-        setAutoBackup(false)
-        localStorage.setItem('github-auto-backup', JSON.stringify(false))
-      }
     }
     
     return () => {
@@ -266,72 +224,15 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
     setTimeout(() => setMessage(null), 3000)
   }
 
-  // Check if configuration is demo mode
-  const isDemoConfig = () => {
-    const checks = {
-      noToken: !config.token,
-      demoToken: config.token === 'demo-token',
-      demoUser: config.owner === 'demo-user',
-      demoRepo: config.repo === 'demo-repo',
-      tokenContainsYour: config.token?.includes('your-personal-access-token'),
-      ownerContainsYour: config.owner?.includes('your-username'),
-      repoContainsYour: config.repo?.includes('your-repo-name')
-    }
-    
-    console.log('isDemoConfig checks:', checks)
-    
-    const result = checks.noToken || 
-                  checks.demoToken || 
-                  checks.demoUser || 
-                  checks.demoRepo ||
-                  checks.tokenContainsYour ||
-                  checks.ownerContainsYour ||
-                  checks.repoContainsYour
-    
-    console.log('isDemoConfig final result:', result)
-    return result
-  }
-
   // Create backup
   const createBackup = async (silent = false) => {
+    if (!isConfigured) {
+      if (!silent) setMessage({ type: 'error', text: '⚠️ Please configure GitHub settings first' })
+      return
+    }
+
+    if (!silent) setIsLoading(true)
     try {
-      console.log('createBackup called:', { isConfigured, config: { owner: config.owner, repo: config.repo, token: config.token?.substring(0, 10) + '...' } })
-      
-      if (!isConfigured) {
-        if (!silent) setMessage({ type: 'error', text: '⚠️ Please configure GitHub settings first' })
-        return
-      }
-
-      // Check if using demo credentials
-      const isDemo = isDemoConfig()
-      console.log('isDemoConfig result:', isDemo)
-      
-      // Additional safety check: if any field is empty or contains placeholder text, treat as demo
-      const hasEmptyFields = !config.token?.trim() || !config.owner?.trim() || !config.repo?.trim()
-      const hasPlaceholderText = 
-        config.token?.includes('your-') || 
-        config.owner?.includes('your-') || 
-        config.repo?.includes('your-') ||
-        config.token?.length < 10  // GitHub tokens are at least 10 characters
-      
-      if (isDemo || hasEmptyFields || hasPlaceholderText) {
-        console.log('Blocking API call due to demo/invalid config:', { isDemo, hasEmptyFields, hasPlaceholderText })
-        if (!silent) {
-          setMessage({ 
-            type: 'info', 
-            text: '🎭 Demo mode: Backup simulated (no real GitHub operations performed)' 
-          })
-          // Simulate backup for demo mode
-          const now = new Date().toISOString()
-          setLastBackupTime(now)
-          localStorage.setItem('github-last-backup', now)
-        }
-        return
-      }
-
-      console.log('Proceeding with real backup API call...')
-      if (!silent) setIsLoading(true)
-      
       const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -367,23 +268,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       }
     } catch (error) {
       console.error('Backup error:', error)
-      
-      // If we get a 502 error, it's likely due to demo/invalid credentials
-      if (error.message?.includes('502')) {
-        console.log('502 error detected - treating as demo mode issue')
-        if (!silent) {
-          setMessage({ 
-            type: 'error', 
-            text: '❌ Connection error: Please check your GitHub credentials or use the Reset button to clear configuration' 
-          })
-        }
-        
-        // Auto-disable auto-backup on 502 error
-        setAutoBackup(false)
-        localStorage.setItem('github-auto-backup', JSON.stringify(false))
-      } else {
-        if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
-      }
+      if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
     } finally {
       if (!silent) setIsLoading(false)
     }
@@ -393,15 +278,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
   const restoreFromBackup = async () => {
     if (!isConfigured) {
       setMessage({ type: 'error', text: '⚠️ Please configure GitHub settings first' })
-      return
-    }
-
-    // Check if using demo credentials
-    if (isDemoConfig()) {
-      setMessage({ 
-        type: 'info', 
-        text: '🎭 Demo mode: Restore simulated (no real GitHub operations performed)' 
-      })
       return
     }
 
@@ -449,30 +325,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
   const loadBackupHistory = async () => {
     if (!isConfigured) return
 
-    // Check if using demo credentials
-    if (isDemoConfig()) {
-      // Set demo history
-      setBackupHistory([
-        {
-          sha: 'demo-commit-1',
-          message: '🎭 Demo: Initial project setup',
-          author: 'Demo User',
-          date: new Date(Date.now() - 86400000).toISOString(),
-          url: '#',
-          timestamp: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          sha: 'demo-commit-2',
-          message: '🎭 Demo: Added subscription system',
-          author: 'Demo User',
-          date: new Date(Date.now() - 43200000).toISOString(),
-          url: '#',
-          timestamp: new Date(Date.now() - 43200000).toISOString()
-        }
-      ])
-      return
-    }
-
     try {
       const response = await fetch('/api/github/history', {
         method: 'POST',
@@ -504,16 +356,6 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
   // Toggle auto backup
   const toggleAutoBackup = (enabled: boolean) => {
-    // Prevent enabling auto backup in demo mode
-    if (enabled && isDemoConfig()) {
-      setMessage({ 
-        type: 'error', 
-        text: '❌ Cannot enable auto backup in demo mode. Please configure real GitHub credentials first.' 
-      })
-      setTimeout(() => setMessage(null), 3000)
-      return
-    }
-
     setAutoBackup(enabled)
     localStorage.setItem('github-auto-backup', JSON.stringify(enabled))
     
@@ -575,18 +417,11 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                 <Badge 
                   className={`text-sm px-3 py-1 ${
                     isConfigured 
-                      ? isDemoConfig() 
-                        ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0'
-                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0' 
                       : 'bg-gradient-to-r from-red-500 to-pink-600 text-white border-0'
                   }`}
                 >
-                  {isConfigured 
-                    ? isDemoConfig() 
-                      ? 'Demo Mode' 
-                      : 'Connected'
-                    : 'Not Connected'
-                  }
+                  {isConfigured ? 'Connected' : 'Not Connected'}
                 </Badge>
                 <Button
                   variant="ghost"
@@ -612,60 +447,12 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Emergency Clear Notice */}
-                  <Alert className="border-yellow-200 bg-yellow-50">
-                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800 text-sm">
-                      ⚠️ <strong>Cached Data Detected:</strong> Old configuration may be causing issues. Click the "Clear All Data" button below to reset everything.
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Clear All Data Button */}
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={() => {
-                        console.log('🧹 Clearing all GitHub data from localStorage')
-                        localStorage.removeItem('github-config')
-                        localStorage.removeItem('github-auto-backup')
-                        localStorage.removeItem('github-last-backup')
-                        setConfig({
-                          owner: '',
-                          repo: '',
-                          token: '',
-                          branch: 'main'
-                        })
-                        setIsConfigured(false)
-                        setAutoBackup(false)
-                        setLastBackupTime(null)
-                        setRepos([])
-                        setBackupHistory([])
-                        setShowHistory(false)
-                        setMessage({ type: 'info', text: '🧹 All GitHub data cleared successfully!' })
-                        setTimeout(() => setMessage(null), 3000)
-                      }}
-                      variant="outline"
-                      className="border-yellow-300 hover:bg-yellow-50 text-yellow-700"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Clear All Data
-                    </Button>
-                  </div>
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {isConfigured ? (
                         <>
-                          {isDemoConfig() ? (
-                            <>
-                              <AlertCircle className="h-5 w-5 text-yellow-500" />
-                              <span className="text-yellow-700 font-medium">Demo Mode</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="h-5 w-5 text-green-500" />
-                              <span className="text-green-700 font-medium">Connected</span>
-                            </>
-                          )}
+                          <Check className="h-5 w-5 text-green-500" />
+                          <span className="text-green-700 font-medium">Connected</span>
                         </>
                       ) : (
                         <>
@@ -674,46 +461,15 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowSettings(!showSettings)}
-                        className="shrink-0 border-blue-200 hover:bg-blue-50"
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        {showSettings ? 'Hide' : 'Settings'}
-                      </Button>
-                      {/* Emergency reset button - only show if there might be issues */}
-                      {(autoBackup || isDemoConfig()) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (window.confirm('🚨 Emergency Reset: This will clear all GitHub configuration and disable auto-backup. Continue?')) {
-                              localStorage.removeItem('github-config')
-                              localStorage.removeItem('github-auto-backup')
-                              localStorage.removeItem('github-last-backup')
-                              setConfig({
-                                owner: '',
-                                repo: '',
-                                token: '',
-                                branch: 'main'
-                              })
-                              setIsConfigured(false)
-                              setAutoBackup(false)
-                              setLastBackupTime(null)
-                              setMessage({ type: 'info', text: '🔄 Emergency reset completed - all configuration cleared' })
-                              setTimeout(() => setMessage(null), 3000)
-                            }
-                          }}
-                          className="shrink-0 border-red-200 hover:bg-red-50 text-red-600"
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Reset
-                        </Button>
-                      )}
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="shrink-0 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      {showSettings ? 'Hide' : 'Settings'}
+                    </Button>
                   </div>
 
                   {isConfigured && (
@@ -725,44 +481,21 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                     </div>
                   )}
 
-                  {/* Demo Mode Warning */}
-                  {isConfigured && isDemoConfig() && (
-                    <Alert className="border-yellow-200 bg-yellow-50">
-                      <AlertCircle className="h-4 w-4 text-yellow-600" />
-                      <AlertDescription className="text-yellow-800 text-sm">
-                        🎭 <strong>Demo Mode Active:</strong> Using demo credentials. No real GitHub operations will be performed. Configure real GitHub credentials to enable actual backups.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
                   {/* Auto Backup Toggle */}
                   {isConfigured && (
-                    <div className={`flex items-center justify-between p-4 rounded-xl border ${
-                      isDemoConfig() 
-                        ? 'bg-gray-100 border-gray-200 opacity-60' 
-                        : 'bg-gradient-to-r from-blue-100 to-cyan-50 border-blue-200'
-                    }`}>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-100 to-cyan-50 rounded-xl border border-blue-200">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          isDemoConfig() ? 'bg-gray-400' : 'bg-blue-500'
-                        }`}>
+                        <div className="p-2 bg-blue-500 rounded-lg">
                           <Zap className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <p className={`text-sm font-semibold ${
-                            isDemoConfig() ? 'text-gray-600' : 'text-blue-900'
-                          }`}>Auto Backup</p>
-                          <p className={`text-xs ${
-                            isDemoConfig() ? 'text-gray-500' : 'text-blue-600'
-                          }`}>
-                            {isDemoConfig() ? 'Disabled in demo mode' : 'Every 5 minutes'}
-                          </p>
+                          <p className="text-sm font-semibold text-blue-900">Auto Backup</p>
+                          <p className="text-xs text-blue-600">Every 5 minutes</p>
                         </div>
                       </div>
                       <Switch
                         checked={autoBackup}
                         onCheckedChange={toggleAutoBackup}
-                        disabled={isDemoConfig()}
                         className="shrink-0"
                       />
                     </div>

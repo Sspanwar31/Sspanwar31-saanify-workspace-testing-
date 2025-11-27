@@ -253,33 +253,54 @@ async function createBackup(config: GitHubConfig): Promise<BackupResult> {
       throw new Error('No files found to backup')
     }
 
+    // If too many files, warn user
+    if (files.length > 1000) {
+      console.warn(`Large project detected: ${files.length} files. This may take a while...`)
+    }
+
     // Step 3: Create backup manifest
     console.log('Creating backup manifest...')
     const manifest = await FileSystemManager.createBackupManifest(files)
     
-    // Step 4: Create blobs for all files
+    // Step 4: Create blobs for all files (with chunking to avoid overwhelming)
     console.log(`Creating blobs for ${files.length} files...`)
-    const filePromises = files.map(async (file) => {
-      try {
-        const content = await fs.readFile(file, 'base64')
-        const blob = await github.createBlob(content)
-        return {
-          path: file.replace(projectRoot + '/', ''),
-          mode: '100644',
-          type: 'blob',
-          sha: blob.sha
+    const CHUNK_SIZE = 50 // Process files in chunks of 50
+    const fileObjects: any[] = []
+    
+    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+      const chunk = files.slice(i, i + CHUNK_SIZE)
+      console.log(`Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(files.length / CHUNK_SIZE)} (${chunk.length} files)...`)
+      
+      const chunkPromises = chunk.map(async (file) => {
+        try {
+          const content = await fs.readFile(file, 'base64')
+          const blob = await github.createBlob(content)
+          return {
+            path: file.replace(projectRoot + '/', ''),
+            mode: '100644',
+            type: 'blob',
+            sha: blob.sha
+          }
+        } catch (error) {
+          console.warn(`Failed to process file ${file}:`, error)
+          return null
         }
-      } catch (error) {
-        console.warn(`Failed to process file ${file}:`, error)
-        return null
-      }
-    })
+      })
 
-    const fileObjects = (await Promise.all(filePromises)).filter(obj => obj !== null)
+      const chunkResults = await Promise.all(chunkPromises)
+      fileObjects.push(...chunkResults.filter(obj => obj !== null))
+      
+      // Add small delay between chunks to avoid rate limiting
+      if (i + CHUNK_SIZE < files.length) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
     
     if (fileObjects.length === 0) {
       throw new Error('No files could be processed for backup')
     }
+
+    console.log(`Successfully processed ${fileObjects.length}/${files.length} files`)
 
     // Step 5: Create tree
     console.log('Creating git tree...')

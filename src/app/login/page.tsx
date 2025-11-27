@@ -241,7 +241,7 @@ export default function UnifiedLoginPage() {
       </div>
 
       {/* Back to Home Button - Bottom Left */}
-      <Link href="/subscription/select-plan" className="absolute bottom-6 left-6 z-20">
+      <Link href="/" className="absolute bottom-6 left-6 z-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

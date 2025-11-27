@@ -1,10 +1,11 @@
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Helper: Decode JWT token
+// Decode JWT
 function decodeJwtPayload(tokenValue: string) {
   try {
-    const base64Url = tokenValue.split('.')[1];
+    const base64Url = tokenValue.split(".")[1];
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
@@ -14,120 +15,102 @@ function decodeJwtPayload(tokenValue: string) {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
-// Public routes that don't require authentication
+/* ────────────────────────────────────────────
+   PUBLIC PAGES (No login required)
+──────────────────────────────────────────── */
 const publicRoutes = [
-  "/",
-  "/login",
-  "/signup",
-  "/auth/signup",
-  "/subscription/select-plan",
-  "/subscription/payment-upload",
+  "/", 
   "/about",
   "/contact",
-  "/not-authorized",
-  "/favicon.ico"
-];
 
-// Auth routes that should redirect logged-in users
-const authRoutes = [
+  // Auth routes must open even without login
   "/login",
   "/signup",
-  "/auth/signup"
+
+  // Subscription + Payment public
+  "/subscription/select-plan",
+  "/subscription/payment",
+  "/subscription/payment-status",
 ];
 
-// Dashboard routes that require role-based access
-const dashboardRoutes = [
-  "/dashboard",
-  "/dashboard/client",
-  "/dashboard/admin"
-];
+/* ────────────────────────────────────────────
+   If logged-in user tries login/signup redirect to dashboard
+──────────────────────────────────────────── */
+const authRoutes = ["/login", "/signup"];
+
+/* ────────────────────────────────────────────
+   Dashboard Protected Routes
+──────────────────────────────────────────── */
+const dashboardRoutes = ["/dashboard", "/dashboard/admin", "/dashboard/client"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const token = req.cookies.get("auth-token")?.value ?? null;
 
-  // Skip API routes entirely
-  if (pathname.startsWith("/api")) {
-    return NextResponse.next();
-  }
+  // Allow API without blocking - including GitHub APIs
+  if (pathname.startsWith("/api")) return NextResponse.next();
 
-  // Public routes
-  const isPublicRoute = publicRoutes.includes(pathname) ||
-    publicRoutes.some(route => pathname.startsWith(route + "/"));
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
+  // Allow public routes directly
+  if (publicRoutes.some(r => pathname.startsWith(r))) return NextResponse.next();
 
-  // Get auth token
-  const token = req.cookies.get("auth-token");
-
+  /* ────────────────────────────────────────────
+     If logged user exists
+  ───────────────────────────────────────────── */
   if (token) {
-    const user = decodeJwtPayload(token.value);
-
-    // Invalid token → redirect login
+    const user = decodeJwtPayload(token);
     if (!user) {
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      response.cookies.delete("auth-token");
-      return response;
+      const res = NextResponse.redirect(new URL("/", req.url));
+      res.cookies.delete("auth-token");
+      return res;
     }
 
-    const userRole = user?.role?.toUpperCase() || "CLIENT";
-    const hasActivePlan = user?.subscriptionActive; // Boolean from token or backend
+    const role = user.role?.toUpperCase();
+    const subscriptionActive = user.subscriptionStatus === "ACTIVE";
 
-    // Auth routes: redirect logged-in users
-    if (authRoutes.some(route => pathname.startsWith(route))) {
-      if (userRole === "ADMIN") return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      return hasActivePlan
-        ? NextResponse.redirect(new URL("/dashboard/client", req.url))
-        : NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+    // Logged user opening /login or /signup → redirect dashboard
+    if (authRoutes.includes(pathname)) {
+      if (role === "ADMIN") return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+      if (role === "CLIENT") return NextResponse.redirect(new URL("/dashboard/client", req.url));
     }
 
-    // Dashboard routes
-    if (pathname.startsWith("/dashboard/admin")) {
-      if (userRole !== "ADMIN") return NextResponse.redirect(new URL("/dashboard/client", req.url));
-    }
-
-    if (pathname.startsWith("/dashboard/client")) {
-      if (userRole !== "CLIENT") return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      // Client with no active subscription → redirect to subscription page
-      if (!hasActivePlan) return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
-    }
-
-    // Dashboard root
-    if (pathname === "/dashboard" || pathname === "/dashboard/") {
-      if (userRole === "ADMIN") return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-      return hasActivePlan
-        ? NextResponse.redirect(new URL("/dashboard/client", req.url))
-        : NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+    // Dashboard Access Rules
+    if (pathname.startsWith("/dashboard")) {
+      if (role === "ADMIN") return NextResponse.next(); // Admin always allowed
+      if (role === "CLIENT") {
+        if (subscriptionActive) return NextResponse.next(); // Valid Subscription → Allowed
+        else return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+      }
     }
 
     return NextResponse.next();
   }
 
-  // No token → handle guest access
+  /* ────────────────────────────────────────────
+     If NO Token → only signup requires subscription
+  ───────────────────────────────────────────── */
+
   if (!token) {
-    // Auth routes allowed
-    if (authRoutes.some(route => pathname.startsWith(route))) {
-      return NextResponse.next();
-    }
-    // Dashboard routes → redirect to subscription page
-    if (dashboardRoutes.some(route => pathname.startsWith(route))) {
+    // Direct signup not allowed → go to plans first
+    if (pathname.startsWith("/signup")) {
       return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
     }
-    // Other protected routes → subscription page
-    return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+
+    // Trying to open dashboard without subscription → redirect to plans
+    if (dashboardRoutes.some(r => pathname.startsWith(r))) {
+      return NextResponse.redirect(new URL("/subscription/select-plan", req.url));
+    }
+
+    return NextResponse.redirect(new URL("/", req.url)); // Default → Landing Page
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    // Match frontend routes, exclude API and static
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
 };

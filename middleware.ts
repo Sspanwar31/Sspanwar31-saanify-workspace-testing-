@@ -36,6 +36,9 @@ const publicRoutes = [
   "/subscription/select-plan",
   "/subscription/payment",
   "/subscription/payment-status",
+
+  // GitHub backup should work without authentication
+  "/api/github",
 ];
 
 /* ────────────────────────────────────────────
@@ -50,10 +53,13 @@ const dashboardRoutes = ["/dashboard", "/dashboard/admin", "/dashboard/client"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = req.cookies.get("auth-token")?.value ?? null;
 
-  // Allow API without blocking - including GitHub APIs
-  if (pathname.startsWith("/api")) return NextResponse.next();
+  // Skip API routes entirely - GitHub backup API should work without authentication
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  const token = req.cookies.get("auth-token")?.value ?? null;
 
   // Allow public routes directly
   if (publicRoutes.some(r => pathname.startsWith(r))) return NextResponse.next();
@@ -70,7 +76,7 @@ export async function middleware(req: NextRequest) {
     }
 
     const role = user.role?.toUpperCase();
-    const subscriptionActive = user.subscriptionStatus === "ACTIVE";
+    const subscriptionActive = user.subscriptionActive === true || user.subscriptionStatus === "ACTIVE";
 
     // Logged user opening /login or /signup → redirect dashboard
     if (authRoutes.includes(pathname)) {
@@ -112,5 +118,12 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: [
+    // Match all request paths except for the ones starting with:
+    // - api (API routes)
+    // - _next/static (static files)
+    // - _next/image (image optimization files)
+    // - favicon.ico (favicon file)
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };

@@ -29,6 +29,7 @@ model User {
   sessions         Session[]
   societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
   paymentProofs    PaymentProof[]
+  notifications    Notification[]
 
   @@map("users")
   @@index([role])
@@ -159,6 +160,24 @@ model PaymentProof {
   @@map("payment_proofs")
   @@index([userId])
   @@index([status])
+}
+
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([isRead])
 }
 
 /// /////////////////////////////////////////////////

@@ -1,516 +1,629 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Upload, QrCode, IndianRupee, Calendar, CheckCircle, AlertCircle, CreditCard, Clock, Star, Shield, TrendingUp } from 'lucide-react'
-import Link from 'next/link'
+import { 
+  CreditCard, 
+  Upload, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  XCircle, 
+  FileText,
+  Download,
+  ArrowRight,
+  User,
+  Mail,
+  Phone,
+  Calendar as CalendarIcon,
+  Info,
+  Shield,
+  Star,
+  DollarSign,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Minus,
+  TrendingUp,
+  BarChart3
+  Activity,
+  Building2
+  Users as UsersIcon,
+  Eye,
+  EyeOff,
+  CheckSquare,
+  AlertTriangle,
+  RefreshCw
+  Trash2,
+  Settings
+  Menu,
+  MoreHorizontal,
+  Edit,
+  Lock,
+  Unlock,
+  Crown,
+  Gem,
+  Bell
+  FileSearch,
+  Search
+  Filter
+  Calendar,
+  Copy,
+  Check
+  X
+  ChevronLeft,
+  ArrowLeft
+  Home,
+  UserPlus,
+  UserCheck,
+  ArrowUpRight
+  Square,
+  CreditCard,
+  Smartphone,
+  Laptop,
+  Monitor,
+  Database,
+  Server,
+  Cpu,
+  Globe,
+  Target,
+  Target as TargetIcon
+} from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import Image from 'next/image'
-import { useAuth } from '@/providers/auth-provider'
 import { useRouter } from 'next/navigation'
+import { makeAuthenticatedRequest } from '@/lib/auth'
+
+interface SubscriptionPlan {
+  id: string
+  name: string
+  description: string
+  price: number
+  duration: string
+  features: string[]
+  color: string
+  popular?: boolean
+  icon?: string
+  yearlyDiscount?: number
+  monthlyPrice?: number
+  yearlyPrice?: number
+  trialDays?: number
+  highlight?: boolean
+}
+
+interface PaymentProof {
+  id: string
+  userId: string
+  amount: number
+  plan: string
+  txnId: string
+  screenshotUrl: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: string
+    name: string
+    email: string
+  societyName: string
+  }
+}
+
+interface FormData {
+  selectedPlan: string
+  transactionId: string
+  screenshot: File | null
+  additionalInfo: string
+  paymentMethod: string
+}
+
+const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'basic',
+    name: 'BASIC',
+    description: 'Perfect for small societies with basic accounting needs',
+    price: 4000,
+    duration: 'monthly',
+    features: [
+      'Up to 50 members',
+      'Basic accounting features',
+      'Email support',
+      'Mobile app access',
+      'Community management'
+    ],
+    color: 'bg-blue-500',
+    icon: '🏠️',
+    popular: true,
+    monthlyPrice: 4000,
+    yearlyPrice: 40000,
+    trialDays: 15
+  },
+  {
+    id: 'pro',
+    name: 'PROFESSIONAL',
+    description: 'Advanced features for growing societies with complex operations',
+    price: 7000,
+    duration: 'monthly',
+    features: [
+      'Up to 200 members',
+      'Advanced accounting & reporting',
+      'Priority support',
+      'Mobile app + Web access',
+      'Advanced analytics',
+      'API integrations',
+      'Custom workflows',
+      'Community management + forums'
+    ],
+    color: 'bg-purple-500',
+    icon: '💎',
+    popular: true,
+    monthlyPrice: 7000,
+    yearlyPrice: 70000,
+    trialDays: 15
+  },
+  {
+    id: 'enterprise',
+    name: 'ENTERPRISE',
+    description: 'Complete solution for large enterprises with unlimited everything',
+    price: 10000,
+    duration: 'monthly',
+    features: [
+      'Unlimited members',
+      'Enterprise-grade security',
+      'Advanced analytics & reporting',
+      'API integrations + Webhooks',
+      'Custom workflows & automations',
+      'Priority support 24/7',
+      'Mobile app + Web access',
+      'Advanced security & compliance',
+      'Dedicated account manager',
+      'White-label solutions',
+      'Advanced community features'
+    ],
+    color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
+    icon: '🏢',
+    popular: false,
+    monthlyPrice: 10000,
+    yearlyPrice: 100000,
+    trialDays: 15
+  }
+]
+
+const PRICING_TIERS = [
+  { id: '1', name: '1 Month', multiplier: 1, popular: true },
+  { id: '3', name: '3 Months', multiplier: 2.8, popular: true },
+  { id: '6', name: '6 Months', multiplier: 5, popular: false },
+  { id: '12', name: '1 Year', multiplier: 10, popular: false }
+]
+
+const PAYMENT_METHODS = [
+  { id: 'upi', name: 'UPI', icon: '📱' },
+  { id: 'paytm', name: 'PayTM', icon: '📟' },
+  { 'id: 'gpay', name: 'Google Pay', icon: '🌐' },
+  { 'id: 'phonepe', name: 'PhonePe', icon: '📱' },
+  { id: 'netbanking', name: 'Net Banking', icon: '🏦' },
+  { id: 'card', name: 'Credit/Debit Card', icon: '💳' },
+  { id: 'cash', name: 'Cash', icon: '💵' }
+]
 
 export default function SubscriptionPage() {
-  const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [selectedPlan, setSelectedPlan] = useState('monthly')
-  const [transactionId, setTransactionId] = useState('')
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
-  const [screenshotPreview, setScreenshotPreview] = useState<string>('')
-  const [isUploading, setIsUploading] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedPlan, setSelectedPlan] = useState<string>('')
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [formData, setFormData] = useState<FormData>({
+    selectedPlan: '',
+    transactionId: '',
+    screenshot: null,
+    additionalInfo: '',
+    paymentMethod: 'upi'
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [paymentProofs, setPaymentProofs] = useState<PaymentProof[]>([])
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, isLoading, router])
+    // Fetch payment proofs when component mounts
+    fetchPaymentProofs()
+  }, [])
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-purple-200">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
-
-  const plans = [
-    {
-      id: 'monthly',
-      name: 'Monthly',
-      duration: '1 Month',
-      price: 999,
-      originalPrice: 1499,
-      features: ['Full access to all features', 'Unlimited transactions', 'Priority support', 'Advanced analytics'],
-      popular: false
-    },
-    {
-      id: 'quarterly',
-      name: 'Quarterly',
-      duration: '3 Months',
-      price: 2499,
-      originalPrice: 4497,
-      features: ['Everything in Monthly', 'Save 33%', 'Custom reports', 'API access'],
-      popular: true
-    },
-    {
-      id: 'semiannual',
-      name: 'Semi-Annual',
-      duration: '6 Months',
-      price: 4499,
-      originalPrice: 8994,
-      features: ['Everything in Quarterly', 'Save 50%', 'Dedicated account manager', 'Custom integrations'],
-      popular: false
-    },
-    {
-      id: 'yearly',
-      name: 'Yearly',
-      duration: '1 Year',
-      price: 7999,
-      originalPrice: 17988,
-      features: ['Everything in Semi-Annual', 'Save 55%', 'White-label options', 'Advanced security'],
-      popular: false
-    }
-  ]
-
-  const upiId = 'saanify@paytm'
-  const qrCodeUrl = '/api/qr-code?upi=' + encodeURIComponent(upiId) + '&amount=' + plans.find(p => p.id === selectedPlan)?.price
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('❌ Invalid File', {
-          description: 'Please upload an image file (JPG, PNG, etc.)',
-          duration: 3000,
-        })
-        return
+  const fetchPaymentProofs = async () => {
+    try {
+      const response = await makeAuthenticatedRequest('/api/admin/subscriptions/payment-proofs')
+      if (response.ok) {
+        const data = await response.json()
+        setPaymentProofs(data.proofs || [])
       }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('❌ File Too Large', {
-          description: 'Please upload an image smaller than 5MB',
-          duration: 3000,
-        })
-        return
-      }
-
-      setScreenshotFile(file)
-      setErrors(prev => ({ ...prev, screenshot: '' }))
-
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setScreenshotPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Failed to fetch payment proofs:', error)
+      toast.error('Failed to load payment proofs')
     }
-  }
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!transactionId.trim()) {
-      newErrors.transactionId = 'Transaction ID is required'
-    }
-
-    if (!screenshotFile) {
-      newErrors.screenshot = 'Payment screenshot is required'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!validateForm()) {
+    if (!formData.selectedPlan || !formData.transactionId) {
+      toast.error('Please select a plan and enter transaction details')
       return
     }
 
-    setIsUploading(true)
+    setIsSubmitting(true)
 
     try {
-      const formData = new FormData()
-      formData.append('plan', selectedPlan)
-      formData.append('amount', plans.find(p => p.id === selectedPlan)?.price.toString() || '0')
-      formData.append('transactionId', transactionId)
-      formData.append('screenshot', screenshotFile!)
+      const formDataToSend = new FormData()
+      formDataToSend.append('plan', formData.selectedPlan)
+      formDataToSend.append('transactionId', formData.transactionId)
+      formDataToSend.append('additionalInfo', formData.additionalInfo)
+      formDataToSend.append('paymentMethod', formData.paymentMethod)
+      
+      if (formData.screenshot) {
+        formDataToSend.append('screenshot', formData.screenshot)
+      }
 
-      const response = await fetch('/api/subscription/submit-payment', {
+      const response = await makeAuthenticatedRequest('/api/subscribe/request', {
         method: 'POST',
-        body: formData
+        body: formDataToSend
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit payment proof')
+      if (response.ok) {
+        const data = await response.json()
+        toast.success('Payment request submitted successfully!')
+        setFormData({
+          selectedPlan: '',
+          transactionId: '',
+          screenshot: null,
+          additionalInfo: '',
+          paymentMethod: 'upi'
+        })
+        setShowPaymentForm(false)
+        // Refresh payment proofs after submission
+        await fetchPaymentProofs()
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to submit payment request')
       }
-
-      toast.success('🎉 Payment Proof Submitted!', {
-        description: 'Your payment proof has been submitted for verification. We will notify you once approved.',
-        duration: 5000,
-      })
-
-      // Reset form
-      setTransactionId('')
-      setScreenshotFile(null)
-      setScreenshotPreview('')
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-
-      // Redirect to dashboard after delay
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 3000)
-
-    } catch (error: any) {
-      console.error('Payment submission error:', error)
-      toast.error('❌ Submission Failed', {
-        description: error.message || 'Failed to submit payment proof. Please try again.',
-        duration: 3000,
-      })
+    } catch (error) {
+      console.error('Failed to submit payment request:', error)
+      toast.error('Failed to submit payment request')
     } finally {
-      setIsUploading(false)
+      setIsSubmitting(false)
     }
   }
 
-  const currentPlan = plans.find(p => p.id === selectedPlan)!
+  const handlePlanSelect = (planId: string) => {
+    setSelectedPlan(planId)
+    setShowPaymentForm(true)
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData(prev => ({ ...prev, screenshot: file }))
+    }
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const calculateYearlyPrice = (monthlyPrice: number, months: number) => {
+    return Math.round(monthlyPrice * months * (1 - 0.1))
+  }
+
+  const getPopularBadge = (plan: SubscriptionPlan) => {
+    if (plan.popular) {
+      return <Badge className="bg-orange-100 text-orange-800">Popular</Badge>
+    }
+    return null
+  }
+
+  const getTrialBadge = (plan: SubscriptionPlan) => {
+    if (plan.trialDays && plan.trialDays > 0) {
+      return <Badge className="bg-green-100 text-green-800">Trial Available</Badge>
+    }
+    return null
+  }
+
+  const getYearlyDiscount = (plan: SubscriptionPlan) => {
+    if (plan.yearlyDiscount && plan.yearlyDiscount > 0) {
+      return <Badge className="bg-red-100 text-red-800">
+        Save {plan.yearlyDiscount * 10}% yearly
+      </Badge>
+    }
+    return null
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
-      </div>
-
-      {/* Back to Dashboard Button */}
-      <Link href="/dashboard" className="absolute top-6 left-6 z-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Button 
-            variant="outline" 
-            className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300 flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
-        </motion.div>
-      </Link>
-
-      <div className="max-w-6xl mx-auto relative z-10 pt-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-            Upgrade Your Subscription
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Choose Your Perfect Plan
           </h1>
-          <p className="text-xl text-purple-200">
-            Choose the perfect plan for your finance society needs
+          <p className="text-xl text-blue-200 mb-2">
+            Select the subscription that best fits your society needs
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Left Side - Plans Selection */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="space-y-6"
-          >
-            <Card className="bg-white/10 backdrop-blur-xl border-0 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-6 h-6 text-purple-400" />
-                  Choose Your Plan
-                </CardTitle>
-                <CardDescription className="text-purple-200">
-                  Select the subscription that best fits your needs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={selectedPlan} onValueChange={setSelectedPlan} className="space-y-4">
-                  {plans.map((plan, index) => (
-                    <motion.div
-                      key={plan.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.1 * index }}
-                    >
-                      <div className={`relative rounded-2xl border-2 p-4 cursor-pointer transition-all duration-300 ${
-                        selectedPlan === plan.id
-                          ? 'border-purple-500 bg-purple-500/20'
-                          : 'border-white/20 bg-white/5 hover:border-white/30'
-                      }`}>
-                        {plan.popular && (
-                          <div className="absolute -top-3 right-4">
-                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                              MOST POPULAR
-                            </span>
-                          </div>
-                        )}
-                        
-                        <RadioGroupItem value={plan.id} id={plan.id} className="sr-only" />
-                        <Label htmlFor={plan.id} className="cursor-pointer">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                              <p className="text-purple-300 text-sm">{plan.duration}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1">
-                                <IndianRupee className="w-5 h-5 text-purple-400" />
-                                <span className="text-2xl font-bold text-white">{plan.price}</span>
-                              </div>
-                              {plan.originalPrice > plan.price && (
-                                <p className="text-sm text-purple-300 line-through">
-                                  ₹{plan.originalPrice}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            {plan.features.map((feature, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <CheckCircle className="w-4 h-4 text-green-400" />
-                                <span className="text-sm text-purple-200">{feature}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </Label>
+        {/* Plans Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {SUBSCRIPTION_PLANS.map((plan) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className="h-full"
+            >
+              <Card className={`relative overflow-hidden border-2 ${plan.color} border-opacity-20 hover:border-opacity-30 transition-all duration-300 cursor-pointer`}
+                onClick={() => handlePlanSelect(plan.id)}
+              >
+                <CardHeader className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-full ${plan.color} text-white flex items-center justify-center text-lg font-bold`}>
+                        {plan.icon}
                       </div>
-                    </motion.div>
-                  ))}
-                </RadioGroup>
-              </CardContent>
-            </Card>
-
-            {/* Payment Info */}
-            <Card className="bg-white/10 backdrop-blur-xl border-0 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-purple-400" />
-                  Payment Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-white/10 rounded-xl p-4">
-                  <Label className="text-purple-200 font-medium">UPI ID</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-white font-mono text-lg">{upiId}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      onClick={() => {
-                        navigator.clipboard.writeText(upiId)
-                        toast.success('📋 UPI ID Copied!', {
-                          description: 'UPI ID has been copied to clipboard',
-                          duration: 2000,
-                        })
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 rounded-xl p-4">
-                  <Label className="text-purple-200 font-medium">QR Code</Label>
-                  <div className="mt-2 flex justify-center">
-                    <div className="bg-white p-4 rounded-lg">
-                      <QrCode className="w-32 h-32 text-gray-800" />
-                      <p className="text-xs text-gray-600 text-center mt-2">Scan to pay</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-4 h-4 text-purple-300" />
-                    <span className="text-purple-200 font-medium">Important:</span>
-                  </div>
-                  <ul className="text-sm text-purple-200 space-y-1">
-                    <li>• Pay the exact amount shown above</li>
-                    <li>• Save the payment screenshot</li>
-                    <li>• Upload proof below for verification</li>
-                    <li>• Verification takes 2-24 hours</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Right Side - Payment Proof Upload */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <Card className="bg-white/10 backdrop-blur-xl border-0 shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Upload className="w-6 h-6 text-purple-400" />
-                  Submit Payment Proof
-                </CardTitle>
-                <CardDescription className="text-purple-200">
-                  Upload your payment screenshot and transaction details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Selected Plan Summary */}
-                  <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
-                    <h3 className="text-white font-semibold mb-2">Selected Plan</h3>
-                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-purple-200">{currentPlan.name} - {currentPlan.duration}</p>
-                        <p className="text-sm text-purple-300">Full access to all features</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1">
-                          <IndianRupee className="w-4 h-4 text-purple-400" />
-                          <span className="text-xl font-bold text-white">{currentPlan.price}</span>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                          <p className="text-blue-100 text-sm">{plan.description}</p>
                         </div>
                       </div>
                     </div>
+                    {getPopularBadge(plan)}
+                    {getTrialBadge(plan)}
                   </div>
-
-                  {/* Transaction ID */}
-                  <div>
-                    <Label htmlFor="transactionId" className="text-purple-200 font-medium">
-                      UPI Transaction ID
-                    </Label>
-                    <Input
-                      id="transactionId"
-                      type="text"
-                      placeholder="Enter your UPI transaction ID"
-                      value={transactionId}
-                      onChange={(e) => {
-                        setTransactionId(e.target.value)
-                        if (errors.transactionId) {
-                          setErrors(prev => ({ ...prev, transactionId: '' }))
-                        }
-                      }}
-                      className={`bg-white/10 border-white/20 text-white placeholder-purple-300 mt-1 ${
-                        errors.transactionId ? 'border-red-500' : ''
-                      }`}
-                      disabled={isUploading}
-                    />
-                    {errors.transactionId && (
-                      <p className="text-sm text-red-400 mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {errors.transactionId}
-                      </p>
-                    )}
+                  <div className="absolute top-4 right-4">
+                    {getYearlyDiscount(plan)}
                   </div>
-
-                  {/* Screenshot Upload */}
-                  <div>
-                    <Label className="text-purple-200 font-medium">Payment Screenshot</Label>
-                    <div
-                      className={`mt-2 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
-                        errors.screenshot
-                          ? 'border-red-500 bg-red-500/10'
-                          : 'border-white/30 bg-white/5 hover:border-white/50'
-                      }`}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                      
-                      {screenshotPreview ? (
-                        <div className="space-y-4">
-                          <div className="relative mx-auto w-48 h-48">
-                            <Image
-                              src={screenshotPreview}
-                              alt="Payment screenshot"
-                              fill
-                              className="object-contain rounded-lg"
-                            />
-                          </div>
-                          <p className="text-sm text-purple-200">Click to change image</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <Upload className="w-12 h-12 text-purple-400 mx-auto" />
-                          <div>
-                            <p className="text-purple-200 font-medium">Upload Payment Screenshot</p>
-                            <p className="text-sm text-purple-300">Click to browse or drag and drop</p>
-                            <p className="text-xs text-purple-400 mt-1">JPG, PNG up to 5MB</p>
-                          </div>
-                        </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="text-2xl font-bold text-white">{formatPrice(plan.price)}</div>
+                      <div className="text-sm text-blue-200 line-through">
+                        {plan.yearlyPrice ? formatPrice(calculateYearlyPrice(plan.yearlyPrice || 0)) : ''}
+                      </div>
+                    </div>
+                    <div className="text-sm text-white">
+                      <span className="text-blue-100">/{plan.duration}</span>
+                      {plan.trialDays && (
+                        <span className="text-green-100">+{plan.trialDays} days trial</span>
                       )}
                     </div>
-                    {errors.screenshot && (
-                      <p className="text-sm text-red-400 mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {errors.screenshot}
-                      </p>
-                    )}
                   </div>
+                  <div className="mt-4">
+                    <ul className="space-y-2 text-sm text-white">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
 
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
-                    disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Submitting Payment Proof...
-                      </div>
-                    ) : (
-                      'Submit Payment Proof'
-                    )}
-                  </Button>
-                </form>
+        {/* Payment Form Modal */}
+        <Dialog open={showPaymentForm} onOpenChange={() => setShowPaymentForm(false)}>
+          <DialogContent className="sm:max-w-[500px] w-full">
+            <DialogHeader>
+              <DialogTitle>Complete Your Subscription</DialogTitle>
+              <DialogDescription>
+                <DialogDescription>
+                  You've selected the <span className="font-semibold text-blue-600">{SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.name || 'Basic'}</span> plan.
+                  Please complete your payment details to activate your subscription.
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="transactionId">Transaction ID *</Label>
+                  <Input
+                    id="transactionId"
+                    type="text"
+                    placeholder="Enter your transaction ID"
+                    value={formData.transactionId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value })}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="paymentMethod">Payment Method *</Label>
+                  <Select value={formData.paymentMethod} onValueChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((method) => (
+                        <SelectItem key={method.id} value={method.id}>
+                          <div className="flex items-center gap-2">
+                            {method.icon}
+                            <span>{method.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                <div className="mt-6 pt-6 border-t border-white/20">
-                  <div className="flex items-center gap-2 text-sm text-purple-200">
-                    <Shield className="w-4 h-4 text-purple-400" />
-                    <span>Your payment information is secure and encrypted</span>
+              <div>
+                  <Label htmlFor="additionalInfo">Additional Information (Optional)</Label>
+                  <Textarea
+                    id="additionalInfo"
+                    placeholder="Any additional information or notes"
+                    value={formData.additionalInfo}
+                    onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
+                    rows={3}
+                    className="w-full"
+                  />
+                </div>
+
+              <div>
+                  <Label htmlFor="screenshot">Payment Screenshot *</Label>
+                  <div className="border-2 border-dashed rounded-lg p-4">
+                    <Input
+                      type="file"
+                      id="screenshot"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="w-full"
+                    />
+                    <div className="mt-2 text-center">
+                      <p className="text-sm text-gray-500">
+                        {formData.screenshot ? (
+                          <div className="flex items-center gap-2">
+                            <File selected: {formData.screenshot.name}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFormData(prev => ({ ...prev, screenshot: null }))}
+                            >
+                              <X
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            <Upload payment screenshot
+                          </div>
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Submit Payment Request
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Proofs Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-white mb-6">Payment Proofs</h2>
+          <p className="text-blue-200 mb-4">
+            Recent payment submissions awaiting admin approval
+          </p>
+          
+          {paymentProofs.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8">
+                <FileText className="w-16 h-16 text-gray-400 mb-4" />
+                <p className="text-gray-600">No payment proofs submitted yet.</p>
+              </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paymentProofs.map((proof) => (
+                <motion.div
+                  key={proof.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="h-full"
+                >
+                  <Card className="border border-gray-200 overflow-hidden">
+                    <CardHeader className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-white font-bold">
+                            <User className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <div>
+                              <h4 className="font-semibold text-white">{proof.user.name}</h4>
+                              <p className="text-sm text-gray-300">{proof.user.email}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className={
+                            proof.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            proof.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }>
+                            {proof.status.charAt(0).toUpperCase() + proof.status.slice(1)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Plan:</p>
+                          <p className="font-semibold text-white">{proof.plan.toUpperCase()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Amount:</p>
+                          <p className="font-semibold text-white">₹{proof.amount.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Transaction ID:</p>
+                          <p className="font-mono text-white">{proof.txnId}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Date:</p>
+                          <p className="text-white">{new Date(proof.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        {proof.screenshotUrl && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium text-gray-600">Screenshot:</p>
+                            <img
+                              src={proof.screenshotUrl}
+                              alt="Payment screenshot"
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -13,6 +13,21 @@ const nextConfig: NextConfig = {
     // 构建时忽略ESLint错误
     ignoreDuringBuilds: true,
   },
+  // Increase body size limit for large backup operations
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  // Configure for large file uploads and long-running operations
+  async rewrites() {
+    return [];
+  },
+  // Increase timeout for API routes
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('_http_common');
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

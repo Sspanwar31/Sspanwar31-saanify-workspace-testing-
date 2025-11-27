@@ -173,6 +173,12 @@ export default function AddUserModal({
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             {editingUser ? 'Edit User' : 'Add New User'}
           </DialogTitle>
+          <DialogDescription>
+            {editingUser 
+              ? 'Update user information and permissions below.'
+              : 'Fill in the details to add a new user to the system.'
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

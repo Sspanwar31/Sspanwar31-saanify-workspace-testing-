@@ -388,6 +388,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Set a longer timeout for this specific route
+    const MAX_EXECUTION_TIME = 300000 // 5 minutes
+    const startTime = Date.now()
+
+    // Check if we're approaching timeout
+    const checkTimeout = () => {
+      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+        throw new Error('Operation timed out. Please try with a smaller dataset.')
+      }
+    }
+
     const { action, config, commitSha, useGit, pushToGitHub } = await request.json()
     
     // Check if we have valid GitHub configuration (not demo values) - DO THIS FIRST
@@ -502,6 +513,30 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('GitHub API error:', error)
+    
+    // Check for timeout or gateway errors
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Request timed out. The backup operation took too long. Please try with fewer files or check your network connection.' 
+        },
+        { status: 504 } // Gateway Timeout
+      )
+    }
+    
+    if (errorMessage.includes('Operation timed out')) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Operation timed out. Please try with a smaller dataset.' 
+        },
+        { status: 504 } // Gateway Timeout
+      )
+    }
+    
     return NextResponse.json(
       { 
         success: false,

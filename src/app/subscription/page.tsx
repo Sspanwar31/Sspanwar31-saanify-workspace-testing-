@@ -433,10 +433,9 @@ export default function SubscriptionPage() {
             <DialogHeader>
               <DialogTitle>Complete Your Subscription</DialogTitle>
               <DialogDescription>
-                <DialogDescription>
-                  You've selected the <span className="font-semibold text-blue-600">{SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.name || 'Basic'}</span> plan.
-                  Please complete your payment details to activate your subscription.
-                </DialogDescription>
+                You've selected the <span className="font-semibold text-blue-600">{SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.name || 'Basic'}</span> plan.
+                Please complete your payment details to activate your subscription.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -235,7 +235,7 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
     try {
       // Add timeout to the fetch request with retry logic
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes timeout for large backups
+      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes timeout for large backups
 
       let requestBody: any = { 
         action: 'backup', 

@@ -207,6 +207,12 @@ export default function AddLoanModal({
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             {editingLoan ? 'Edit Loan' : 'Add New Loan'}
           </DialogTitle>
+          <DialogDescription>
+            {editingLoan 
+              ? 'Update loan details and repayment schedule below.'
+              : 'Fill in the details to create a new loan for a member.'
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

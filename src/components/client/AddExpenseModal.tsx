@@ -150,6 +150,12 @@ export default function AddExpenseModal({
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             {editingExpense ? 'Edit Expense' : 'Add New Expense'}
           </DialogTitle>
+          <DialogDescription>
+            {editingExpense 
+              ? 'Update the expense details below.'
+              : 'Fill in the details to add a new expense record.'
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

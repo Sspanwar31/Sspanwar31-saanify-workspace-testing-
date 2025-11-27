@@ -612,6 +612,45 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Emergency Clear Notice */}
+                  <Alert className="border-yellow-200 bg-yellow-50">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800 text-sm">
+                      ⚠️ <strong>Cached Data Detected:</strong> Old configuration may be causing issues. Click the "Clear All Data" button below to reset everything.
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Clear All Data Button */}
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => {
+                        console.log('🧹 Clearing all GitHub data from localStorage')
+                        localStorage.removeItem('github-config')
+                        localStorage.removeItem('github-auto-backup')
+                        localStorage.removeItem('github-last-backup')
+                        setConfig({
+                          owner: '',
+                          repo: '',
+                          token: '',
+                          branch: 'main'
+                        })
+                        setIsConfigured(false)
+                        setAutoBackup(false)
+                        setLastBackupTime(null)
+                        setRepos([])
+                        setBackupHistory([])
+                        setShowHistory(false)
+                        setMessage({ type: 'info', text: '🧹 All GitHub data cleared successfully!' })
+                        setTimeout(() => setMessage(null), 3000)
+                      }}
+                      variant="outline"
+                      className="border-yellow-300 hover:bg-yellow-50 text-yellow-700"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Clear All Data
+                    </Button>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {isConfigured ? (

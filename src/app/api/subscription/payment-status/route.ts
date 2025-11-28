@@ -4,17 +4,23 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
-// Helper function to verify JWT token
-function verifyToken(request: NextRequest) {
+// Helper function to get user from token
+async function getUserFromToken(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value || 
-                request.headers.get('Authorization')?.replace('Bearer ', '')
+                request.headers.get('authorization')?.replace('Bearer ', '')
 
   if (!token) {
     return null
   }
 
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const user = await db.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, name: true, email: true }
+    })
+    
+    return user
   } catch (error) {
     return null
   }
@@ -22,66 +28,60 @@ function verifyToken(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user from token
-    const user = verifyToken(request)
+    // Get authenticated user
+    const user = await getUserFromToken(request)
     
     if (!user) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
-    // Get user details to find email
-    const userDetails = await db.user.findUnique({
-      where: { id: user.userId },
-      select: { email: true }
-    })
-
-    if (!userDetails) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Check for pending payment
-    const pendingPayment = await db.pendingPayment.findFirst({
-      where: {
-        userEmail: userDetails.email,
-        status: 'PENDING'
+    // Get the most recent pending payment for this user
+    const payment = await db.paymentProof.findFirst({
+      where: { 
+        userId: user.id,
+        status: { in: ['pending', 'approved', 'rejected'] }
       },
-      orderBy: {
-        createdAt: 'desc'
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
       }
     })
 
-    if (!pendingPayment) {
-      return NextResponse.json({ 
-        status: 'none',
-        message: 'No pending payment found' 
-      })
+    if (!payment) {
+      return NextResponse.json(
+        { error: 'No payment found' },
+        { status: 404 }
+      )
     }
 
-    // Check if payment has expired
-    if (pendingPayment.expiresAt && new Date() > pendingPayment.expiresAt) {
-      await db.pendingPayment.update({
-        where: { id: pendingPayment.id },
-        data: { status: 'REJECTED' }
-      })
-      
-      return NextResponse.json({ 
-        status: 'expired',
-        message: 'Payment has expired' 
-      })
-    }
-
-    return NextResponse.json({ 
-      status: pendingPayment.status.toLowerCase(),
-      paymentId: pendingPayment.id,
-      plan: pendingPayment.plan,
-      amount: pendingPayment.amount
+    return NextResponse.json({
+      success: true,
+      payment: {
+        id: payment.id,
+        status: payment.status,
+        plan: payment.plan,
+        amount: payment.amount,
+        transactionId: payment.txnId,
+        submittedAt: payment.createdAt.toISOString(),
+        reviewedAt: payment.updatedAt.toISOString(),
+        adminNotes: payment.status === 'rejected' ? 'Payment rejected. Please contact support.' : null,
+        rejectionReason: payment.status === 'rejected' ? 'Payment could not be verified. Please upload a valid payment proof.' : null
+      }
     })
 
   } catch (error) {
-    console.error('Error checking payment status:', error)
-    return NextResponse.json({ 
-      error: 'Failed to check payment status',
-      status: 'error'
-    }, { status: 500 })
+    console.error('Payment status check error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

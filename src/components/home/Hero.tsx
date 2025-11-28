@@ -194,13 +194,13 @@ function FeatureCard({ icon, title, description, gradient, shadowColor, floatDur
 
 export default function Hero() {
   const handleStartTrial = () => {
-    toast.success("🎉 Trial Started!", {
-      description: "Welcome to Effortless Society Management! Your 15-day free trial has begun.",
+    toast.success("🎉 Start Your Free Trial!", {
+      description: "Choose your plan and start your 15-day free trial.",
       duration: 5000,
     })
-    // Redirect to signup page for trial users
+    // Redirect to subscription page for trial users
     setTimeout(() => {
-      window.location.href = '/signup'
+      window.location.href = '/subscription'
     }, 1000)
   }
 
@@ -217,12 +217,12 @@ export default function Hero() {
 
   const handleFeatureClick = (featureName: string) => {
     toast.success(`✨ ${featureName}`, {
-      description: "Learn more about this feature in our dashboard.",
+      description: "Learn more about this feature by starting your free trial.",
       duration: 3000,
     })
-    // Redirect to signup to explore features
+    // Redirect to subscription to explore features
     setTimeout(() => {
-      window.location.href = '/signup'
+      window.location.href = '/subscription'
     }, 1000)
   }
 

@@ -11,7 +11,10 @@ const generateTokens = (user: any) => {
     userId: user.id, 
     email: user.email, 
     role: user.role,
-    societyAccountId: user.societyAccountId
+    societyAccountId: user.societyAccountId,
+    subscriptionStatus: user.subscriptionStatus,
+    plan: user.plan,
+    expiryDate: user.expiryDate
   }
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' })
   const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' })
@@ -32,9 +35,22 @@ export async function POST(request: NextRequest) {
 
     const validatedData = loginSchema.parse(body)
 
-    // 1. Find User
+    // 1. Find User with subscription info
     const user = await db.user.findUnique({
-      where: { email: validatedData.email }
+      where: { email: validatedData.email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+        societyAccountId: true,
+        subscriptionStatus: true,
+        plan: true,
+        expiryDate: true,
+        trialEndsAt: true,
+        isActive: true
+      }
     })
 
     if (!user) {
@@ -81,7 +97,15 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name, 
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        plan: user.plan,
+        expiryDate: user.expiryDate
+      },
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       redirectUrl

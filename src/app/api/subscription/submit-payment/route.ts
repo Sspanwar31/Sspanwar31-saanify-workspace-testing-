@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if transaction ID already exists
-    const existingTransaction = await db.paymentProof.findUnique({
+    const existingTransaction = await db.pendingPayment.findUnique({
       where: { txnId: transactionId }
     })
 
@@ -85,32 +85,33 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(filepath, buffer)
 
-    // Create payment proof record
-    const paymentProof = await db.paymentProof.create({
+    // Create pending payment record
+    const pendingPayment = await db.pendingPayment.create({
       data: {
         userId: user.id,
         amount,
         plan,
         txnId: transactionId,
         screenshotUrl: `/uploads/payment-proofs/${filename}`,
-        status: 'pending',
+        status: 'PENDING',
         createdAt: new Date(),
         updatedAt: new Date()
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
+      }
+    })
+
+    // Update user subscription status to PENDING
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionStatus: 'PENDING',
+        updatedAt: new Date()
       }
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Payment proof submitted successfully',
-      paymentProof
+      message: 'Payment proof submitted successfully. Awaiting admin approval.',
+      pendingPayment
     })
 
   } catch (error) {

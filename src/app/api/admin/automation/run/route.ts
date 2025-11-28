@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 // Mock task execution - handle tasks internally without HTTP calls
 const taskExecutors = {
@@ -103,6 +104,102 @@ const taskExecutors = {
       details: 'System performance optimized',
       performance_improvement: '15%',
       optimizations_applied: 8
+    }
+  },
+  'subscription-expiry-scan': async () => {
+    // REAL: Subscription expiry scan
+    console.log('🔄 Starting subscription expiry scan...');
+    
+    const now = new Date();
+    
+    try {
+      // Find all users with ACTIVE subscriptions that have expired
+      const expiredUsers = await db.user.findMany({
+        where: {
+          subscriptionStatus: 'ACTIVE',
+          expiryDate: {
+            lt: now
+          }
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          subscriptionStatus: true,
+          expiryDate: true,
+          plan: true
+        }
+      });
+
+      console.log(`📊 Found ${expiredUsers.length} users with expired subscriptions`);
+
+      if (expiredUsers.length === 0) {
+        return {
+          success: true,
+          message: 'Subscription expiry scan completed - no expired subscriptions found',
+          details: {
+            updatedUsers: 0,
+            scanTime: now.toISOString(),
+            totalExpiredFound: 0
+          }
+        };
+      }
+
+      // Update all expired users
+      const updatePromises = expiredUsers.map(async (user) => {
+        try {
+          await db.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionStatus: 'EXPIRED',
+              plan: null,
+              // Keep expiryDate as is for reference
+              // Keep role as is (member/admin)
+            }
+          });
+          
+          console.log(`✅ Updated user ${user.email} (${user.name}) - subscription expired`);
+          
+          return {
+            userId: user.id,
+            email: user.email,
+            previousPlan: user.plan,
+            previousExpiry: user.expiryDate
+          };
+        } catch (error) {
+          console.error(`❌ Failed to update user ${user.email}:`, error);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(updatePromises);
+      const successfulUpdates = results.filter(result => result !== null);
+
+      console.log(`🎉 Successfully updated ${successfulUpdates.length} expired subscriptions`);
+
+      return {
+        success: true,
+        message: `Subscription expiry scan completed - updated ${successfulUpdates.length} expired subscriptions`,
+        details: {
+          updatedUsers: successfulUpdates.length,
+          scanTime: now.toISOString(),
+          totalExpiredFound: expiredUsers.length,
+          successfulUpdates: successfulUpdates.length,
+          failedUpdates: expiredUsers.length - successfulUpdates.length,
+          updatedUsers: successfulUpdates
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Subscription expiry scan failed:', error);
+      return {
+        success: false,
+        message: 'Subscription expiry scan failed',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          updatedUsers: 0
+        }
+      };
     }
   }
 }

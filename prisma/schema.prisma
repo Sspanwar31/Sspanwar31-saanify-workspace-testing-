@@ -10,29 +10,34 @@ datasource db {
 /// /////////////////////////////////////////////////
 /// /////////////////////////////////////////////////
 model User {
-  id               String          @id @default(cuid())
-  name             String?
-  email            String?         @unique
-  emailVerified    DateTime?
-  image            String?
-  password         String?
-  role             String          @default("CLIENT")
-  isActive         Boolean         @default(true)
-  lastLoginAt      DateTime?
-  societyAccountId String?
-  trialEndsAt      DateTime?
+  id                 String           @id @default(cuid())
+  name               String?
+  email              String?          @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  role               String           @default("CLIENT")
+  isActive           Boolean          @default(true)
+  lastLoginAt        DateTime?
+  societyAccountId   String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
   subscriptionEndsAt DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  accounts         Account[]
-  posts            Post[]
-  sessions         Session[]
-  societyAccount   SocietyAccount? @relation(fields: [societyAccountId], references: [id])
-  paymentProofs    PaymentProof[]
+  trialEndsAt        DateTime?
+  expiryDate         DateTime?
+  plan               String?
+  subscriptionStatus String?
+  accounts           Account[]
+  paymentProofs      PaymentProof[]
+  pendingPayments    PendingPayment[]
+  posts              Post[]
+  sessions           Session[]
+  societyAccount     SocietyAccount?  @relation(fields: [societyAccountId], references: [id])
 
-  @@map("users")
   @@index([role])
   @@index([isActive])
+  @@index([subscriptionStatus])
+  @@map("users")
 }
 
 model Account {
@@ -156,9 +161,30 @@ model PaymentProof {
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("payment_proofs")
   @@index([userId])
   @@index([status])
+  @@map("payment_proofs")
+}
+
+/// /////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
+model PendingPayment {
+  id             String   @id @default(cuid())
+  userId         String
+  plan           String
+  txnId          String   @unique
+  amount         Float
+  status         String   @default("pending")
+  screenshotUrl  String?
+  adminNotes     String?
+  rejectionReason String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("pending_payments")
 }
 
 /// /////////////////////////////////////////////////

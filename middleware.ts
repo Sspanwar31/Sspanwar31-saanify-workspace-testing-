@@ -14,6 +14,76 @@ function hasAccess(userRole: string, pathname: string): boolean {
   );
 }
 
+// Helper: Check subscription status and return appropriate action
+function checkSubscriptionStatus(user: any): { allowed: boolean; redirectUrl?: string; reason?: string } {
+  // Admins and Superadmins don't need subscription validation
+  if (user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') {
+    return { allowed: true };
+  }
+  
+  const subscriptionStatus = user?.subscriptionStatus;
+  const expiryDate = user?.expiryDate;
+  
+  console.log(`🔐 Middleware: Checking subscription status: ${subscriptionStatus}, expiry: ${expiryDate}`);
+  
+  // Status logic implementation (case-insensitive comparison)
+  switch (subscriptionStatus?.toUpperCase()) {
+    case 'TRIAL':
+      // TRIAL users get auto access to dashboard
+      return { allowed: true };
+      
+    case 'ACTIVE':
+      // Check if subscription has expired
+      if (expiryDate) {
+        const now = new Date();
+        const expiry = new Date(expiryDate);
+        
+        if (expiry < now) {
+          console.log(`🔐 Middleware: ACTIVE subscription expired on ${expiryDate}`);
+          return { 
+            allowed: false, 
+            redirectUrl: '/subscription',
+            reason: 'Subscription expired' 
+          };
+        }
+      }
+      // Active users get full access
+      return { allowed: true };
+      
+    case 'PENDING':
+      // PENDING users are locked and redirected to waiting page
+      return { 
+        allowed: false, 
+        redirectUrl: '/subscription/waiting',
+        reason: 'Payment verification pending' 
+      };
+      
+    case 'REJECTED':
+      // REJECTED users are locked and redirected to retry payment
+      return { 
+        allowed: false, 
+        redirectUrl: '/subscription',
+        reason: 'Payment rejected, please retry' 
+      };
+      
+    case 'EXPIRED':
+      // EXPIRED users are locked and redirected to renew subscription
+      return { 
+        allowed: false, 
+        redirectUrl: '/subscription',
+        reason: 'Subscription expired, please renew' 
+      };
+      
+    default:
+      // No subscription or unknown status
+      return { 
+        allowed: false, 
+        redirectUrl: '/subscription',
+        reason: 'No active subscription found' 
+      };
+  }
+}
+
 // Helper: Get appropriate redirect for user role
 function getRedirectForRole(userRole: string): string {
   const roleConfig = roleBasedAccess[userRole as keyof typeof roleBasedAccess];
@@ -60,6 +130,9 @@ const publicRoutes = [
   "/login",
   "/signup", 
   "/not-authorized",
+  "/subscription",
+  "/subscription/waiting",
+  "/subscription/payment-upload",
   "/favicon.ico",
   "/_next"
 ];
@@ -94,7 +167,10 @@ const publicApiRoutes = [
   "/api/glm",
   "/api/ai",
   "/api/users",
-  "/api/clients"
+  "/api/clients",
+  "/api/subscription",
+  "/api/subscription/submit-payment",
+  "/api/subscription/check-status"
 ];
 
 // Role-based route access control
@@ -178,6 +254,39 @@ export async function middleware(req: NextRequest) {
 
   const userRole = user?.role?.toUpperCase() || 'CLIENT';
   console.log(`🔐 Middleware: User role detected as ${userRole} for ${pathname}`);
+
+  // Subscription-based access control for protected routes
+  // Skip subscription check for admin routes and public routes
+  const isSubscriptionProtectedRoute = 
+    (pathname.startsWith("/dashboard/client") || 
+     pathname.startsWith("/api/dashboard/client")) &&
+    !pathname.startsWith("/admin") &&
+    userRole !== 'ADMIN' && 
+    userRole !== 'SUPERADMIN';
+
+  if (isSubscriptionProtectedRoute) {
+    console.log(`🔐 Middleware: Checking subscription for ${userRole} accessing ${pathname}`);
+    
+    const subscriptionCheck = checkSubscriptionStatus(user);
+    
+    if (!subscriptionCheck.allowed) {
+      console.log(`🔐 Middleware: Subscription check failed: ${subscriptionCheck.reason}`);
+      
+      // For API routes, return JSON error
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ 
+          error: 'Subscription required',
+          message: subscriptionCheck.reason || 'Active subscription needed to access this resource',
+          redirectUrl: subscriptionCheck.redirectUrl || '/subscription'
+        }, { status: 402 });
+      }
+      
+      // For page routes, redirect to appropriate page based on status
+      return NextResponse.redirect(new URL(subscriptionCheck.redirectUrl || '/subscription', req.url));
+    }
+    
+    console.log(`🔐 Middleware: Subscription check passed for ${userRole} with status: ${user.subscriptionStatus}`);
+  }
 
   // Enhanced API Route Protection
   if (pathname.startsWith("/api/")) {

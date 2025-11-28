@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 15)
 
-    // Create user with trial
+    // Create user with trial subscription
     const user = await db.user.create({
       data: {
         name: validatedData.name,
@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
         role: 'CLIENT',
         isActive: true,
         trialEndsAt,
+        // Set subscription fields for trial
+        subscriptionStatus: 'TRIAL',
+        plan: 'TRIAL',
+        expiryDate: trialEndsAt,
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -60,16 +64,22 @@ export async function POST(request: NextRequest) {
         isActive: true,
         trialEndsAt: true,
         subscriptionEndsAt: true,
+        subscriptionStatus: true,
+        plan: true,
+        expiryDate: true,
         createdAt: true
       }
     })
 
-    // Create JWT token
+    // Create JWT token with subscription info
     const token = jwt.sign(
       { 
         userId: user.id, 
         email: user.email, 
-        role: user.role 
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        plan: user.plan,
+        expiryDate: user.expiryDate
       },
       JWT_SECRET,
       { expiresIn: '7d' }

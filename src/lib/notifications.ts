@@ -185,6 +185,89 @@ export class NotificationService {
       })
     }
   }
+
+  // Send payment approval notification
+  static async sendPaymentApprovalNotification(
+    email: string,
+    userName: string,
+    plan: string,
+    expiryDate: Date
+  ) {
+    try {
+      // Create notification for user
+      const userId = await this.getUserIdByEmail(email)
+      if (userId) {
+        await this.createNotification({
+          userId,
+          title: 'Payment Approved',
+          message: `Your ${plan} subscription has been activated successfully!`,
+          type: 'success',
+          data: {
+            plan,
+            expiryDate,
+            type: 'payment_approved'
+          }
+        })
+      }
+
+      // Log email notification (in production, this would send actual email)
+      console.log(`📧 Payment Approval Email sent to ${email}`)
+      console.log(`Subject: 🎉 Your ${plan} Subscription has been Approved!`)
+      console.log(`Message: Dear ${userName}, your payment has been approved and your subscription is now active until ${expiryDate.toDateString()}.`)
+
+      return true
+    } catch (error) {
+      console.error('Error sending payment approval notification:', error)
+      return false
+    }
+  }
+
+  // Send payment rejection notification
+  static async sendPaymentRejectionNotification(
+    email: string,
+    userName: string,
+    reason: string
+  ) {
+    try {
+      // Create notification for user
+      const userId = await this.getUserIdByEmail(email)
+      if (userId) {
+        await this.createNotification({
+          userId,
+          title: 'Payment Rejected',
+          message: `Your payment proof could not be verified. Please contact support.`,
+          type: 'error',
+          data: {
+            reason,
+            type: 'payment_rejected'
+          }
+        })
+      }
+
+      // Log email notification (in production, this would send actual email)
+      console.log(`📧 Payment Rejection Email sent to ${email}`)
+      console.log(`Subject: Payment Verification Update`)
+      console.log(`Message: Dear ${userName}, we could not verify your payment proof. Reason: ${reason}`)
+
+      return true
+    } catch (error) {
+      console.error('Error sending payment rejection notification:', error)
+      return false
+    }
+  }
+
+  // Helper method to get user ID by email
+  private static async getUserIdByEmail(email: string): Promise<string | null> {
+    try {
+      const user = await db.user.findUnique({
+        where: { email }
+      })
+      return user?.id || null
+    } catch (error) {
+      console.error('Error getting user by email:', error)
+      return null
+    }
+  }
 }
 
 declare global {

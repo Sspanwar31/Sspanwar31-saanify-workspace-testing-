@@ -44,6 +44,7 @@ const publicRoutePatterns = [
   "/api/ai",
   "/api/users",
   "/api/clients",
+  "/api/uploads",
   "/not-authorized",
   "/favicon.ico",
   "/_next"
@@ -54,6 +55,11 @@ export async function middleware(req: NextRequest) {
 
   // Skip middleware entirely for API routes
   if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
+  // Allow uploads directory without authentication
+  if (pathname.startsWith('/uploads/')) {
     return NextResponse.next();
   }
 
@@ -127,7 +133,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match only frontend routes, exclude all API routes and static files
+     * Match all routes except API routes and static files
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],

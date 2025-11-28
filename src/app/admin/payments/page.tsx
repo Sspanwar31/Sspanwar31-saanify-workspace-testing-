@@ -97,9 +97,12 @@ export default function AdminPaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<PaymentProof | null>(null)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [availablePlans, setAvailablePlans] = useState<any[]>([])
+  const [selectedPlanForApproval, setSelectedPlanForApproval] = useState<string>('')
 
   useEffect(() => {
     fetchPayments()
+    fetchAvailablePlans()
     fetchNotifications()
     // Set up periodic refresh for notifications
     const notificationInterval = setInterval(fetchNotifications, 30000) // Refresh every 30 seconds
@@ -161,7 +164,20 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  const handleApprovePayment = async (paymentId: string) => {
+  const fetchAvailablePlans = async () => {
+    try {
+      const response = await makeAuthenticatedRequest('/api/admin/subscription-plans?includeInactive=true')
+      if (response.ok) {
+        const data = await response.json()
+        // Get all plans including inactive ones for payment approval
+        setAvailablePlans(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching available plans:', error)
+    }
+  }
+
+  const handleApprovePayment = async (paymentId: string, selectedPlan?: string) => {
     setIsProcessing(paymentId)
     try {
       // Find the payment to get userId and plan
@@ -170,13 +186,16 @@ export default function AdminPaymentsPage() {
         throw new Error('Payment not found')
       }
 
+      // Use selected plan if provided, otherwise use payment's plan
+      const planToApprove = selectedPlan || payment.plan
+
       const response = await makeAuthenticatedRequest('/api/admin/subscriptions/approve-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           paymentId,
           userId: payment.userId,
-          plan: payment.plan,
+          plan: planToApprove,
           adminNotes: 'Payment approved by admin'
         })
       })
@@ -631,7 +650,10 @@ export default function AdminPaymentsPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => setSelectedPayment(payment)}
+                                  onClick={() => {
+                                    setSelectedPayment(payment)
+                                    setSelectedPlanForApproval(payment.plan) // Set current plan as default
+                                  }}
                                   className="hover:bg-blue-50 hover:border-blue-300"
                                 >
                                   <Eye className="h-4 w-4 mr-1" />
@@ -659,7 +681,21 @@ export default function AdminPaymentsPage() {
                                       </div>
                                       <div>
                                         <p className="text-sm font-medium text-slate-600 mb-1">Subscription Plan</p>
-                                        <p className="font-semibold text-slate-900">{selectedPayment.plan}</p>
+                                        <div className="space-y-2">
+                                          <p className="text-sm text-slate-500">Current: <span className="font-semibold">{selectedPayment.plan}</span></p>
+                                          <Select value={selectedPlanForApproval} onValueChange={setSelectedPlanForApproval}>
+                                            <SelectTrigger className="w-full">
+                                              <SelectValue placeholder="Select plan for approval" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {availablePlans.map((plan) => (
+                                                <SelectItem key={plan.id} value={plan.name}>
+                                                  {plan.name} - ₹{plan.price}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
                                       </div>
                                       <div>
                                         <p className="text-sm font-medium text-slate-600 mb-1">Payment Amount</p>
@@ -734,8 +770,8 @@ export default function AdminPaymentsPage() {
                                           Reject Payment
                                         </Button>
                                         <Button 
-                                          onClick={() => handleApprovePayment(selectedPayment.id)}
-                                          disabled={isProcessing === selectedPayment.id}
+                                          onClick={() => handleApprovePayment(selectedPayment.id, selectedPlanForApproval)}
+                                          disabled={isProcessing === selectedPayment.id || !selectedPlanForApproval}
                                           className="bg-green-600 hover:bg-green-700"
                                         >
                                           {isProcessing === selectedPayment.id ? (
@@ -770,7 +806,10 @@ export default function AdminPaymentsPage() {
                                 </Button>
                                 <Button 
                                   size="sm"
-                                  onClick={() => handleApprovePayment(payment.id)}
+                                  onClick={() => {
+                                    setSelectedPlanForApproval(payment.plan) // Set current plan as default
+                                    handleApprovePayment(payment.id, payment.plan)
+                                  }}
                                   disabled={isProcessing === payment.id}
                                   className="bg-green-600 hover:bg-green-700"
                                 >

@@ -1,59 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { subscriptionPlanStorage } from '@/lib/subscription-storage';
 
 export async function GET(request: NextRequest) {
   try {
-    // Return mock subscription plans data that matches the frontend interface
-    const subscriptionPlans = [
-      {
-        id: '1',
-        name: 'Basic Plan',
-        description: 'Perfect for small societies',
-        price: 0,
-        duration: 1,
-        durationType: 'monthly' as 'monthly' | 'yearly',
-        features: ['Up to 50 members', 'Basic transactions', 'Email support'],
-        isActive: true,
-        maxMembers: 50,
-        maxTransactions: 100
-      },
-      {
-        id: '2',
-        name: 'Standard Plan',
-        description: 'Great for medium societies',
-        price: 1999,
-        duration: 1,
-        durationType: 'monthly' as 'monthly' | 'yearly',
-        features: ['Up to 200 members', 'Advanced transactions', 'Priority support', 'Mobile app access'],
-        isActive: true,
-        maxMembers: 200,
-        maxTransactions: 500
-      },
-      {
-        id: '3',
-        name: 'Premium Plan',
-        description: 'Best for large societies',
-        price: 999,
-        duration: 1,
-        durationType: 'monthly' as 'monthly' | 'yearly',
-        features: ['Up to 500 members', 'Advanced transactions', 'Priority support', 'Mobile app access', 'Advanced analytics'],
-        isActive: true,
-        maxMembers: 500,
-        maxTransactions: 2000
-      },
-      {
-        id: '4',
-        name: 'Enterprise Annual',
-        description: 'Complete solution for enterprises',
-        price: 49999,
-        duration: 1,
-        durationType: 'yearly' as 'monthly' | 'yearly',
-        features: ['Everything in Premium', 'Dedicated account manager', 'Custom integrations', 'On-premise option'],
-        isActive: true,
-        maxMembers: 9999,
-        maxTransactions: 99999
+    const { searchParams } = new URL(request.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
+    
+    // Try to get plans from database first
+    let subscriptionPlans = [];
+    
+    try {
+      // Check if we have a subscription plans table or similar
+      const dbPlans = await db.subscriptionPlan.findMany({
+        where: includeInactive ? {} : { isActive: true },
+        orderBy: { createdAt: 'asc' }
+      });
+      
+      if (dbPlans && dbPlans.length > 0) {
+        subscriptionPlans = dbPlans.map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description || '',
+          price: plan.price || 0,
+          duration: plan.duration || 1,
+          durationType: plan.durationType || 'monthly',
+          features: plan.features || [],
+          isActive: plan.isActive,
+          maxMembers: plan.maxMembers || 50,
+          maxTransactions: plan.maxTransactions || 100
+        }));
       }
-    ];
+    } catch (dbError) {
+      console.log('Database plans not available, using in-memory storage');
+    }
+    
+    // If no plans in database, use in-memory storage
+    if (subscriptionPlans.length === 0) {
+      subscriptionPlans = includeInactive 
+        ? subscriptionPlanStorage.getAllPlansIncludingInactive()
+        : subscriptionPlanStorage.getAllPlans();
+    }
 
     return NextResponse.json({
       success: true,
@@ -87,8 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new plan with proper structure
-    const newPlan = {
-      id: Date.now().toString(),
+    const planData = {
       name: body.name,
       description: body.description || '',
       price: body.price,
@@ -97,14 +83,34 @@ export async function POST(request: NextRequest) {
       features: body.features || [],
       isActive: body.isActive !== undefined ? body.isActive : true,
       maxMembers: body.maxMembers || 50,
-      maxTransactions: body.maxTransactions || 100,
-      createdAt: new Date().toISOString()
+      maxTransactions: body.maxTransactions || 100
     };
 
-    return NextResponse.json({
-      success: true,
-      data: newPlan
-    });
+    // Try to save to database
+    try {
+      const savedPlan = await db.subscriptionPlan.create({
+        data: {
+          ...planData,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString()
+        }
+      });
+      
+      return NextResponse.json({
+        success: true,
+        data: savedPlan
+      });
+    } catch (dbError) {
+      console.log('Could not save to database, using in-memory storage');
+      
+      // Fallback: save to in-memory storage
+      const newPlan = subscriptionPlanStorage.createPlan(planData);
+      
+      return NextResponse.json({
+        success: true,
+        data: newPlan
+      });
+    }
   } catch (error) {
     console.error('Error creating subscription plan:', error);
     return NextResponse.json(
@@ -132,9 +138,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update plan with proper structure
-    const updatedPlan = {
-      id: body.id,
+    const planData = {
       name: body.name,
       description: body.description || '',
       price: body.price,
@@ -143,14 +147,44 @@ export async function PUT(request: NextRequest) {
       features: body.features || [],
       isActive: body.isActive !== undefined ? body.isActive : true,
       maxMembers: body.maxMembers || 50,
-      maxTransactions: body.maxTransactions || 100,
-      updatedAt: new Date().toISOString()
+      maxTransactions: body.maxTransactions || 100
     };
 
-    return NextResponse.json({
-      success: true,
-      data: updatedPlan
-    });
+    // Try to update in database
+    try {
+      const updatedPlan = await db.subscriptionPlan.update({
+        where: { id: body.id },
+        data: {
+          ...planData,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      
+      return NextResponse.json({
+        success: true,
+        data: updatedPlan
+      });
+    } catch (dbError) {
+      console.log('Could not update in database, using in-memory storage');
+      
+      // Fallback: update in in-memory storage
+      const updatedPlan = subscriptionPlanStorage.updatePlan(body.id, planData);
+      
+      if (!updatedPlan) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Plan not found' 
+          },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: updatedPlan
+      });
+    }
   } catch (error) {
     console.error('Error updating subscription plan:', error);
     return NextResponse.json(
@@ -178,12 +212,37 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // For now, just return success
-    // In a real implementation, this would delete from database
-    return NextResponse.json({
-      success: true,
-      message: 'Subscription plan deleted successfully'
-    });
+    // Try to delete from database
+    try {
+      await db.subscriptionPlan.delete({
+        where: { id }
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Subscription plan deleted successfully'
+      });
+    } catch (dbError) {
+      console.log('Could not delete from database, using in-memory storage');
+      
+      // Fallback: delete from in-memory storage
+      const deleted = subscriptionPlanStorage.deletePlan(id);
+      
+      if (!deleted) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Plan not found' 
+          },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Subscription plan deleted successfully'
+      });
+    }
   } catch (error) {
     console.error('Error deleting subscription plan:', error);
     return NextResponse.json(

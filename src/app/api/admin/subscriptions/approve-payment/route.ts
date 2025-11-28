@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { NotificationService } from '@/lib/notifications';
+import { subscriptionPlanStorage } from '@/lib/subscription-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,11 +18,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get available plans from subscription storage
+    let validPlans = ['basic', 'standard', 'premium', 'enterprise'];
+    
+    try {
+      // Get plans from in-memory storage (including inactive ones for validation)
+      const storagePlans = subscriptionPlanStorage.getAllPlansIncludingInactive();
+      if (storagePlans && storagePlans.length > 0) {
+        // Extract plan names and create valid plans array
+        validPlans = storagePlans.map(plan => {
+          // Convert plan name to lowercase and remove spaces for validation
+          return plan.name.toLowerCase().replace(/\s+/g, '');
+        });
+        
+        // Also keep the original mapping for backwards compatibility
+        validPlans.push('basic', 'standard', 'premium', 'enterprise');
+      }
+    } catch (error) {
+      console.log('Could not fetch subscription plans from storage, using default plans');
+    }
+
     // Normalize and validate plan
-    const validPlans = ['basic', 'standard', 'premium', 'enterprise'];
     let normalizedPlan = body.plan.toLowerCase().trim();
     
-    // Convert common plan name variations to standard values
+    // Enhanced plan mapping that includes custom plans
     const planMapping: { [key: string]: string } = {
       'basic plan': 'basic',
       'standard plan': 'standard', 
@@ -38,11 +58,39 @@ export async function POST(request: NextRequest) {
       normalizedPlan = planMapping[normalizedPlan];
     }
     
-    if (!validPlans.includes(normalizedPlan)) {
+    // For custom plans, also check if the plan exists in our valid plans (without spaces)
+    const planWithoutSpaces = normalizedPlan.replace(/\s+/g, '');
+    const isValidCustomPlan = validPlans.some(plan => plan === planWithoutSpaces || plan === normalizedPlan);
+    
+    // Special case: If the plan exists in any payment record, allow it even if not in current plans
+    // This handles cases where plans were deactivated but payments still exist
+    let isLegacyPlan = false;
+    if (!validPlans.includes(normalizedPlan) && !isValidCustomPlan) {
+      try {
+        // Check if this plan exists in any payment record
+        const existingPayment = await db.pendingPayment.findFirst({
+          where: {
+            plan: {
+              contains: body.plan,
+              mode: 'insensitive'
+            }
+          }
+        });
+        
+        if (existingPayment) {
+          isLegacyPlan = true;
+          console.log(`Allowing legacy plan "${body.plan}" found in existing payment records`);
+        }
+      } catch (error) {
+        console.log('Could not check for legacy plan in payments');
+      }
+    }
+    
+    if (!validPlans.includes(normalizedPlan) && !isValidCustomPlan && !isLegacyPlan) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Invalid plan. Must be one of: basic, standard, premium, enterprise' 
+          error: `Invalid plan "${body.plan}". Available plans: ${validPlans.join(', ')}` 
         },
         { status: 400 }
       );

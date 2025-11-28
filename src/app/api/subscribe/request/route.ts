@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     let amount = 0
     try {
       const planAmount = planDetails?.price || 0
-      const multiplier = PRICING_TIERS.find(tier => tier.multiplier || 1
+      const multiplier = PRICING_TIERS.find(tier => tier.multiplier) || 1
       amount = planAmount * multiplier
     } catch (error) {
       console.error('Error calculating amount:', error)
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     // Save payment request to database
     const savedRequest = await db.paymentRequest.create({
       data: {
-        ...paymentRequest
+        ...paymentRequest,
         status: 'pending'
       }
     })
@@ -209,10 +209,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Payment request error:', error)
-      return NextResponse.json(
-        { error: 'Failed to process payment request' },
-        { status: 500 }
-      )
-    }
+    return NextResponse.json(
+      { error: 'Failed to process payment request' },
+      { status: 500 }
+    )
   }
 }

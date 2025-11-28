@@ -134,7 +134,9 @@ const publicRoutes = [
   "/subscription/waiting",
   "/subscription/payment-upload",
   "/favicon.ico",
-  "/_next"
+  "/_next",
+  "/uploads",
+  "/placeholder-screenshot.svg"
 ];
 
 // API routes that don't require authentication

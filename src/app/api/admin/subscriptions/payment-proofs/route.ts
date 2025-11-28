@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { encodeImageUrl } from '@/lib/screenshot-utils'
 
 export async function GET() {
   try {
@@ -30,7 +31,7 @@ export async function GET() {
       amount: payment.amount || 0,
       plan: payment.plan || 'UNKNOWN',
       txnId: payment.transactionId || payment.id,
-      screenshotUrl: payment.screenshotUrl,
+      screenshotUrl: encodeImageUrl(payment.screenshotUrl),
       status: payment.status,
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString(),

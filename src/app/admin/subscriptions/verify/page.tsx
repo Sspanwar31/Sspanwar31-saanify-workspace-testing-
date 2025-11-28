@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { makeAuthenticatedRequest } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import { NotificationService } from '@/lib/notifications'
+import { formatScreenshotUrl, createFullScreenshotUrl, createAccessibleImageUrl } from '@/lib/screenshot-utils'
 
 interface PaymentProof {
   id: string
@@ -93,6 +94,12 @@ export default function AdminPaymentsPage() {
       if (response.ok) {
         const data = await response.json()
         const proofs = data.paymentProofs || []
+        
+        console.log('🔍 API Response:', proofs.map(p => ({
+          id: p.id,
+          screenshotUrl: p.screenshotUrl,
+          urlType: typeof p.screenshotUrl
+        })))
         
         // Transform data to match UI expectations
         const transformedProofs = proofs.map((proof: any) => ({
@@ -361,8 +368,10 @@ export default function AdminPaymentsPage() {
       return
     }
     
-    // Create full URL if it's a relative path
-    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`
+    // Use the new accessible URL function
+    const fullUrl = createAccessibleImageUrl(url)
+    
+    console.log('🔗 Opening screenshot URL:', fullUrl)
     
     // Open in new window with error handling
     try {
@@ -818,16 +827,72 @@ export default function AdminPaymentsPage() {
                       {selectedProof.screenshotUrl ? (
                         <div className="border rounded-xl overflow-hidden bg-white/10">
                           <div className="relative group">
-                            <img
-                              src={selectedProof.screenshotUrl}
+                              <img
+                              src={createAccessibleImageUrl(selectedProof.screenshotUrl)}
                               alt="Payment Screenshot"
                               className="w-full h-auto max-h-96 object-contain rounded-lg transition-transform duration-200 group-hover:scale-105"
-                              onError={(e) => {
-                                console.error('Screenshot load error:', selectedProof.screenshotUrl)
-                                e.currentTarget.src = '/placeholder-screenshot.png'
-                              }}
                               onLoad={() => {
-                                console.log('Screenshot loaded successfully:', selectedProof.screenshotUrl)
+                                console.log('✅ Screenshot loaded successfully:', createAccessibleImageUrl(selectedProof.screenshotUrl || null))
+                              }}
+                              onError={(e) => {
+                                const originalUrl = selectedProof.screenshotUrl
+                                if (!originalUrl) {
+                                  console.log('🖼️ No URL provided, using placeholder')
+                                  e.currentTarget.src = '/placeholder-screenshot.svg'
+                                  return
+                                }
+                                
+                                console.error('❌ Screenshot load error:', originalUrl)
+                                
+                                // Try multiple fallback approaches
+                                try {
+                                  // 1. Try with different encoding approaches
+                                  const filename = originalUrl.split('/').pop()
+                                  const encodedFilename = encodeURIComponent(filename || '')
+                                  const alternativeUrl = `/uploads/payment-proofs/${encodedFilename}`
+                                  
+                                  console.log('🔄 Trying alternative encoded URL:', alternativeUrl)
+                                  const imgElement = e.currentTarget as HTMLImageElement
+                                  imgElement.src = alternativeUrl
+                                  
+                                  // 2. If alternative fails, try safe copy for problematic files
+                                  imgElement.onerror = () => {
+                                    console.log('🔄 Trying safe copy approach...')
+                                    
+                                    // Check if this is the problematic file and use safe copy
+                                    if (filename && filename.includes('1764338893228_Screenshot')) {
+                                      const safeCopyUrl = '/uploads/payment-proofs/1764338893228_Screenshot_copy1.png'
+                                      console.log('🔄 Using safe copy:', safeCopyUrl)
+                                      imgElement.src = safeCopyUrl
+                                      
+                                      imgElement.onerror = () => {
+                                        console.log('🔄 Trying direct path...')
+                                        const directUrl = `/uploads/payment-proofs/${filename}`
+                                        imgElement.src = directUrl
+                                        
+                                        // 3. Final fallback to placeholder
+                                        imgElement.onerror = () => {
+                                          console.log('🖼️ Using placeholder image')
+                                          imgElement.src = '/placeholder-screenshot.svg'
+                                        }
+                                      }
+                                    } else {
+                                      console.log('🔄 Trying direct path...')
+                                      const directUrl = `/uploads/payment-proofs/${filename}`
+                                      imgElement.src = directUrl
+                                      
+                                      // 3. Final fallback to placeholder
+                                      imgElement.onerror = () => {
+                                        console.log('🖼️ Using placeholder image')
+                                        imgElement.src = '/placeholder-screenshot.svg'
+                                      }
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.log('🖼️ Error in fallback, using placeholder')
+                                  const imgElement = e.currentTarget as HTMLImageElement
+                                  imgElement.src = '/placeholder-screenshot.svg'
+                                }
                               }}
                             />
                             <div className="absolute inset-0 bg-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">

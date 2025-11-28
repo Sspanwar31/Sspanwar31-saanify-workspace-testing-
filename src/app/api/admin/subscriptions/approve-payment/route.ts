@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Get user details
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { id: body.userId },
       include: {
         societyAccount: true
       }
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
 
     // Update user subscription status
     const updatedUser = await db.user.update({
-      where: { id: userId },
+      where: { id: body.userId },
       data: {
         subscriptionStatus: 'active',
-        plan: plan.toLowerCase(),
+        plan: body.plan.toLowerCase(),
         expiryDate: expiryDate,
         updatedAt: new Date()
       }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       await db.societyAccount.update({
         where: { id: user.societyAccount.id },
         data: {
-          subscriptionPlan: plan.toUpperCase(),
+          subscriptionPlan: body.plan.toUpperCase(),
           subscriptionEndsAt: expiryDate,
           status: 'ACTIVE',
           updatedAt: new Date()
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     } else {
       await db.pendingPayment.updateMany({
         where: { 
-          userId: userId,
+          userId: body.userId,
           status: 'pending'
         },
         data: updateData
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       await NotificationService.sendPaymentApprovalNotification(
         user.email!,
         user.name || 'User',
-        plan,
+        body.plan,
         expiryDate
       );
     } catch (notificationError) {

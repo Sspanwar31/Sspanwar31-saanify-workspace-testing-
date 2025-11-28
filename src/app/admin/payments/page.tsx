@@ -164,11 +164,19 @@ export default function AdminPaymentsPage() {
   const handleApprovePayment = async (paymentId: string) => {
     setIsProcessing(paymentId)
     try {
+      // Find the payment to get userId and plan
+      const payment = payments.find(p => p.id === paymentId)
+      if (!payment) {
+        throw new Error('Payment not found')
+      }
+
       const response = await makeAuthenticatedRequest('/api/admin/subscriptions/approve-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           paymentId,
+          userId: payment.userId,
+          plan: payment.plan,
           adminNotes: 'Payment approved by admin'
         })
       })
@@ -194,11 +202,18 @@ export default function AdminPaymentsPage() {
   const handleRejectPayment = async (paymentId: string) => {
     setIsProcessing(paymentId)
     try {
+      // Find the payment to get userId
+      const payment = payments.find(p => p.id === paymentId)
+      if (!payment) {
+        throw new Error('Payment not found')
+      }
+
       const response = await makeAuthenticatedRequest('/api/admin/subscriptions/reject-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           paymentId,
+          userId: payment.userId,
           adminNotes: 'Payment rejected by admin'
         })
       })

@@ -134,13 +134,43 @@ export default function AdminPaymentsPage() {
 
     setIsProcessing(true)
     
+    // Map plan names to valid values with proper pricing
+    const mapPlanToValid = (plan: string): string => {
+      const planLower = plan.toLowerCase()
+      switch (planLower) {
+        case 'basic':
+        case 'starter':
+        case 'trial':
+          return 'basic'
+        case 'standard':
+        case 'regular':
+        case 'professional':
+          return 'standard'
+        case 'premium':
+        case 'advanced':
+        case 'business':
+        case 'pro_monthly':
+          return 'premium'
+        case 'enterprise':
+        case 'corporate':
+        case 'unlimited':
+          return 'enterprise'
+        default:
+          // If unknown, default to basic
+          console.warn(`Unknown plan "${plan}", defaulting to basic`)
+          return 'basic'
+      }
+    }
+    
+    const validPlan = mapPlanToValid(proof.plan)
+    
     try {
       const response = await makeAuthenticatedRequest(`/api/admin/subscriptions/approve-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           userId: proof.userId,
-          plan: proof.plan.toLowerCase(),
+          plan: validPlan,
           duration: 1, // Default 1 month duration
           adminNotes: adminNotes,
           proofId: proof.id
@@ -167,7 +197,7 @@ export default function AdminPaymentsPage() {
           await NotificationService.sendPaymentApprovalNotification(
             proof.user.email,
             proof.user.name,
-            proof.plan,
+            formatPlanName(proof.plan),
             new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
           )
         } catch (notifError) {
@@ -277,6 +307,22 @@ export default function AdminPaymentsPage() {
     }).format(amount)
   }
 
+  const formatPlanName = (plan: string) => {
+    const planLower = plan.toLowerCase()
+    switch (planLower) {
+      case 'basic':
+        return 'Basic Plan'
+      case 'standard':
+        return 'Standard Plan'
+      case 'premium':
+        return 'Premium Plan'
+      case 'enterprise':
+        return 'Enterprise Plan'
+      default:
+        return plan.charAt(0).toUpperCase() + plan.slice(1).replace('_', ' ')
+    }
+  }
+
   const handleSendNotifications = async () => {
     try {
       // Send notifications to all pending payment users
@@ -286,7 +332,7 @@ export default function AdminPaymentsPage() {
         await NotificationService.createNotification({
           userId: proof.userId,
           title: 'Payment Under Review',
-          message: `Your payment of ${formatAmount(proof.amount)} for ${proof.plan} plan is currently under review by our admin team.`,
+          message: `Your payment of ${formatAmount(proof.amount)} for ${formatPlanName(proof.plan)} is currently under review by our admin team.`,
           type: 'info',
           data: {
             proofId: proof.id,
@@ -310,7 +356,31 @@ export default function AdminPaymentsPage() {
   }
 
   const handleViewScreenshot = (url: string) => {
-    window.open(url, '_blank')
+    if (!url) {
+      toast.error('No screenshot available')
+      return
+    }
+    
+    // Create full URL if it's a relative path
+    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`
+    
+    // Open in new window with error handling
+    try {
+      const newWindow = window.open(fullUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        // Fallback: try opening in same tab
+        window.location.href = fullUrl
+      }
+    } catch (error) {
+      console.error('Failed to open screenshot:', error)
+      toast.error('Failed to open screenshot. Please try again.')
+      // Fallback: copy URL to clipboard
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        toast.info('Screenshot URL copied to clipboard')
+      }).catch(() => {
+        toast.error('Could not open or copy screenshot URL')
+      })
+    }
   }
 
   return (
@@ -577,7 +647,7 @@ export default function AdminPaymentsPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="font-medium border-cyan-500/30 text-cyan-400">
-                              {proof.plan.toUpperCase()}
+                              {formatPlanName(proof.plan)}
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium text-white">
@@ -635,6 +705,9 @@ export default function AdminPaymentsPage() {
                     </div>
                   </div>
                 </DialogTitle>
+                <DialogDescription className="text-cyan-400">
+                  Review payment information and client details for verification
+                </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-6 p-6">
@@ -650,7 +723,7 @@ export default function AdminPaymentsPage() {
                         <CardTitle className="text-base text-white flex items-center gap-2">
                           <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 0 8 8M12 20l4 4m0 0l-4-4m4 4H8a2 2 0 002-2v8a2 2 0 002 2h8a2 2 0 002 2v-8a2 2 0 00-2-2H8a2 2 0 00-2-2V6a2 2 0 00-2-2z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 8zM12 14a4 4 0 00-4 4v4a2 2 0 002 2h8a2 2 0 002-2v-4a4 4 0 00-4-4h-4z" />
                             </svg>
                           </div>
                           Client Information
@@ -716,19 +789,19 @@ export default function AdminPaymentsPage() {
                 </div>
 
                 {/* Screenshot Preview */}
-                {selectedProof.screenshotUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                  >
-                    <Card className="backdrop-blur-xl bg-white/5 border-white/10">
-                      <CardHeader>
-                        <CardTitle className="text-base text-white flex items-center gap-2">
-                          <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                            <Eye className="w-3 h-3 text-white" />
-                          </div>
-                          Payment Screenshot
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-base text-white flex items-center gap-2">
+                        <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                          <Eye className="w-3 h-3 text-white" />
+                        </div>
+                        Payment Screenshot
+                        {selectedProof.screenshotUrl && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -738,23 +811,57 @@ export default function AdminPaymentsPage() {
                             <Eye className="w-4 h-4 mr-2" />
                             View Full Size
                           </Button>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {selectedProof.screenshotUrl ? (
                         <div className="border rounded-xl overflow-hidden bg-white/10">
-                          <img
-                            src={selectedProof.screenshotUrl}
-                            alt="Payment Screenshot"
-                            className="w-full h-auto max-h-96 object-contain rounded-lg"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder-screenshot.png'
-                            }}
-                          />
+                          <div className="relative group">
+                            <img
+                              src={selectedProof.screenshotUrl}
+                              alt="Payment Screenshot"
+                              className="w-full h-auto max-h-96 object-contain rounded-lg transition-transform duration-200 group-hover:scale-105"
+                              onError={(e) => {
+                                console.error('Screenshot load error:', selectedProof.screenshotUrl)
+                                e.currentTarget.src = '/placeholder-screenshot.png'
+                              }}
+                              onLoad={() => {
+                                console.log('Screenshot loaded successfully:', selectedProof.screenshotUrl)
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleViewScreenshot(selectedProof.screenshotUrl!)}
+                                className="bg-white/90 hover:bg-white text-black"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Full Size
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-white/5 border-t border-white/10">
+                            <p className="text-xs text-white/60 truncate">
+                              {selectedProof.screenshotUrl}
+                            </p>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                )}
+                      ) : (
+                        <div className="border rounded-xl overflow-hidden bg-white/10 p-8 text-center">
+                          <div className="w-16 h-16 bg-gray-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Eye className="w-8 h-8 text-gray-400" />
+                          </div>
+                          <p className="text-white/60 mb-4">No screenshot available</p>
+                          <p className="text-xs text-white/40">
+                            User did not upload a payment proof screenshot
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* Previous Notes */}
                 {(selectedProof.adminNotes || selectedProof.rejectionReason) && (

@@ -33,13 +33,13 @@ export async function GET(request: NextRequest) {
         id: '3',
         name: 'Premium Plan',
         description: 'Best for large societies',
-        price: 4999,
+        price: 999,
         duration: 1,
         durationType: 'monthly' as 'monthly' | 'yearly',
-        features: ['Unlimited members', 'Unlimited transactions', '24/7 support', 'Advanced analytics', 'Custom features'],
+        features: ['Up to 500 members', 'Advanced transactions', 'Priority support', 'Mobile app access', 'Advanced analytics'],
         isActive: true,
-        maxMembers: 999,
-        maxTransactions: 9999
+        maxMembers: 500,
+        maxTransactions: 2000
       },
       {
         id: '4',

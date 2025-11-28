@@ -17,9 +17,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate plan
+    // Normalize and validate plan
     const validPlans = ['basic', 'standard', 'premium', 'enterprise'];
-    if (!validPlans.includes(body.plan.toLowerCase())) {
+    let normalizedPlan = body.plan.toLowerCase().trim();
+    
+    // Convert common plan name variations to standard values
+    const planMapping: { [key: string]: string } = {
+      'basic plan': 'basic',
+      'standard plan': 'standard', 
+      'premium plan': 'premium',
+      'pro_monthly': 'premium',
+      'pro monthly': 'premium',
+      'enterprise annual': 'enterprise',
+      'enterprise plan': 'enterprise',
+      'enterprise': 'enterprise'
+    };
+    
+    // Apply mapping if found
+    if (planMapping[normalizedPlan]) {
+      normalizedPlan = planMapping[normalizedPlan];
+    }
+    
+    if (!validPlans.includes(normalizedPlan)) {
       return NextResponse.json(
         { 
           success: false, 
@@ -66,7 +85,7 @@ export async function POST(request: NextRequest) {
       where: { id: body.userId },
       data: {
         subscriptionStatus: 'active',
-        plan: body.plan.toLowerCase(),
+        plan: normalizedPlan,
         expiryDate: expiryDate,
         updatedAt: new Date()
       }
@@ -77,7 +96,7 @@ export async function POST(request: NextRequest) {
       await db.societyAccount.update({
         where: { id: user.societyAccount.id },
         data: {
-          subscriptionPlan: body.plan.toUpperCase(),
+          subscriptionPlan: normalizedPlan.toUpperCase(),
           subscriptionEndsAt: expiryDate,
           status: 'ACTIVE',
           updatedAt: new Date()
@@ -121,7 +140,7 @@ export async function POST(request: NextRequest) {
       await NotificationService.sendPaymentApprovalNotification(
         user.email!,
         user.name || 'User',
-        body.plan,
+        normalizedPlan,
         expiryDate
       );
     } catch (notificationError) {

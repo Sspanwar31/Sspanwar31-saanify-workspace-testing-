@@ -2,57 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  CheckSquare,
-  AlertTriangle,
-  Download,
-  Upload,
-  RefreshCw,
-  Trash2,
-  EyeOff,
-  FileText,
-  Calendar as CalendarIcon,
-  Clock,
-  DollarSign,
-  Users as UsersIcon,
-  Shield,
-  Activity,
-  BarChart3,
-  TrendingUp,
-  MoreHorizontal,
-  Menu,
-  ChevronDown,
-  Edit,
-  Lock,
-  Unlock,
-  Crown,
-  Gem,
-  Bell,
-  Search,
-  Filter
-  X,
-  ChevronLeft,
-  Home
-  UserCheck,
-  ArrowUp,
-  CreditCard,
-  Settings
-  Monitor,
-  Server,
-  Database,
-  Target as TargetIcon
-} from 'lucide-react'
-
+import { Eye, CheckCircle, XCircle, FileText, DollarSign, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { makeAuthenticatedRequest } from '@/lib/auth'
 
@@ -72,14 +29,6 @@ interface PaymentProof {
     email: string
     societyName: string
   }
-}
-
-interface PaymentRequest {
-  id: string
-  status: 'approved' | 'rejected'
-  adminNotes?: string
-  processedAt?: string
-  processedBy?: string
 }
 
 export default function AdminPaymentsPage() {
@@ -119,30 +68,6 @@ export default function AdminPaymentsPage() {
       })
 
       if (response.ok) {
-        const data = await response.json()
-        
-        // Update payment proof status
-        await db.paymentProof.update({
-          where: { id: proofId },
-          data: {
-            status: 'approved',
-            processedAt: new Date().toISOString(),
-            processedBy: 'admin'
-          }
-        })
-
-        // Update subscription status if approved
-        if (data.subscriptionData) {
-          await db.societyAccount.update({
-            where: { id: data.subscriptionData.societyAccountId },
-            data: {
-              status: 'ACTIVE',
-              subscriptionEndsAt: data.subscriptionData.subscriptionEndsAt,
-              updatedAt: new Date().toISOString()
-            }
-          })
-        }
-
         setPaymentProofs(prev => 
           prev.map(proof => 
             proof.id === proofId 
@@ -152,6 +77,7 @@ export default function AdminPaymentsPage() {
         )
 
         setSelectedProof(null)
+        setAdminNotes('')
         toast.success('Payment approved successfully!')
       } else {
         const errorData = await response.json()
@@ -179,16 +105,6 @@ export default function AdminPaymentsPage() {
       })
 
       if (response.ok) {
-        // Update payment proof status
-        await db.paymentProof.update({
-          where: { id: proofId },
-          data: {
-            status: 'rejected',
-            processedAt: new Date().toISOString(),
-            processedBy: 'admin'
-          }
-        })
-
         setPaymentProofs(prev => 
           prev.map(proof => 
             proof.id === proofId 
@@ -198,6 +114,7 @@ export default function AdminPaymentsPage() {
         )
 
         setSelectedProof(null)
+        setAdminNotes('')
         toast.success('Payment rejected successfully!')
       } else {
         const errorData = await response.json()
@@ -235,15 +152,15 @@ export default function AdminPaymentsPage() {
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
+      currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -257,7 +174,6 @@ export default function AdminPaymentsPage() {
           </p>
         </motion.div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -311,66 +227,57 @@ export default function AdminPaymentsPage() {
             </CardContent>
           </Card>
         </div>
-        </div>
 
-        {/* Payment Proofs Table */}
         <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-blue-500" />
-                <h3 className="text-lg font-semibold">Payment Proofs</h3>
-              </CardTitle>
+              <h3 className="text-lg font-semibold">Payment Proofs</h3>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Client</TableCell>
-                      <TableCell>Plan</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Transaction</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Actions</TableCell>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Transaction</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paymentProofs.map((proof) => (
+                    <TableRow key={proof.id}>
+                      <TableCell>{proof.user.name}</TableCell>
+                      <TableCell>{proof.plan.toUpperCase()}</TableCell>
+                      <TableCell>{formatAmount(proof.amount)}</TableCell>
+                      <TableCell>{proof.txnId}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(proof.status)}
+                      </TableCell>
+                      <TableCell>{formatDate(proof.createdAt)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedProof(proof)}
+                          className="w-full"
+                        >
+                          <Eye className="w-4 h-4 text-blue-500" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paymentProofs.map((proof) => (
-                      <TableRow key={proof.id}>
-                        <TableCell>
-                          <TableCell>{proof.user.name}</TableCell>
-                          <TableCell>{proof.plan.toUpperCase()}</TableCell>
-                          <TableCell>₹{formatAmount(proof.amount)}</TableCell>
-                          <TableCell>{proof.txnId}</TableCell>
-                          <TableCell>
-                          <TableCell>
-                            {getStatusBadge(proof.status)}
-                          </TableCell>
-                          <TableCell>
-                          <TableCell>{formatDate(proof.createdAt)}</TableCell>
-                          <TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedProof(proof)}
-                                className="w-full"
-                              >
-                                <Eye className="w-4 h-4 text-blue-500" />
-                              </Button>
-                            </TableCell>
-                          </TableCell>
-                        </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-            </CardContent>
-          </Card>
-        </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Selected Proof Modal */}
         {selectedProof && (
           <Dialog open={true} onOpenChange={() => setSelectedProof(null)}>
             <DialogContent className="max-w-4xl max-h-[80vh] w-full">
@@ -379,191 +286,101 @@ export default function AdminPaymentsPage() {
                   <FileText className="w-5 h-5 text-blue-500" />
                   <h3 className="text-lg font-semibold">Payment Proof Details</h3>
                 </DialogTitle>
-                <DialogDescription>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Client Name</Label>
-                        <p className="font-medium text-gray-700">{selectedProof.user.name}</p>
-                        </div>
-                      <div>
-                        <Label>Client Email</Label>
-                        <p className="font-medium text-gray-700">{selectedProof.user.email}</p>
-                        </div>
-                      <div>
-                        <Label>Society Name</Label>
-                        <p className="font-medium text-gray-700">{selectedProof.user.societyName}</p>
-                        </div>
-                      <div>
-                        <Label>Plan</Label>
-                        <p className="font-medium text-gray-700">{selectedProof.plan.toUpperCase()}</p>
-                        </div>
-                      <div>
-                        <Label>Amount</Label>
-                        <p className="font-medium text-gray-700">₹{formatAmount(selectedProof.amount)}</p>
-                        </div>
-                      <div>
-                        <Label>Transaction ID</Label>
-                        <p className="font-medium text-gray-700">{selectedProof.txnId}</p>
-                        </div>
-                      <div>
-                        <Label>Date</Label>
-                        <p className="font-medium text-gray-700">{formatDate(selectedProof.createdAt)}</p>
-                        </div>
-                      <div>
-                        <div>
-                          <Label>Status</Label>
-                          <p className="font-medium text-gray-700">
-                            {getStatusBadge(selectedProof.status)}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <div>
-                          <Label>Payment Method</Label>
-                          <p className="font-medium text-gray-700">{selectedProof.paymentMethod?.toUpperCase()}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <div>
-                          <Label>Admin Notes</Label>
-                          <p className="font-medium text-gray-700">{selectedProof.adminNotes || 'No notes'}</p>
-                        </div>
-                      </div>
+              </DialogHeader>
+              <DialogDescription>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Client Name</Label>
+                      <p className="font-medium text-gray-700">{selectedProof.user.name}</p>
                     </div>
-                    {selectedProof.screenshotUrl && (
-                      <div>
-                        <Label>Screenshot</Label>
-                        <p className="font-medium text-gray-700">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              window.open(selectedProof.screenshotUrl, '_blank')
-                            }}
-                          >
-                            <View Full Size
-                          </Button>
-                        </div>
-                      )}
-                        </div>
-                      <div>
+                    <div>
+                      <Label>Client Email</Label>
+                      <p className="font-medium text-gray-700">{selectedProof.user.email}</p>
+                    </div>
+                    <div>
+                      <Label>Society Name</Label>
+                      <p className="font-medium text-gray-700">{selectedProof.user.societyName}</p>
+                    </div>
+                    <div>
+                      <Label>Plan</Label>
+                      <p className="font-medium text-gray-700">{selectedProof.plan.toUpperCase()}</p>
+                    </div>
+                    <div>
+                      <Label>Amount</Label>
+                      <p className="font-medium text-gray-700">{formatAmount(selectedProof.amount)}</p>
+                    </div>
+                    <div>
+                      <Label>Transaction ID</Label>
+                      <p className="font-medium text-gray-700">{selectedProof.txnId}</p>
+                    </div>
+                    <div>
+                      <Label>Date</Label>
+                      <p className="font-medium text-gray-700">{formatDate(selectedProof.createdAt)}</p>
+                    </div>
+                    <div>
+                      <Label>Status</Label>
+                      <p className="font-medium text-gray-700">
+                        {getStatusBadge(selectedProof.status)}
+                      </p>
                     </div>
                   </div>
-                  <div className="mt-6">
-                    <Label>Additional Info</Label>
-                    <p className="font-medium text-gray-700">{selectedProof.additionalInfo || 'No additional information'}</p>
+                  
+                  {selectedProof.screenshotUrl && (
+                    <div>
+                      <Label>Screenshot</Label>
+                      <p className="font-medium text-gray-700">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            window.open(selectedProof.screenshotUrl, '_blank')
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Full Size
+                        </Button>
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label>Admin Notes</Label>
+                    <Textarea
+                      placeholder="Add admin notes..."
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      rows={3}
+                    />
                   </div>
                 </div>
               </DialogDescription>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedProof(null)}
-                >
-                  Close
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    setAdminNotes('')
-                    setSelectedProof(null)
-                  }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <span className="ml-2">{getStatusBadge(selectedProof.status)} Status Updated</span>
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Admin Notes Section */}
-        {selectedProof && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Edit className="w-5 h-5 text-blue-500" />
-                <h3 className="text-lg font-semibold">Admin Notes</h3>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Label>Admin Notes</Label>
-              <p className="text-sm text-gray-700">
-                Add notes about this payment verification
-              </Label>
-              <Textarea
-                id="admin-notes"
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Enter admin notes..."
-                rows={4}
-                className="w-full"
-              />
-              </div>
-              <CardFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (adminNotes.trim()) {
-                      // Update admin notes
-                      const response = await makeAuthenticatedRequest(`/api/admin/subscriptions/update-payment-proof`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          proofId: selectedProof.id,
-                          adminNotes: adminNotes
-                        })
-                      })
-
-                      if (response.ok) {
-                        setAdminNotes('')
-                        toast.success('Admin notes updated successfully!')
-                      } else {
-                        toast.error('Failed to update admin notes')
-                      }
-                    }
-                  }}
-                >
-                  Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          </Card>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="fixed bottom-8 right-8 flex gap-4">
-        <Button
-          variant="outline"
-          onClick={() => fetchPaymentProofs()}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          <span>Refresh</span>
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setPaymentProofs([])
-            toast.success('All payment proofs cleared')
-          }}
-          >
-          <Trash2 className="w-4 h-4 text-red-500" />
-          <span>Clear All</span>
-        </Button>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedProof(null)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleReject(selectedProof.id)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : 'Reject'}
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => handleApprove(selectedProof.id)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : 'Approve'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
       </div>
     </div>
-  )
   )
 }

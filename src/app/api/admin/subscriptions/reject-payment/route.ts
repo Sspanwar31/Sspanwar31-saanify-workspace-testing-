@@ -6,12 +6,32 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    // Handle both paymentId and userId approaches
+    let userId = body.userId
+    
+    // If paymentId is provided, get the payment details first
+    if (body.paymentId) {
+      const payment = await db.pendingPayment.findUnique({
+        where: { id: body.paymentId },
+        include: { user: true }
+      })
+      
+      if (!payment) {
+        return NextResponse.json(
+          { success: false, error: 'Payment not found' },
+          { status: 404 }
+        )
+      }
+      
+      userId = payment.userId
+    }
+    
     // Validate required fields
-    if (!body.userId) {
+    if (!userId) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Missing required field: userId' 
+          error: 'Missing required field: userId or paymentId' 
         },
         { status: 400 }
       );
@@ -19,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Get user details
     const user = await db.user.findUnique({
-      where: { id: body.userId },
+      where: { id: userId },
       include: {
         societyAccount: true
       }
@@ -37,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Update user subscription status to rejected/pending
     const updatedUser = await db.user.update({
-      where: { id: body.userId },
+      where: { id: userId },
       data: {
         subscriptionStatus: 'rejected',
         plan: null,
@@ -60,8 +80,13 @@ export async function POST(request: NextRequest) {
       updateData.adminNotes = body.adminNotes;
     }
 
-    // Update by userId if proofId not provided, otherwise update by proofId
-    if (body.proofId) {
+    // Update by paymentId if provided, otherwise by userId
+    if (body.paymentId) {
+      await db.pendingPayment.update({
+        where: { id: body.paymentId },
+        data: updateData
+      });
+    } else if (body.proofId) {
       await db.pendingPayment.update({
         where: { id: body.proofId },
         data: updateData
@@ -69,7 +94,7 @@ export async function POST(request: NextRequest) {
     } else {
       await db.pendingPayment.updateMany({
         where: { 
-          userId: body.userId,
+          userId: userId,
           status: 'pending'
         },
         data: updateData

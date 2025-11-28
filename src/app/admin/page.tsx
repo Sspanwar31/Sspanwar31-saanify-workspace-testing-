@@ -1927,6 +1927,7 @@ export default function AdminDashboard() {
                     <h2 className="text-3xl font-bold text-white mb-2">Subscription & Billing</h2>
                     <p className="text-white/60">Manage plans, revenue, and client subscriptions</p>
                   </div>
+                <div className="flex gap-3">
                   <Button 
                     onClick={() => router.push('/admin/subscription-plans')}
                     className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
@@ -1934,6 +1935,21 @@ export default function AdminDashboard() {
                     <Settings className="h-4 w-4 mr-2" />
                     Manage Plans
                   </Button>
+                  <Button 
+                    onClick={() => router.push('/admin/payments')}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Payment Approvals
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/admin/subscriptions/verify')}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Verify Payments
+                  </Button>
+                </div>
                 </div>
 
                 {/* Revenue Overview */}

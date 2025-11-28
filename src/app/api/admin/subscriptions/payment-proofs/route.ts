@@ -10,7 +10,11 @@ export async function GET() {
             id: true,
             name: true,
             email: true,
-            societyName: true
+            societyAccount: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       },
@@ -36,13 +40,23 @@ export async function GET() {
         id: payment.user.id,
         name: payment.user.name || 'Unknown User',
         email: payment.user.email || 'unknown@example.com',
-        societyName: payment.user.societyName || 'N/A'
+        societyName: payment.user.societyAccount?.name || 'N/A'
       }
     }))
 
+    // Calculate stats
+    const stats = {
+      total: paymentProofs.length,
+      pending: paymentProofs.filter(p => p.status === 'pending').length,
+      approved: paymentProofs.filter(p => p.status === 'approved').length,
+      rejected: paymentProofs.filter(p => p.status === 'rejected').length,
+      totalAmount: paymentProofs.reduce((sum, p) => sum + (p.amount || 0), 0)
+    }
+
     return NextResponse.json({
       success: true,
-      paymentProofs
+      paymentProofs,
+      stats
     })
 
   } catch (error) {

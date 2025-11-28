@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Get user details
     const user = await db.user.findUnique({
-      where: { id: body.userId },
+      where: { id: userId },
       include: {
         societyAccount: true
       }
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
 
     // Update user subscription status
     const updatedUser = await db.user.update({
-      where: { id: body.userId },
+      where: { id: userId },
       data: {
         subscriptionStatus: 'active',
-        plan: body.plan.toLowerCase(),
+        plan: plan.toLowerCase(),
         expiryDate: expiryDate,
         updatedAt: new Date()
       }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       await db.societyAccount.update({
         where: { id: user.societyAccount.id },
         data: {
-          subscriptionPlan: body.plan.toUpperCase(),
+          subscriptionPlan: plan.toUpperCase(),
           subscriptionEndsAt: expiryDate,
           status: 'ACTIVE',
           updatedAt: new Date()
@@ -95,8 +95,13 @@ export async function POST(request: NextRequest) {
       updateData.adminNotes = body.adminNotes;
     }
 
-    // Update by userId if proofId not provided, otherwise update by proofId
-    if (body.proofId) {
+    // Update by paymentId if provided, otherwise by userId
+    if (body.paymentId) {
+      await db.pendingPayment.update({
+        where: { id: body.paymentId },
+        data: updateData
+      });
+    } else if (body.proofId) {
       await db.pendingPayment.update({
         where: { id: body.proofId },
         data: updateData
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest) {
     } else {
       await db.pendingPayment.updateMany({
         where: { 
-          userId: body.userId,
+          userId: userId,
           status: 'pending'
         },
         data: updateData
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
       await NotificationService.sendPaymentApprovalNotification(
         user.email!,
         user.name || 'User',
-        body.plan,
+        plan,
         expiryDate
       );
     } catch (notificationError) {

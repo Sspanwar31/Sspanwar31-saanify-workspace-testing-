@@ -108,6 +108,29 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Send notification to admins about new payment submission
+    try {
+      const notificationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/payment-submitted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          plan,
+          amount,
+          transactionId
+        })
+      })
+      
+      if (!notificationResponse.ok) {
+        console.error('Failed to send admin notification:', await notificationResponse.text())
+      }
+    } catch (notificationError) {
+      console.error('Error sending admin notification:', notificationError)
+      // Don't fail the request if notification fails
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Payment proof submitted successfully. Awaiting admin approval.',

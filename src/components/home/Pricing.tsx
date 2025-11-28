@@ -28,7 +28,7 @@ function PricingCard({ title, price, period, description, features, highlighted,
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay }}
       viewport={{ once: true }}
-      whileHover={{ y: -10, scale: highlighted ? 1.02 : 1.02 }}
+      whileHover={{ y: -10, scale: highlighted ? 1.02 : 1.01 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className={`relative ${highlighted ? 'scale-105' : ''}`}
@@ -79,12 +79,7 @@ function PricingCard({ title, price, period, description, features, highlighted,
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: delay + index * 0.1 }}
               >
-                <motion.div
-                  animate={{ scale: isHovered ? 1.2 : 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-                </motion.div>
+                <Check className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
                 <span className="text-foreground text-sm">{feature}</span>
               </motion.li>
             ))}
@@ -99,7 +94,7 @@ function PricingCard({ title, price, period, description, features, highlighted,
               className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
                 highlighted
                   ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl'
-                  : 'bg-foreground hover:bg-foreground/90 text-background'
+                  : 'bg-foreground hover:bg-foreground/90 text-background hover:shadow-lg'
               }`}
             >
               {cta}
@@ -135,20 +130,13 @@ export default function Pricing() {
     } else if (planTitle === "Enterprise") {
       toast.success("Enterprise Plan!", {
         description: "Our sales team will contact you within 24 hours.",
-        duration: 3000,
+        duration: 5000,
       })
       // Redirect to signup page for enterprise users
       setTimeout(() => {
         window.location.href = '/signup'
       }, 1000)
     }
-  }
-
-  const handleContactSales = () => {
-    toast.info("Sales Team Contact", {
-      description: "Please call +91-XXXXXXXXXX or email sales@saanify.com",
-      duration: 5000,
-    })
   }
 
   const pricingPlans = [
@@ -177,10 +165,9 @@ export default function Pricing() {
         "Up to 500 members",
         "Advanced member management",
         "Priority support",
-        "Advanced analytics & reports",
+        "Advanced analytics",
         "Custom branding",
-        "API access",
-        "Automated workflows"
+        "API access"
       ],
       highlighted: true,
       delay: 0.2,
@@ -196,8 +183,7 @@ export default function Pricing() {
         "White-label solution",
         "Dedicated account manager",
         "Custom integrations",
-        "Advanced security features",
-        "Custom training sessions",
+        "Advanced security",
         "SLA guarantee"
       ],
       highlighted: false,
@@ -220,7 +206,7 @@ export default function Pricing() {
             Plans & Pricing
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Choose the perfect plan for your society. Scale as you grow with our flexible pricing options.
+            Choose the perfect plan for your society's growth journey
           </p>
         </motion.div>
 
@@ -256,8 +242,7 @@ export default function Pricing() {
             whileTap={{ scale: 0.95 }}
           >
             <Button 
-              onClick={handleContactSales}
-              variant="outline" 
+              variant="outline"
               className="border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-8 py-3 rounded-lg transition-all duration-300"
             >
               Talk to Sales Team

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +16,22 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: ""
   });
+
+  // Detect plan from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    if (plan) {
+      setSelectedPlan(plan);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -40,8 +51,9 @@ export default function SignupPage() {
     }
 
     try {
-      // Get payment token from URL if available
+      // Get plan and payment token from URL if available
       const urlParams = new URLSearchParams(window.location.search);
+      const plan = urlParams.get('plan');
       const paymentToken = urlParams.get('token');
 
       const response = await fetch('/api/auth/signup', {
@@ -53,6 +65,7 @@ export default function SignupPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          plan, // Pass plan if available (trial, basic, etc.)
           paymentToken // Pass payment token if available
         }),
       });
@@ -79,15 +92,26 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Card className="w-full max-w-md shadow-xl border-0">
+          <CardContent className="pt-8 pb-6">
             <div className="flex flex-col items-center space-y-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              >
+                <CheckCircle className="h-16 w-16 text-green-500" />
+              </motion.div>
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900">Account Created!</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedPlan === 'trial' ? 'Trial Started Successfully!' : 'Account Created!'}
+                </h2>
                 <p className="text-gray-600 mt-2">
-                  Your account has been successfully created. Redirecting to dashboard...
+                  {selectedPlan === 'trial' 
+                    ? 'Your 15-day free trial has been activated. Redirecting to dashboard...'
+                    : 'Your account has been successfully created. Redirecting to dashboard...'
+                  }
                 </p>
               </div>
             </div>
@@ -98,14 +122,37 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Create your account</CardTitle>
-            <CardDescription className="text-center">
-              Enter your information to get started
-            </CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        {/* Plan indicator */}
+        {selectedPlan === 'trial' && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-xl text-center font-semibold shadow-lg">
+              🚀 Starting 15-Day Free Trial - No Credit Card Required
+            </div>
+          </motion.div>
+        )}
+        
+        <Card className="shadow-xl border-0">
+          <CardHeader className="space-y-2 pb-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span className="text-2xl">🏢</span>
+              </div>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                {selectedPlan === 'trial' ? 'Start Your Free Trial' : 'Create your account'}
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                {selectedPlan === 'trial' 
+                  ? 'Sign up to experience all premium features free for 15 days'
+                  : 'Enter your information to get started'
+                }
+              </CardDescription>
+            </div>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -177,16 +224,16 @@ export default function SignupPage() {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full py-3 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" 
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account...
+                    {selectedPlan === 'trial' ? 'Starting Trial...' : 'Creating Account...'}
                   </>
                 ) : (
-                  "Create Account"
+                  selectedPlan === 'trial' ? 'Start Free Trial' : 'Create Account'
                 )}
               </Button>
               

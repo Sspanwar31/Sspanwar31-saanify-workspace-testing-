@@ -26,6 +26,26 @@ interface SubscriptionPlan {
 
 const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
+    id: 'trial',
+    name: 'TRIAL',
+    description: 'Experience all features free for 15 days',
+    price: 0,
+    duration: '15 days',
+    features: [
+      'All premium features unlocked',
+      'Up to 50 members',
+      'Advanced accounting & reporting',
+      'Priority support',
+      'Mobile app + Web access',
+      'Advanced analytics',
+      'No credit card required'
+    ],
+    color: 'bg-gradient-to-r from-green-500 to-emerald-600',
+    icon: '🚀',
+    popular: true,
+    trialDays: 15
+  },
+  {
     id: 'basic',
     name: 'BASIC',
     description: 'Perfect for small societies with basic accounting needs',
@@ -114,6 +134,11 @@ export default function PaymentUploadPage() {
     if (planId) {
       const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId)
       if (plan) {
+        // If trial plan is selected, redirect to signup instead
+        if (planId === 'trial') {
+          router.push('/signup?plan=trial')
+          return
+        }
         setSelectedPlan(plan)
         setFormData(prev => ({
           ...prev,

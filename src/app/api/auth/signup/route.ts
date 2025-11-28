@@ -8,8 +8,8 @@ import jwt from 'jsonwebtoken'
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number')
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  plan: z.string().optional().default('trial')
 })
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
         role: 'CLIENT',
         isActive: true,
         trialEndsAt,
-        // Set subscription fields for trial
-        subscriptionStatus: 'TRIAL',
-        plan: 'TRIAL',
-        expiryDate: trialEndsAt,
+        // Set subscription fields based on plan
+        subscriptionStatus: validatedData.plan === 'trial' ? 'TRIAL' : 'ACTIVE',
+        plan: validatedData.plan.toUpperCase(),
+        expiryDate: validatedData.plan === 'trial' ? trialEndsAt : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days for paid plans
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -88,8 +88,11 @@ export async function POST(request: NextRequest) {
     // Set HTTP-only cookie
     const response = NextResponse.json({
       success: true,
-      message: 'Account created successfully with 15-day trial',
+      message: validatedData.plan === 'trial' 
+        ? 'Account created successfully with 15-day trial'
+        : `Account created successfully with ${validatedData.plan} plan`,
       user,
+      plan: validatedData.plan,
       redirectUrl: '/dashboard/client'
     })
 
@@ -104,12 +107,20 @@ export async function POST(request: NextRequest) {
 
     return response
 
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Signup error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      errors: error.errors,
+      issues: error.issues
+    });
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { 
           error: 'Validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -118,9 +129,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('Signup error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     )
   }

@@ -33,6 +33,10 @@ export default function UnifiedLoginPage() {
     client: {
       email: 'client@saanify.com', 
       password: 'client123'
+    },
+    trial: {
+      email: 'client1@gmail.com',
+      password: 'client123'
     }
   }
 
@@ -117,7 +121,12 @@ export default function UnifiedLoginPage() {
       }
       
       // Success toast based on user type
-      if (data.userType === 'admin') {
+      if (data.user.email === 'client1@gmail.com') {
+        toast.success('🎉 Trial Account Created & Logged In!', {
+          description: `Welcome to your 15-day free trial, ${data.user.name}! Redirecting to dashboard...`,
+          duration: 3000,
+        })
+      } else if (data.userType === 'admin') {
         toast.success('👑 Admin Access Granted!', {
           description: `Welcome back, ${data.user.name}! Redirecting to admin panel...`,
           duration: 3000,
@@ -174,6 +183,18 @@ export default function UnifiedLoginPage() {
     toast.info('👤 Client Demo Credentials', {
       description: 'Client credentials filled. Click Sign In to continue.',
       duration: 2000,
+    })
+  }
+
+  const handleQuickTrialLogin = () => {
+    setLoginData({
+      email: demoCredentials.trial.email,
+      password: demoCredentials.trial.password,
+      rememberMe: false
+    })
+    toast.info('🎯 Trial Demo Credentials', {
+      description: 'Trial user will be created automatically on first login. Click Sign In to continue.',
+      duration: 3000,
     })
   }
 
@@ -397,6 +418,14 @@ export default function UnifiedLoginPage() {
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Client Demo (client@saanify.com)
+                </Button>
+                <Button
+                  onClick={handleQuickTrialLogin}
+                  variant="outline"
+                  className="w-full bg-green-500/20 border-green-500/30 text-green-200 hover:bg-green-500/30 hover:border-green-500/50 transition-all duration-300"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Trial Demo (client1@gmail.com)
                 </Button>
               </div>
             </motion.div>

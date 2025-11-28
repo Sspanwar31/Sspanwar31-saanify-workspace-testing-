@@ -25,8 +25,10 @@ interface UserData {
   email: string;
   subscriptionStatus: string;
   plan: string | null;
+  trialEndsAt: string | null;
   expiryDate: string | null;
   createdAt: string;
+  role: string;
 }
 
 export default function ClientDashboard() {
@@ -41,20 +43,41 @@ export default function ClientDashboard() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/user/profile');
+      console.log('🔍 Client Dashboard: Fetching user data...')
       
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/login');
+      // First verify client access
+      const verifyResponse = await fetch('/api/client/verify');
+      
+      console.log('🔍 Client Dashboard: Verify response status:', verifyResponse.status)
+      
+      if (!verifyResponse.ok) {
+        if (verifyResponse.status === 401) {
+          const errorData = await verifyResponse.json();
+          console.log('❌ Client Dashboard: Access denied:', errorData.error)
+          setError(errorData.error || 'Access denied. Please login as a legitimate client.');
+          setTimeout(() => {
+            console.log('🔄 Client Dashboard: Redirecting to login...')
+            router.push('/login');
+          }, 3000);
           return;
         }
-        throw new Error('Failed to fetch user data');
+        throw new Error('Failed to verify client access');
       }
 
-      const data = await response.json();
-      setUserData(data.user);
+      const verifyData = await verifyResponse.json();
+      console.log('✅ Client Dashboard: Verification successful:', verifyData.currentUser?.email)
+      
+      if (!verifyData.success) {
+        setError(verifyData.error || 'Client verification failed');
+        return;
+      }
+
+      // Set user data from verification response
+      setUserData(verifyData.currentUser);
+      
     } catch (err: any) {
-      setError(err.message);
+      console.error('❌ Client Dashboard: Error:', err.message)
+      setError(err.message || 'Failed to load client dashboard');
     } finally {
       setLoading(false);
     }
@@ -108,9 +131,11 @@ export default function ClientDashboard() {
     });
   };
 
-  const getDaysUntilExpiry = (expiryDate: string | null) => {
-    if (!expiryDate) return null;
-    const expiry = new Date(expiryDate);
+  const getDaysUntilExpiry = (expiryDate: string | null, trialEndsAt: string | null) => {
+    // Use trialEndsAt for trial users, expiryDate for paid users
+    const relevantDate = trialEndsAt || expiryDate;
+    if (!relevantDate) return null;
+    const expiry = new Date(relevantDate);
     const now = new Date();
     const diffTime = expiry.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -160,7 +185,11 @@ export default function ClientDashboard() {
     );
   }
 
-  const daysUntilExpiry = getDaysUntilExpiry(userData.expiryDate);
+  const daysUntilExpiry = getDaysUntilExpiry(userData.expiryDate, userData.trialEndsAt);
+  
+  // Determine which date to show
+  const relevantExpiryDate = userData.trialEndsAt || userData.expiryDate;
+  const dateLabel = userData.trialEndsAt ? 'Trial End Date' : 'Expiry Date';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -198,6 +227,11 @@ export default function ClientDashboard() {
                 <CardTitle className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   Profile Information
+                  {(userData.email === 'client1@gmail.com' || userData.email === 'client@saanify.com') && (
+                    <Badge className="ml-2 bg-purple-100 text-purple-800">
+                      Demo Account
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -208,6 +242,14 @@ export default function ClientDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Email</p>
                   <p className="text-sm">{userData.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Account Type</p>
+                  <p className="text-sm capitalize">
+                    {userData.email === 'client1@gmail.com' || userData.email === 'client@saanify.com' 
+                      ? 'Demo Client' 
+                      : 'Real Client'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Member Since</p>
@@ -242,10 +284,10 @@ export default function ClientDashboard() {
                   </p>
                 </div>
 
-                {userData.expiryDate && (
+                {relevantExpiryDate && (
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Expiry Date</p>
-                    <p className="text-sm">{formatDate(userData.expiryDate)}</p>
+                    <p className="text-sm font-medium text-gray-500">{dateLabel}</p>
+                    <p className="text-sm">{formatDate(relevantExpiryDate)}</p>
                     {daysUntilExpiry !== null && (
                       <p className={`text-xs mt-1 ${
                         daysUntilExpiry <= 7 ? 'text-red-600 font-medium' : 'text-gray-500'

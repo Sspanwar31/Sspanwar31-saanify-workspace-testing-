@@ -111,30 +111,30 @@ export default function Pricing() {
   const handleSelectPlan = (planTitle: string) => {
     if (planTitle === "Free Trial") {
       toast.success("Free Trial Started!", {
-        description: "Welcome to Saanify! Your 15-day free trial has begun.",
+        description: "Redirecting to subscription page for trial...",
         duration: 5000,
       })
-      // Redirect to signup page for trial users
+      // Redirect to subscription page for trial users
       setTimeout(() => {
-        window.location.href = '/signup'
+        window.location.href = '/subscription'
       }, 1000)
     } else if (planTitle === "Pro") {
       toast.success("Pro Plan Selected!", {
-        description: "Redirecting to signup for Pro plan...",
+        description: "Redirecting to subscription page for Pro plan...",
         duration: 3000,
       })
-      // Redirect to signup page for pro users
+      // Redirect to subscription page for pro users
       setTimeout(() => {
-        window.location.href = '/signup'
+        window.location.href = '/subscription'
       }, 1000)
     } else if (planTitle === "Enterprise") {
-      toast.success("Enterprise Plan!", {
-        description: "Our sales team will contact you within 24 hours.",
+      toast.success("Enterprise Plan Selected!", {
+        description: "Redirecting to subscription page for Enterprise plan...",
         duration: 5000,
       })
-      // Redirect to signup page for enterprise users
+      // Redirect to subscription page for enterprise users
       setTimeout(() => {
-        window.location.href = '/signup'
+        window.location.href = '/subscription'
       }, 1000)
     }
   }
@@ -158,7 +158,7 @@ export default function Pricing() {
     },
     {
       title: "Pro",
-      price: "₹4,000",
+      price: "₹7,000",
       period: "/month",
       description: "Best for growing societies",
       features: [
@@ -188,7 +188,7 @@ export default function Pricing() {
       ],
       highlighted: false,
       delay: 0.3,
-      cta: "Contact Sales"
+      cta: "Get Started Now"
     }
   ]
 

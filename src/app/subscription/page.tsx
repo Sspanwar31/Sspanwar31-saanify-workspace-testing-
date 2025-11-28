@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, Star, Crown, Building, Users } from 'lucide-react'
+import { CheckCircle, Star, Crown, Building, Users, ArrowLeft, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 interface SubscriptionPlan {
   id: string
@@ -116,6 +117,16 @@ export default function SubscriptionPage() {
   const router = useRouter()
   const [isYearly, setIsYearly] = useState(false)
 
+  const handleBackToHome = () => {
+    toast.success("🏠 Going Back Home", {
+      description: "Redirecting to landing page...",
+      duration: 2000,
+    })
+    setTimeout(() => {
+      router.push('/')
+    }, 1000)
+  }
+
   const handlePlanSelect = (planId: string) => {
     if (planId === 'trial') {
       router.push('/auth/signup?plan=trial')
@@ -159,6 +170,21 @@ export default function SubscriptionPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleBackToHome}
+                  className="flex items-center gap-2 hover:bg-blue-50 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Button>
+              </motion.div>
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-lg">S</span>
               </div>

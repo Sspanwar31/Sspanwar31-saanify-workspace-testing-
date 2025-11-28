@@ -107,11 +107,11 @@ export default function Navbar() {
 
   const handleGetStarted = () => {
     toast.success("🚀 Welcome!", {
-      description: "Starting your 15-day free trial...",
+      description: "Redirecting to subscription plans...",
       duration: 3000,
     })
     setTimeout(() => {
-      window.location.href = '/signup'
+      window.location.href = '/subscription'
     }, 1000)
   }
 

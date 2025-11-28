@@ -844,9 +844,8 @@ export default function AdminPaymentsPage() {
                                 
                                 console.error('❌ Screenshot load error:', originalUrl)
                                 
-                                // Try multiple fallback approaches
+                                // Try a direct approach with encoded filename
                                 try {
-                                  // 1. Try with different encoding approaches
                                   const filename = originalUrl.split('/').pop()
                                   const encodedFilename = encodeURIComponent(filename || '')
                                   const alternativeUrl = `/uploads/payment-proofs/${encodedFilename}`
@@ -855,43 +854,14 @@ export default function AdminPaymentsPage() {
                                   const imgElement = e.currentTarget as HTMLImageElement
                                   imgElement.src = alternativeUrl
                                   
-                                  // 2. If alternative fails, try safe copy for problematic files
+                                  // Final fallback to placeholder
                                   imgElement.onerror = () => {
-                                    console.log('🔄 Trying safe copy approach...')
-                                    
-                                    // Check if this is the problematic file and use safe copy
-                                    if (filename && filename.includes('1764338893228_Screenshot')) {
-                                      const safeCopyUrl = '/uploads/payment-proofs/1764338893228_Screenshot_copy1.png'
-                                      console.log('🔄 Using safe copy:', safeCopyUrl)
-                                      imgElement.src = safeCopyUrl
-                                      
-                                      imgElement.onerror = () => {
-                                        console.log('🔄 Trying direct path...')
-                                        const directUrl = `/uploads/payment-proofs/${filename}`
-                                        imgElement.src = directUrl
-                                        
-                                        // 3. Final fallback to placeholder
-                                        imgElement.onerror = () => {
-                                          console.log('🖼️ Using placeholder image')
-                                          imgElement.src = '/placeholder-screenshot.svg'
-                                        }
-                                      }
-                                    } else {
-                                      console.log('🔄 Trying direct path...')
-                                      const directUrl = `/uploads/payment-proofs/${filename}`
-                                      imgElement.src = directUrl
-                                      
-                                      // 3. Final fallback to placeholder
-                                      imgElement.onerror = () => {
-                                        console.log('🖼️ Using placeholder image')
-                                        imgElement.src = '/placeholder-screenshot.svg'
-                                      }
-                                    }
+                                    console.log('🖼️ Using placeholder image')
+                                    imgElement.src = '/placeholder-screenshot.svg'
                                   }
                                 } catch (error) {
-                                  console.log('🖼️ Error in fallback, using placeholder')
-                                  const imgElement = e.currentTarget as HTMLImageElement
-                                  imgElement.src = '/placeholder-screenshot.svg'
+                                  console.error('Error in fallback:', error)
+                                  e.currentTarget.src = '/placeholder-screenshot.svg'
                                 }
                               }}
                             />

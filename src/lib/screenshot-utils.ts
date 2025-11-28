@@ -109,19 +109,26 @@ export function createAccessibleImageUrl(url: string | null): string {
     imagePath = `/uploads/payment-proofs/${filename}`
   }
   
-  // Properly encode the entire path to handle spaces and special characters
-  // But be careful not to double-encode
-  const urlParts = imagePath.split('/')
-  const encodedParts = urlParts.map((part, index) => {
-    // Don't encode the first empty part or 'uploads' and 'payment-proofs'
-    if (index === 0 || part === 'uploads' || part === 'payment-proofs') {
-      return part
-    }
-    // Only encode the filename part
-    return encodeURIComponent(part)
-  })
+  // For filenames with spaces and special characters, we need to encode the filename properly
+  // but keep the directory structure intact
+  const lastSlashIndex = imagePath.lastIndexOf('/')
+  const directoryPath = imagePath.substring(0, lastSlashIndex + 1)
+  const filename = imagePath.substring(lastSlashIndex + 1)
   
-  const properlyEncodedPath = encodedParts.join('/')
+  // Handle known problematic files with specific mappings
+  const knownMappings: { [key: string]: string } = {
+    '1764338893228_Screenshot (1).png': '1764338893228_Screenshot_1.png',
+    '1764313897781_Screenshot (4).png': '1764313897781_Screenshot_4.png'
+  }
+  
+  let finalFilename = filename
+  if (knownMappings[filename]) {
+    finalFilename = knownMappings[filename]
+  }
+  
+  // Properly encode the filename to handle spaces, parentheses, and other special characters
+  const encodedFilename = encodeURIComponent(finalFilename)
+  const properlyEncodedPath = directoryPath + encodedFilename
   
   // Combine base URL with properly encoded image path
   const fullUrl = `${baseUrl}${properlyEncodedPath}`

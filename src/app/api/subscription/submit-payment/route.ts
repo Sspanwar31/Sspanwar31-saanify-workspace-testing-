@@ -75,9 +75,21 @@ export async function POST(request: NextRequest) {
       // Directory might already exist
     }
 
-    // Generate unique filename
+    // Generate unique filename with sanitized name
     const timestamp = Date.now()
-    const filename = `${timestamp}_${screenshot.name}`
+    
+    // Sanitize filename: remove spaces, special characters, and make it URL-safe
+    const originalName = screenshot.name
+    const fileExtension = originalName.split('.').pop()
+    const nameWithoutExtension = originalName.substring(0, originalName.lastIndexOf('.'))
+    
+    // Replace spaces and special characters with underscores
+    const sanitizedName = nameWithoutExtension
+      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+    
+    const filename = `${timestamp}_${sanitizedName}.${fileExtension}`
     const filepath = path.join(uploadsDir, filename)
 
     // Save screenshot

@@ -1,112 +1,129 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import jwt from 'jsonwebtoken';
 import { NotificationService } from '@/lib/notifications';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+async function authenticateAdmin(request: NextRequest) {
+  const token = request.cookies.get('auth-token')?.value || 
+               request.headers.get('Authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return { authenticated: false, error: 'No token provided' };
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const user = await db.user.findUnique({
+      where: { id: decoded.userId },
+      select: { role: true }
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
+      return { authenticated: true, error: 'Access denied - Admin privileges required' };
+    }
+
+    return { authenticated: true, userId: decoded.userId };
+  } catch (error) {
+    return { authenticated: false, error: 'Invalid token' };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    
-    // Handle both paymentId and userId approaches
-    let userId = body.userId
-    
-    // If paymentId is provided, get the payment details first
-    if (body.paymentId) {
-      const payment = await db.pendingPayment.findUnique({
-        where: { id: body.paymentId },
-        include: { user: true }
-      })
-      
-      if (!payment) {
-        return NextResponse.json(
-          { success: false, error: 'Payment not found' },
-          { status: 404 }
-        )
-      }
-      
-      userId = payment.userId
-    }
-    
-    // Validate required fields
-    if (!userId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required field: userId or paymentId' 
-        },
-        { status: 400 }
-      );
+    // Authenticate admin
+    const auth = await authenticateAdmin(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({
+        authenticated: false,
+        success: false,
+        error: auth.error
+      }, { status: 200 });
     }
 
-    // Get user details
-    const user = await db.user.findUnique({
-      where: { id: userId },
+    if (auth.error) {
+      return NextResponse.json({
+        authenticated: true,
+        success: false,
+        error: auth.error
+      }, { status: 200 });
+    }
+
+    const { paymentId, adminNotes, rejectionReason } = await request.json();
+    
+    if (!paymentId) {
+      return NextResponse.json({
+        authenticated: true,
+        success: false,
+        error: 'Payment ID is required'
+      }, { status: 200 });
+    }
+
+    // Find the payment record
+    const payment = await db.pendingPayment.findUnique({
+      where: { id: paymentId },
       include: {
-        societyAccount: true
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'User not found' 
-        },
-        { status: 404 }
-      );
+    if (!payment) {
+      return NextResponse.json({
+        authenticated: true,
+        success: false,
+        error: 'Payment not found'
+      }, { status: 200 });
     }
 
-    // Update user subscription status to rejected/pending
-    const updatedUser = await db.user.update({
-      where: { id: userId },
+    // Update payment status to rejected
+    const updatedPayment = await db.pendingPayment.update({
+      where: { id: paymentId },
       data: {
-        subscriptionStatus: 'rejected',
+        status: 'rejected',
+        rejectionReason: rejectionReason || adminNotes || 'Payment proof rejected by admin',
+        adminNotes: adminNotes,
+        updatedAt: new Date()
+      }
+    });
+
+    // Create a payment proof record for the rejected payment
+    await db.paymentProof.create({
+      data: {
+        userId: payment.userId,
+        amount: payment.amount,
+        plan: payment.plan,
+        txnId: payment.transactionId, // Fixed field name
+        screenshotUrl: payment.screenshotUrl,
+        status: 'rejected',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    // Update user subscription status back to trial or expired
+    await db.user.update({
+      where: { id: payment.userId },
+      data: {
+        subscriptionStatus: 'TRIAL',
         plan: null,
         expiryDate: null,
         updatedAt: new Date()
       }
     });
 
-    // Mark pending payment as rejected with admin remarks
-    const updateData: any = {
-      status: 'rejected',
-      updatedAt: new Date()
-    };
-
-    if (body.reason) {
-      updateData.rejectionReason = body.reason;
-    }
-
-    if (body.adminNotes) {
-      updateData.adminNotes = body.adminNotes;
-    }
-
-    // Update by paymentId if provided, otherwise by userId
-    if (body.paymentId) {
-      await db.pendingPayment.update({
-        where: { id: body.paymentId },
-        data: updateData
-      });
-    } else if (body.proofId) {
-      await db.pendingPayment.update({
-        where: { id: body.proofId },
-        data: updateData
-      });
-    } else {
-      await db.pendingPayment.updateMany({
-        where: { 
-          userId: userId,
-          status: 'pending'
-        },
-        data: updateData
-      });
-    }
-
     // Send rejection notification to user
     try {
       await NotificationService.sendPaymentRejectionNotification(
-        user.email!,
-        user.name || 'User',
-        body.reason || 'Payment proof could not be verified. Please contact support for more information.'
+        payment.user.email!,
+        payment.user.name || 'User',
+        rejectionReason || adminNotes || 'Payment proof rejected by admin'
       );
     } catch (notificationError) {
       console.error('Failed to send rejection notification:', notificationError);
@@ -114,26 +131,18 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
+      authenticated: true,
       success: true,
       message: 'Payment rejected successfully',
-      data: {
-        userId: updatedUser.id,
-        subscriptionStatus: updatedUser.subscriptionStatus,
-        plan: updatedUser.plan,
-        expiryDate: updatedUser.expiryDate,
-        rejectedAt: new Date(),
-        reason: body.reason || null
-      }
+      payment: updatedPayment
     });
 
   } catch (error) {
     console.error('Error rejecting payment:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to reject payment' 
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      authenticated: true,
+      success: false,
+      error: 'Failed to reject payment'
+    }, { status: 200 });
   }
 }

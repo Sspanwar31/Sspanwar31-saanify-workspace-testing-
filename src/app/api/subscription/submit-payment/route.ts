@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
     const user = await getUserFromToken(request)
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+      return NextResponse.json({
+        authenticated: false,
+        error: 'Authentication required'
+      }, { status: 200 })
     }
 
     const formData = await request.formData()
@@ -49,22 +49,22 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!plan || !amount || !transactionId || !screenshot) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        authenticated: true,
+        error: 'All fields are required'
+      }, { status: 200 })
     }
 
     // Check if transaction ID already exists
     const existingTransaction = await db.pendingPayment.findUnique({
-      where: { txnId: transactionId }
+      where: { transactionId: transactionId }
     })
 
     if (existingTransaction) {
-      return NextResponse.json(
-        { error: 'Transaction ID already exists' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        authenticated: true,
+        error: 'Transaction ID already exists'
+      }, { status: 200 })
     }
 
     // Create uploads directory if it doesn't exist
@@ -103,9 +103,9 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         amount,
         plan,
-        txnId: transactionId,
+        transactionId: transactionId, // Fixed field name
         screenshotUrl: `/uploads/payment-proofs/${filename}`,
-        status: 'PENDING',
+        status: 'pending',
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -144,16 +144,24 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
+      authenticated: true,
       success: true,
       message: 'Payment proof submitted successfully. Awaiting admin approval.',
-      pendingPayment
+      pendingPayment: {
+        id: pendingPayment.id,
+        plan: pendingPayment.plan,
+        amount: pendingPayment.amount,
+        txnId: pendingPayment.transactionId, // Fixed field name
+        status: 'pending',
+        createdAt: pendingPayment.createdAt
+      }
     })
 
   } catch (error) {
     console.error('Payment submission error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      authenticated: true,
+      error: 'Internal server error'
+    }, { status: 200 })
   }
 }

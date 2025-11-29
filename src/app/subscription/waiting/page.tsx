@@ -46,37 +46,80 @@ export default function WaitingPage() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch('/api/subscription/payment-status')
+        // Get auth token from cookies
+        const getCookie = (name: string) => {
+          const value = `; ${document.cookie}`
+          const parts = value.split(`; ${name}=`)
+          if (parts.length === 2) return parts.pop()?.split(';').shift()
+          return null
+        }
+        
+        const authToken = getCookie('auth-token')
+        
+        if (!authToken) {
+          console.log('No auth token found, redirecting to login')
+          router.push('/login')
+          return
+        }
+
+        const response = await fetch('/api/subscription/payment-status', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        })
+        
         const data = await response.json()
 
-        if (response.ok && data.payment) {
-          setPaymentStatus(data.payment)
+        if (response.ok && data.authenticated && data.paymentStatus !== 'not-paid') {
+          // Create payment status object from API response
+          const paymentData = data.paymentDetails?.pendingPayment || data.paymentDetails?.paymentProof
           
-          // If payment is approved, redirect to signup
-          if (data.payment.status === 'approved') {
+          if (paymentData) {
+            const paymentStatusObj = {
+              id: paymentData.id,
+              status: data.paymentStatus === 'completed' ? 'approved' : 
+                     data.paymentStatus === 'pending' ? 'pending' : 'rejected',
+              plan: paymentData.plan,
+              amount: paymentData.amount,
+              transactionId: paymentData.transactionId,
+              submittedAt: paymentData.createdAt,
+              adminNotes: data.debug?.paymentProofFound ? 'Payment under review' : undefined
+            }
+            
+            setPaymentStatus(paymentStatusObj)
+          } else {
+            setPaymentStatus({
+              id: 'unknown',
+              status: 'pending',
+              plan: 'Unknown',
+              amount: 0,
+              transactionId: 'Unknown',
+              submittedAt: new Date().toISOString(),
+              adminNotes: 'Payment processing...'
+            })
+          }
+          
+          // If payment is approved, redirect to dashboard
+          if (data.paymentStatus === 'completed') {
             toast.success('🎉 Payment Approved!', {
-              description: 'Your payment has been approved. Redirecting to signup...',
+              description: 'Your payment has been approved. Redirecting to dashboard...',
               duration: 3000,
             })
             setTimeout(() => {
-              router.push('/signup')
+              router.push('/client/dashboard')
             }, 2000)
           }
-          
-          // If payment is rejected, show error
-          if (data.payment.status === 'rejected') {
-            toast.error('❌ Payment Rejected', {
-              description: data.payment.rejectionReason || 'Your payment was rejected. Please contact support.',
-              duration: 5000,
-            })
-          }
         } else {
-          // No payment found, redirect to subscription
-          router.push('/subscription')
+          // No payment found or not authenticated, redirect to subscription
+          console.log('No payment found or not authenticated')
+          if (!data.authenticated) {
+            router.push('/login')
+          } else {
+            router.push('/subscription')
+          }
         }
       } catch (error) {
         console.error('Failed to check payment status:', error)
-      } finally {
         setIsLoading(false)
       }
     }

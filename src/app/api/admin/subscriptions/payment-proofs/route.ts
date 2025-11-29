@@ -10,12 +10,7 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            email: true,
-            societyAccount: {
-              select: {
-                name: true
-              }
-            }
+            email: true
           }
         }
       },
@@ -32,7 +27,7 @@ export async function GET() {
       plan: payment.plan || 'UNKNOWN',
       txnId: payment.transactionId || payment.id,
       screenshotUrl: encodeImageUrl(payment.screenshotUrl),
-      status: payment.status,
+      status: payment.status?.toLowerCase() || 'pending', // Normalize status to lowercase
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString(),
       adminNotes: payment.adminNotes,
@@ -41,7 +36,7 @@ export async function GET() {
         id: payment.user.id,
         name: payment.user.name || 'Unknown User',
         email: payment.user.email || 'unknown@example.com',
-        societyName: payment.user.societyAccount?.name || 'N/A'
+        societyName: 'N/A' // Simplified for now
       }
     }))
 

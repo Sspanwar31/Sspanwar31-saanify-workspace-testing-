@@ -234,6 +234,25 @@ export default function PaymentUploadPage() {
     setIsSubmitting(true)
 
     try {
+      // Get auth token from cookies
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop()?.split(';').shift()
+        return null
+      }
+      
+      const authToken = getCookie('auth-token')
+      
+      if (!authToken) {
+        toast.error('❌ Authentication Required', {
+          description: 'Please login to submit payment proof.',
+          duration: 3000,
+        })
+        router.push('/login')
+        return
+      }
+
       // Create form data for file upload
       const submitFormData = new FormData()
       submitFormData.append('plan', selectedPlan.id)
@@ -252,6 +271,10 @@ export default function PaymentUploadPage() {
 
       const response = await fetch('/api/subscription/submit-payment', {
         method: 'POST',
+        headers: {
+          // Add authentication token from cookie
+          'Authorization': `Bearer ${authToken}`
+        },
         body: submitFormData
       })
 

@@ -4,85 +4,126 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-/* ---------------------------------------------------------
-   🔐 Extract User From Token (NextAuth Nahi — JWT based auth)
----------------------------------------------------------- */
+// Helper: get user from JWT token
 async function getUserFromToken(request: Request) {
+  const token =
+    request.headers
+      .get("cookie")
+      ?.split("auth-token=")[1]
+      ?.split(";")[0] ||
+    request.headers.get("authorization")?.replace("Bearer ", "");
+
+  if (!token) return null;
+
   try {
-    const token =
-      request.headers.get("cookie")?.split("auth-token=")[1]?.split(";")[0] ||
-      request.headers.get("authorization")?.replace("Bearer ", "");
-
-    if (!token) return null;
-
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-
-    return await db.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, name: true, email: true },
     });
-  } catch {
+    return user;
+  } catch (err) {
     return null;
   }
 }
 
-/* ---------------------------------------------------------
-   🚀 Main API — Always 200 Response
-   No 401 — UI will NEVER break now
----------------------------------------------------------- */
-
 export async function GET(request: Request) {
-  try {
-    const user = await getUserFromToken(request);
+  let token = "";
+  let user = null;
+  let paymentProof = null;
+  let pendingPayment = null;
+  let paymentStatus = "unknown";
 
-    // ⛔ Not logged in — but DO NOT THROW 401
+  try {
+    // Get user
+    token =
+      request.headers
+        .get("cookie")
+        ?.split("auth-token=")[1]
+        ?.split(";")[0] ||
+      request.headers.get("authorization")?.replace("Bearer ", "");
+    user = await getUserFromToken(request);
+
     if (!user) {
       return NextResponse.json(
         {
           authenticated: false,
-          paymentStatus: "unknown", // UI will redirect to plan screen
+          paymentStatus: "unknown",
+          debug: { tokenReceived: token, userFound: null },
         },
         { status: 200 }
       );
     }
 
-    // 🧾 Get latest payment entry
-    const payment = await db.paymentProof.findFirst({
-      where: {
-        userId: user.id,
-        status: { in: ["pending", "approved", "rejected"] },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Fetch payment proof & pending payment concurrently
+    [paymentProof, pendingPayment] = await Promise.all([
+      db.paymentProof.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.pendingPayment.findFirst({ // Fixed table name
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
-    let paymentStatus: "pending" | "completed" | "not-paid";
-
-    // -------------------------------
-    // FINAL LOGIC MAPPED FOR UI
-    // -------------------------------
-    if (!payment) {
-      paymentStatus = "not-paid"; // never paid
-    } else if (payment.status === "pending") {
-      paymentStatus = "pending"; // waiting for admin
-    } else if (payment.status === "approved") {
-      paymentStatus = "completed"; // 🔥 UI expects this
+    // Determine payment status
+    if (paymentProof && paymentProof.status === "approved") {
+      paymentStatus = "completed";
+    } else if (paymentProof && paymentProof.status === "pending") {
+      paymentStatus = "pending";
+    } else if (paymentProof && paymentProof.status === "rejected") {
+      paymentStatus = "not-paid";
+    } else if (pendingPayment && pendingPayment.status === "pending") {
+      paymentStatus = "pending";
     } else {
-      paymentStatus = "not-paid"; // rejected = must reupload
+      paymentStatus = "not-paid";
     }
 
     return NextResponse.json(
       {
         authenticated: true,
         paymentStatus,
+        paymentDetails: {
+          paymentProof: paymentProof ? {
+            id: paymentProof.id,
+            plan: paymentProof.plan,
+            amount: paymentProof.amount,
+            transactionId: paymentProof.transactionId,
+            status: paymentProof.status,
+            createdAt: paymentProof.createdAt
+          } : null,
+          pendingPayment: pendingPayment ? {
+            id: pendingPayment.id,
+            plan: pendingPayment.plan,
+            amount: pendingPayment.amount,
+            transactionId: pendingPayment.transactionId,
+            status: pendingPayment.status,
+            createdAt: pendingPayment.createdAt
+          } : null
+        },
+        debug: {
+          tokenReceived: token,
+          userFound: user.id,
+          paymentProofFound: paymentProof,
+          pendingPaymentFound: pendingPayment,
+        },
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("🔴 PAYMENT STATUS ERROR", error);
+    console.error("PAYMENT STATUS ERROR:", error);
     return NextResponse.json(
       {
         authenticated: false,
         paymentStatus: "unknown",
+        debug: {
+          tokenReceived: token,
+          userFound: user ? user.id : null,
+          paymentProofFound: paymentProof,
+          pendingPaymentFound: pendingPayment,
+          errorMessage: error instanceof Error ? error.message : error,
+        },
       },
       { status: 200 }
     );

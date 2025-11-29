@@ -154,7 +154,7 @@ model PaymentProof {
   userId        String
   amount        Float
   plan          String
-  txnId         String   @unique
+  transactionId String   @unique // Fixed field name for consistency
   screenshotUrl String?
   status        String   @default("pending")
   createdAt     DateTime @default(now())
@@ -172,7 +172,7 @@ model PendingPayment {
   id             String   @id @default(cuid())
   userId         String
   plan           String
-  txnId          String   @unique
+  transactionId  String   @unique // Fixed field name for consistency
   amount         Float
   status         String   @default("pending")
   screenshotUrl  String?

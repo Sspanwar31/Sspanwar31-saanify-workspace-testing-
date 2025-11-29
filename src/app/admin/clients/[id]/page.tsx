@@ -248,9 +248,9 @@ export default function ClientDetailPage() {
   const getPlanPrice = (plan: string) => {
     const prices = {
       TRIAL: 0,
-      BASIC: 99,
-      PRO: 299,
-      ENTERPRISE: 999
+      BASIC: 4000,
+      PRO: 7000,
+      ENTERPRISE: 10000
     }
     return prices[plan as keyof typeof prices] || 0
   }

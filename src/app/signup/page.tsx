@@ -39,7 +39,7 @@ export default function SignupPage() {
     {
       id: 'basic',
       name: 'Basic',
-      price: '₹400',
+      price: '₹4,000',
       duration: '/month',
       features: ['All trial features', 'Priority support', 'Basic analytics'],
       icon: Users,
@@ -48,16 +48,16 @@ export default function SignupPage() {
     {
       id: 'pro',
       name: 'Pro',
-      price: '₹950',
+      price: '₹7,000',
       duration: '/month',
       features: ['Advanced features', 'AI-powered tools', 'Priority support'],
       icon: Zap,
       color: 'from-purple-500 to-pink-600'
     },
     {
-      id: 'ultra',
-      name: 'Ultra',
-      price: '₹7,833',
+      id: 'enterprise',
+      name: 'Enterprise',
+      price: '₹10,000',
       duration: '/month',
       features: ['All features', 'Custom integrations', 'Dedicated support'],
       icon: Crown,

@@ -149,7 +149,7 @@ export function ClientStats({ clients, showRevenue }: ClientStatsProps) {
     {
       title: 'Active Revenue',
       value: clients.filter(c => c.status === 'ACTIVE').reduce((sum, client) => {
-        const planPrices = { TRIAL: 0, BASIC: 99, PRO: 299, ENTERPRISE: 999 }
+        const planPrices = { TRIAL: 0, BASIC: 4000, PRO: 7000, ENTERPRISE: 10000 }
         return sum + (planPrices[client.subscriptionPlan as keyof typeof planPrices] || 0)
       }, 0),
       change: '+12%',

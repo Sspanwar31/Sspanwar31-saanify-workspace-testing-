@@ -47,8 +47,8 @@ export async function GET(
       totalMembers: client.users.length,
       totalLoans: Math.floor(Math.random() * 50) + 10, // Mock data
       totalRevenue: client.subscriptionPlan === 'TRIAL' ? 0 :
-                   client.subscriptionPlan === 'BASIC' ? 99 :
-                   client.subscriptionPlan === 'PRO' ? 299 : 999
+                   client.subscriptionPlan === 'BASIC' ? 4000 :
+                   client.subscriptionPlan === 'PRO' ? 7000 : 10000
     }
 
     return NextResponse.json({

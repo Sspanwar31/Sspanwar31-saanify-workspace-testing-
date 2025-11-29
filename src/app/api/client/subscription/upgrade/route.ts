@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully upgraded to ${planName} plan!`,
       newPlan: planName,
       upgradeId: `upgrade_${Date.now()}`,
-      amount: planName === 'Professional' ? 599 : planName === 'Enterprise' ? 999 : 299,
+      amount: planName === 'Professional' ? 7000 : planName === 'Enterprise' ? 10000 : planName === 'Basic' ? 4000 : 0,
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
     }
 

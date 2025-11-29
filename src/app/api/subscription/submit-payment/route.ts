@@ -47,8 +47,18 @@ export async function POST(request: NextRequest) {
     const transactionId = formData.get('transactionId') as string
     const screenshot = formData.get('screenshot') as File
 
+    // Log received data for debugging
+    console.log('Payment submission received:', {
+      user: user.id,
+      plan,
+      amount,
+      transactionId,
+      hasScreenshot: !!screenshot
+    })
+
     // Validate required fields
     if (!plan || !amount || !transactionId || !screenshot) {
+      console.log('Validation failed:', { plan, amount, transactionId, hasScreenshot: !!screenshot })
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -61,8 +71,9 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingTransaction) {
+      console.log('Duplicate transaction ID found:', transactionId)
       return NextResponse.json(
-        { error: 'Transaction ID already exists' },
+        { error: 'Transaction ID already exists. Please use a unique transaction ID.' },
         { status: 400 }
       )
     }

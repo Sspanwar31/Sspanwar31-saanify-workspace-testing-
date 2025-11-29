@@ -25,7 +25,7 @@ export default function WaitingPage() {
 
         // 1️⃣ Session exist nahi → user ko plan select page par bhejo
         if (!data.authenticated || data.paymentStatus === "unknown" || data.paymentStatus === "not-paid") {
-          router.push("/user/subscription/select");
+          router.push("/subscription/select-plan");
           return;
         }
 

@@ -6,8 +6,8 @@ import { decodeJwtPayload } from '@/lib/auth-helpers'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip for non-subscription routes
-  if (!pathname.startsWith('/subscription') && !pathname.startsWith('/dashboard')) {
+  // Skip for non-subscription routes and client subscription routes
+  if (!pathname.startsWith('/subscription') || pathname.startsWith('/client/subscription')) {
     return NextResponse.next()
   }
 
@@ -75,5 +75,6 @@ export const config = {
   matcher: [
     '/subscription/:path*',
     '/dashboard/:path*',
+    '!/client/subscription/:path*',
   ],
 };

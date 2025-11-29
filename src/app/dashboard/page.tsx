@@ -66,7 +66,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Link href="/subscription">
+              <Link href="/client/subscription/upgrade">
                 <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3">
                   Renew Subscription
                 </Button>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
                       Upgrade to continue using all features.
                     </p>
                   </div>
-                  <Link href="/subscription">
+                  <Link href="/client/subscription/upgrade">
                     <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white">
                       Upgrade Now
                     </Button>

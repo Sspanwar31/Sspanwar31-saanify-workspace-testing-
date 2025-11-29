@@ -50,6 +50,15 @@ const publicRoutePatterns = [
   "/_next"
 ];
 
+// New user onboarding routes (only for unauthenticated users)
+const newSubscriptionRoutes = [
+  "/subscription",
+  "/subscription/",
+  "/subscription/select-plan",
+  "/subscription/payment-upload",
+  "/subscription/history"
+];
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -63,7 +72,65 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if it's a public route
+  // PRIORITY 1: Allow client subscription upgrade and all client routes with authentication only
+  if (pathname.startsWith('/client/')) {
+    const token = req.cookies.get("auth-token");
+    
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    const user = decodeJwtPayload(token.value);
+    
+    if (!user) {
+      const response = NextResponse.redirect(new URL("/login", req.url));
+      response.cookies.delete("auth-token");
+      return response;
+    }
+
+    const userRole = user?.role?.toUpperCase() || 'CLIENT';
+
+    // Only CLIENT role can access client routes
+    if (userRole !== 'CLIENT') {
+      if (userRole === 'ADMIN') {
+        return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+      } else {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
+
+    // Allow all client routes including /client/subscription/upgrade without subscription checks
+    return NextResponse.next();
+  }
+
+  // PRIORITY 2: DENY access to new user subscription routes for authenticated users
+  if (newSubscriptionRoutes.some(route => pathname.startsWith(route))) {
+    const token = req.cookies.get("auth-token");
+    
+    if (!token) {
+      // Allow unauthenticated users to access subscription selection
+      return NextResponse.next();
+    }
+
+    const user = decodeJwtPayload(token.value);
+    
+    if (!user) {
+      const response = NextResponse.redirect(new URL("/login", req.url));
+      response.cookies.delete("auth-token");
+      return response;
+    }
+
+    const userRole = user?.role?.toUpperCase() || 'CLIENT';
+
+    // Redirect authenticated users AWAY from new subscription routes
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+    } else {
+      return NextResponse.redirect(new URL("/dashboard/client", req.url));
+    }
+  }
+
+  // PRIORITY 3: Check if it's a public route
   const isPublicRoute = publicRoutePatterns.some(pattern => {
     if (pattern.endsWith('/')) {
       return pathname.startsWith(pattern);
@@ -76,7 +143,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get token from cookie
+  // PRIORITY 4: Require authentication for all other routes
   const token = req.cookies.get("auth-token");
 
   // If no token and not a public route, redirect to login

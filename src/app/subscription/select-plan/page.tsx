@@ -33,16 +33,18 @@ const plans = [
   {
     id: 'basic',
     name: 'Basic',
-    price: '₹4,000',
+    price: '₹299',
     duration: 'per month',
-    description: 'Great for small societies and growing organizations',
+    description: 'Perfect for small societies getting started',
     features: [
-      'Everything in Trial',
-      'Up to 10 users',
+      'Up to 50 members',
+      'Basic transaction tracking',
+      'Monthly reports',
+      'Email support',
+      'Mobile app access',
       'Advanced analytics',
-      'Priority email support',
-      'Data export',
-      'Monthly reports'
+      'Custom branding',
+      'API access'
     ],
     icon: Crown,
     badge: 'Most Popular',
@@ -54,23 +56,25 @@ const plans = [
   },
   {
     id: 'pro',
-    name: 'Pro',
-    price: '₹7,000',
+    name: 'Professional',
+    price: '₹599',
     duration: 'per month',
-    description: 'Advanced features for larger societies',
+    description: 'Ideal for growing societies with more needs',
     features: [
-      'Everything in Basic',
-      'Unlimited users',
-      'Real-time collaboration',
-      'Phone & email support',
-      'Custom integrations',
-      'Advanced security',
-      'API access'
+      'Up to 200 members',
+      'Advanced transaction tracking',
+      'Weekly & monthly reports',
+      'Priority email support',
+      'Mobile app access',
+      'Advanced analytics dashboard',
+      'Custom branding options',
+      'API access',
+      'Dedicated account manager'
     ],
     icon: Zap,
     badge: 'Best Value',
     badgeVariant: 'destructive' as const,
-    cta: 'Choose Pro',
+    cta: 'Choose Professional',
     popular: false,
     gradient: 'from-purple-500 to-pink-500',
     bgLight: 'bg-purple-50'
@@ -78,17 +82,20 @@ const plans = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '₹10,000',
+    price: '₹999',
     duration: 'per month',
-    description: 'Complete solution for large organizations',
+    description: 'Complete solution for large societies',
     features: [
-      'Everything in Pro',
+      'Unlimited members',
+      'Complete transaction management',
+      'Real-time reporting & analytics',
+      '24/7 phone & email support',
+      'Mobile app with white-labeling',
+      'Advanced analytics & insights',
+      'Full custom branding',
+      'API access for integrations',
       'Dedicated account manager',
-      'Custom training',
-      'SLA guarantee',
-      'White-label options',
-      'On-premise deployment',
-      'Custom contracts'
+      'On-site training & setup'
     ],
     icon: Building,
     badge: 'Premium',
@@ -122,9 +129,9 @@ export default function SubscriptionSelectPage() {
     // Save selected plan to session storage as well
     sessionStorage.setItem('selectedPlan', planId)
     
-    // Redirect to signup with plan parameter
+    // Redirect to payment upload page with plan parameter
     setTimeout(() => {
-      router.push(`/auth/signup?plan=${planId}`)
+      router.push(`/subscription/payment-upload?plan=${planId}`)
     }, 300)
   }
 

@@ -323,7 +323,7 @@ export default function AdminDashboard() {
           plan: item.plan,
           status: item.status,
           expiryDate: item.subscriptionEndsAt || item.trialEndsAt || 'N/A',
-          revenue: item.plan === 'basic' ? '₹0' : item.plan === 'professional' ? '₹99' : item.plan === 'enterprise' ? '₹299' : '₹0',
+          revenue: item.plan === 'trial' ? '₹0' : item.plan === 'basic' ? '₹299' : item.plan === 'professional' ? '₹599' : item.plan === 'enterprise' ? '₹999' : '₹0',
           subscriptionEndsAt: item.subscriptionEndsAt,
           trialEndsAt: item.trialEndsAt,
           memberCount: item.memberCount
@@ -2093,9 +2093,9 @@ export default function AdminDashboard() {
                   <CardContent>
                     <div className="space-y-3">
                       {[
-                        { client: 'Acme Corporation', amount: '₹1,999', plan: 'Standard Plan', date: '2024-11-01', status: 'completed' },
-                        { client: 'TechStart Inc', amount: '₹999', plan: 'Basic Plan', date: '2024-11-01', status: 'completed' },
-                        { client: 'Global Enterprises', amount: '₹4,999', plan: 'Premium Plan', date: '2024-10-31', status: 'completed' },
+                        { client: 'Acme Corporation', amount: '₹999', plan: 'Enterprise Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'TechStart Inc', amount: '₹299', plan: 'Basic Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'Global Enterprises', amount: '₹599', plan: 'Professional Plan', date: '2024-10-31', status: 'completed' },
                         { client: 'StartupHub', amount: '₹0', plan: 'Trial', date: '2024-10-30', status: 'pending' }
                       ].map((transaction, index) => (
                         <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">

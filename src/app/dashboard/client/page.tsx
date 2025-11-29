@@ -201,7 +201,7 @@ export default function ClientDashboard() {
               <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/subscription">
+              <Link href="/client/subscription">
                 <Button variant="outline" size="sm">
                   <CreditCard className="h-4 w-4 mr-2" />
                   Manage Subscription
@@ -338,7 +338,7 @@ export default function ClientDashboard() {
 
                 <div className="space-y-2">
                   {userData.subscriptionStatus !== 'ACTIVE' && (
-                    <Link href="/subscription">
+                    <Link href="/client/subscription/upgrade">
                       <Button className="w-full">
                         <CreditCard className="h-4 w-4 mr-2" />
                         {userData.subscriptionStatus === 'PENDING' ? 'View Payment Status' : 'Upgrade Plan'}
@@ -346,7 +346,7 @@ export default function ClientDashboard() {
                     </Link>
                   )}
                   
-                  <Link href="/subscription/history">
+                  <Link href="/client/subscription/history">
                     <Button variant="outline" className="w-full">
                       <FileText className="h-4 w-4 mr-2" />
                       Payment History

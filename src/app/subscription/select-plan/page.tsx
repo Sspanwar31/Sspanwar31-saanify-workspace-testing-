@@ -33,7 +33,7 @@ const plans = [
   {
     id: 'basic',
     name: 'Basic',
-    price: '₹299',
+    price: '₹4,000',
     duration: 'per month',
     description: 'Perfect for small societies getting started',
     features: [
@@ -57,7 +57,7 @@ const plans = [
   {
     id: 'pro',
     name: 'Professional',
-    price: '₹599',
+    price: '₹7,000',
     duration: 'per month',
     description: 'Ideal for growing societies with more needs',
     features: [
@@ -82,7 +82,7 @@ const plans = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '₹999',
+    price: '₹10,000',
     duration: 'per month',
     description: 'Complete solution for large societies',
     features: [

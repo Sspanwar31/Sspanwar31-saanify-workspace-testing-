@@ -388,7 +388,7 @@ export function AnalyticsCharts({ clients, showRevenue }: AnalyticsChartsProps) 
                     >
                       <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                         ${clients.reduce((sum, client) => {
-                          const planPrices = { TRIAL: 0, BASIC: 99, PRO: 299, ENTERPRISE: 999 }
+                          const planPrices = { TRIAL: 0, BASIC: 4000, PRO: 7000, ENTERPRISE: 10000 }
                           return sum + (planPrices[client.subscriptionPlan as keyof typeof planPrices] || 0)
                         }, 0).toLocaleString()}
                       </div>

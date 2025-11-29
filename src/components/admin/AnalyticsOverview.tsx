@@ -100,9 +100,9 @@ export function AnalyticsOverview({ clients, showRevenue, onRevenueToggle, userD
   const calculateRevenue = () => {
     const planPrices = {
       TRIAL: 0,
-      BASIC: 99,
-      PRO: 299,
-      ENTERPRISE: 999
+      BASIC: 4000,
+      PRO: 7000,
+      ENTERPRISE: 10000
     }
     
     return clients.reduce((total, client) => {

@@ -98,9 +98,9 @@ export function ClientsTable({ clients, onAction, onDelete, showRevenue = false 
   const getClientRevenue = (plan: string) => {
     const planPrices = {
       TRIAL: 0,
-      BASIC: 99,
-      PRO: 299,
-      ENTERPRISE: 999
+      BASIC: 4000,
+      PRO: 7000,
+      ENTERPRISE: 10000
     }
     return planPrices[plan as keyof typeof planPrices] || 0
   }

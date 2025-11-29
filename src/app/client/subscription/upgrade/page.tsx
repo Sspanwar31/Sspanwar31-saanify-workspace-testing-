@@ -17,13 +17,13 @@ import { cn } from '@/lib/utils'
 // Mock current plan - will be replaced with database subscription later
 const currentPlan = {
   name: 'Basic',
-  price: 299
+  price: 4000
 }
 
 const plans = [
   {
     name: 'Basic',
-    price: 299,
+    price: 4000,
     duration: 'per month',
     description: 'Perfect for small societies getting started',
     icon: Crown,
@@ -42,7 +42,7 @@ const plans = [
   },
   {
     name: 'Professional',
-    price: 599,
+    price: 7000,
     duration: 'per month',
     description: 'Ideal for growing societies with more needs',
     icon: Shield,
@@ -63,7 +63,7 @@ const plans = [
   },
   {
     name: 'Enterprise',
-    price: 999,
+    price: 10000,
     duration: 'per month',
     description: 'Complete solution for large societies',
     icon: Crown,

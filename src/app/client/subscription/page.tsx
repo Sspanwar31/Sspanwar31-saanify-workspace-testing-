@@ -166,23 +166,22 @@ export default function SubscriptionPage() {
   const PlanIcon = planDetails.icon
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <div className="w-full max-w-4xl px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-8">
+      <div className="w-full max-w-4xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center"
         >
           {/* Page Title */}
-          <div className="mb-4">
-            <h1 className="text-xl font-bold text-slate-900 mb-1">Subscription Management</h1>
-            <p className="text-sm text-slate-600">Manage your subscription, payments, and billing information</p>
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Subscription Management</h1>
+            <p className="text-slate-600">Manage your subscription, payments, and billing information</p>
           </div>
 
           {/* Status Banner */}
-          <Card className={`border-2 ${getStatusColor(subscriptionData.status)} mb-4`}>
-            <CardContent className="p-4">
+          <Card className={`border-2 ${getStatusColor(subscriptionData.status)} mb-6 shadow-lg`}>
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-full ${planDetails.bgColor} bg-opacity-20`}>
@@ -243,28 +242,28 @@ export default function SubscriptionPage() {
             </CardContent>
           </Card>
 
-          {/* Two Column Layout for Bottom Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Bottom Sections - Single Column Layout */}
+          <div className="space-y-6">
             {/* Trial Progress Bar */}
             {subscriptionData.status === 'TRIAL' && subscriptionData.daysRemaining !== undefined && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center space-x-2 text-base">
-                    <Clock className="w-4 h-4 text-blue-500" />
+              <Card className="shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3 text-lg">
+                    <Clock className="w-5 h-5 text-blue-500" />
                     <span>Trial Progress</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Days Remaining</span>
-                      <span className="font-semibold">{subscriptionData.daysRemaining} days</span>
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-base">
+                      <span className="text-slate-600 font-medium">Days Remaining</span>
+                      <span className="font-bold text-lg">{subscriptionData.daysRemaining} days</span>
                     </div>
                     <Progress 
                       value={(subscriptionData.daysRemaining / 15) * 100} 
-                      className="h-2"
+                      className="h-3"
                     />
-                    <p className="text-xs text-slate-500">
+                    <p className="text-base text-slate-500">
                       Upgrade before your trial ends to continue using all features
                     </p>
                   </div>
@@ -273,34 +272,34 @@ export default function SubscriptionPage() {
             )}
 
             {/* Current Plan Details */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Current Plan Details</CardTitle>
+            <Card className="shadow-md">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Current Plan Details</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                    <span className="text-slate-600 text-sm">Plan Type</span>
-                    <span className="font-semibold text-sm">{planDetails.name}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                    <span className="text-slate-600 font-medium text-base">Plan Type</span>
+                    <span className="font-bold text-lg">{planDetails.name}</span>
                   </div>
-                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                    <span className="text-slate-600 text-sm">Status</span>
-                    <Badge variant="outline" className={`${getStatusColor(subscriptionData.status)} text-xs px-2 py-1`}>
+                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                    <span className="text-slate-600 font-medium text-base">Status</span>
+                    <Badge variant="outline" className={`${getStatusColor(subscriptionData.status)} text-sm font-medium px-3 py-1`}>
                       {subscriptionData.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>
                   {subscriptionData.trialEndsAt && (
-                    <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                      <span className="text-slate-600 text-sm">Trial Ends</span>
-                      <span className="font-semibold text-sm">
+                    <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                      <span className="text-slate-600 font-medium text-base">Trial Ends</span>
+                      <span className="font-bold text-lg">
                         {new Date(subscriptionData.trialEndsAt).toLocaleDateString()}
                       </span>
                     </div>
                   )}
                   {subscriptionData.subscriptionEndsAt && (
-                    <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                      <span className="text-slate-600 text-sm">Subscription Ends</span>
-                      <span className="font-semibold text-sm">
+                    <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
+                      <span className="text-slate-600 font-medium text-base">Subscription Ends</span>
+                      <span className="font-bold text-lg">
                         {new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString()}
                       </span>
                     </div>

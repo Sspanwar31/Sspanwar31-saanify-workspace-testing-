@@ -131,12 +131,11 @@ export default function SubscriptionPlansPage() {
       const response = await makeAuthenticatedRequest('/api/admin/clients');
       const result = await response.json();
       if (result.success) {
-        setClients(result.data?.clients || []);
+        setClients(result.clients);
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error);
       toast.error('Failed to fetch clients');
-      setClients([]); // Set empty array on error
     }
   };
 
@@ -709,11 +708,11 @@ export default function SubscriptionPlansPage() {
                   {/* Client Dropdown */}
                   {showClientDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {(clients || []).filter(client => 
+                      {clients.filter(client => 
                         client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
                         client.adminName.toLowerCase().includes(clientSearchTerm.toLowerCase())
                       ).length > 0 ? (
-                        (clients || []).filter(client => 
+                        clients.filter(client => 
                           client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
                           client.adminName.toLowerCase().includes(clientSearchTerm.toLowerCase())
                         ).map(client => (

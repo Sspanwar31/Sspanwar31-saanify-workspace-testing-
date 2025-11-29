@@ -86,9 +86,9 @@ export function UnifiedAnalytics({ clients, showRevenue, isAdmin }: UnifiedAnaly
   const calculateRevenue = () => {
     const planPrices = {
       TRIAL: 0,
-      BASIC: 4000,
-      PRO: 7000,
-      ENTERPRISE: 10000
+      BASIC: 99,
+      PRO: 299,
+      ENTERPRISE: 999
     }
     
     return clients.reduce((total, client) => {

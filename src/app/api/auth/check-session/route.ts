@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { authenticated: false, error: "No authentication token found" },
-        { status: 401 }
+        { authenticated: false },
+        { status: 200 }
       );
     }
 
@@ -33,15 +33,15 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       console.log("❌ Check-session: Token verification failed", err); // LOG
       return NextResponse.json(
-        { authenticated: false, error: "Invalid or expired token" },
-        { status: 401 }
+        { authenticated: false },
+        { status: 200 }
       );
     }
 
     if (!decoded || !decoded.userId) {
       return NextResponse.json(
-        { authenticated: false, error: "Invalid token payload" },
-        { status: 401 }
+        { authenticated: false },
+        { status: 200 }
       );
     }
 
@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
     if (!user) {
       console.log("❌ Check-session: User not found in DB"); // LOG
       return NextResponse.json(
-        { authenticated: false, error: "User no longer exists" },
-        { status: 401 }
+        { authenticated: false },
+        { status: 200 }
       );
     }
 
@@ -95,8 +95,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Session check error:", error);
     return NextResponse.json(
-      { authenticated: false, error: "Internal server error" },
-      { status: 500 }
+      { authenticated: false },
+      { status: 200 }
     );
   }
 }

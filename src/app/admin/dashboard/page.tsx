@@ -43,12 +43,14 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { PaymentModeToggle } from '@/components/admin/PaymentModeToggle'
 
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPlan, setSelectedPlan] = useState('all')
   const [activeTab, setActiveTab] = useState('overview')
+  const [paymentMode, setPaymentMode] = useState<'MANUAL' | 'RAZORPAY' | null>(null)
 
   // Enhanced stats
   const stats = {
@@ -387,6 +389,13 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Payment Mode Settings */}
+              <PaymentModeToggle 
+                currentMode={paymentMode}
+                onModeChange={setPaymentMode}
+                isAdmin={true} // In real app, check actual user role
+              />
 
               {/* Quick Actions */}
               <Card>

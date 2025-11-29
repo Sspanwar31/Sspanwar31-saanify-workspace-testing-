@@ -156,7 +156,7 @@ export default function PaymentHistoryPage() {
               </Link>
               <h1 className="text-xl font-semibold text-gray-900">Payment History</h1>
             </div>
-            <Link href="/client/subscription">
+            <Link href="/subscription">
               <Button variant="outline" size="sm">
                 <CreditCard className="h-4 w-4 mr-2" />
                 New Payment
@@ -251,7 +251,7 @@ export default function PaymentHistoryPage() {
                       ? "No payments match your search criteria." 
                       : "You haven't made any payments yet."}
                   </p>
-                  <Link href="/client/subscription">
+                  <Link href="/subscription">
                     <Button>
                       <CreditCard className="h-4 w-4 mr-2" />
                       Make Your First Payment

@@ -141,20 +141,20 @@ export default function Pricing() {
 
   const pricingPlans = [
     {
-      title: "Basic",
-      price: "₹4,000",
-      period: "/month",
-      description: "Perfect for small societies getting started",
+      title: "Free Trial",
+      price: "Free",
+      period: "15 Days",
+      description: "Perfect for exploring our platform",
       features: [
         "Up to 50 members",
         "Basic member management",
-        "Email support",
-        "Mobile app access",
-        "Basic analytics"
+        "Standard support",
+        "Limited analytics",
+        "Mobile app access"
       ],
       highlighted: false,
       delay: 0.1,
-      cta: "Get Started Now"
+      cta: "Start Free Trial"
     },
     {
       title: "Pro",

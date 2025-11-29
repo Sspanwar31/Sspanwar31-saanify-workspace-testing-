@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Upload, FileText, AlertCircle, CheckCircle, DollarSign, Calendar, User, CreditCard, Smartphone, Building2, IndianRupee, Shield, Star, Crown } from 'lucide-react'
+import { ArrowLeft, Upload, FileText, AlertCircle, CheckCircle, DollarSign, Calendar, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,7 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Advanced analytics',
       'No credit card required'
     ],
-    color: 'from-emerald-500 to-teal-600',
+    color: 'bg-gradient-to-r from-green-500 to-emerald-600',
     icon: '🚀',
     popular: true,
     trialDays: 15
@@ -48,42 +48,38 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'basic',
     name: 'BASIC',
-    description: 'Perfect for small societies getting started',
+    description: 'Perfect for small societies with basic accounting needs',
     price: 4000,
     duration: 'monthly',
     features: [
       'Up to 50 members',
-      'Basic transaction tracking',
-      'Monthly reports',
+      'Basic accounting features',
       'Email support',
       'Mobile app access',
-      'Advanced analytics',
-      'Custom branding',
-      'API access'
+      'Community management'
     ],
-    color: 'from-blue-500 to-cyan-600',
-    icon: '🏠',
-    popular: false,
+    color: 'bg-blue-500',
+    icon: '🏠️',
+    popular: true,
     trialDays: 15
   },
   {
     id: 'pro',
     name: 'PROFESSIONAL',
-    description: 'Ideal for growing societies with more needs',
-    price: 7000,
+    description: 'Advanced features for growing societies with complex operations',
+    price: 8000,
     duration: 'monthly',
     features: [
       'Up to 200 members',
-      'Advanced transaction tracking',
-      'Weekly & monthly reports',
-      'Priority email support',
-      'Mobile app access',
-      'Advanced analytics dashboard',
-      'Custom branding options',
-      'API access',
-      'Dedicated account manager'
+      'Advanced accounting & reporting',
+      'Priority support',
+      'Mobile app + Web access',
+      'Advanced analytics',
+      'API integrations',
+      'Custom workflows',
+      'Community management + forums'
     ],
-    color: 'from-purple-500 to-pink-600',
+    color: 'bg-purple-500',
     icon: '💎',
     popular: true,
     trialDays: 15
@@ -91,22 +87,23 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'enterprise',
     name: 'ENTERPRISE',
-    description: 'Complete solution for large societies',
-    price: 10000,
+    description: 'Complete solution for large enterprises with unlimited everything',
+    price: 15000,
     duration: 'monthly',
     features: [
       'Unlimited members',
-      'Complete transaction management',
-      'Real-time reporting & analytics',
-      '24/7 phone & email support',
-      'Mobile app with white-labeling',
-      'Advanced analytics & insights',
-      'Full custom branding',
-      'API access for integrations',
+      'Enterprise-grade security',
+      'Advanced analytics & reporting',
+      'API integrations + Webhooks',
+      'Custom workflows & automations',
+      'Priority support 24/7',
+      'Mobile app + Web access',
+      'Advanced security & compliance',
       'Dedicated account manager',
-      'On-site training & setup'
+      'White-label solutions',
+      'Advanced community features'
     ],
-    color: 'from-amber-500 to-orange-600',
+    color: 'bg-gradient-to-r from-purple-600 to-indigo-600',
     icon: '🏢',
     popular: false,
     trialDays: 15
@@ -271,19 +268,10 @@ export default function PaymentUploadPage() {
           router.push('/subscription/waiting')
         }, 2000)
       } else {
-        const errorData = await response.json()
-        console.error('Payment submission failed:', errorData)
-        
         toast.error('❌ Submission Failed', {
-          description: errorData.error || 'Failed to submit payment proof. Please try again.',
-          duration: 5000,
+          description: data.error || 'Failed to submit payment proof. Please try again.',
+          duration: 3000,
         })
-        
-        // If it's a duplicate transaction ID, clear the field for user
-        if (errorData.error?.includes('Transaction ID already exists')) {
-          setFormData(prev => ({ ...prev, transactionId: '' }))
-          setErrors(prev => ({ ...prev, transactionId: 'Please use a different transaction ID' }))
-        }
       }
     } catch (error) {
       console.error('Payment submission error:', error)
@@ -317,8 +305,8 @@ export default function PaymentUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -328,104 +316,66 @@ export default function PaymentUploadPage() {
           <Button
             variant="ghost"
             onClick={() => router.push('/subscription')}
-            className="mb-6 hover:bg-white/50 backdrop-blur-sm"
+            className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Plans
           </Button>
           
           <div className="text-center">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4"
-            >
-              <Crown className="w-8 h-8 text-white" />
-            </motion.div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Complete Your Payment
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Upload your payment proof for the <span className="font-semibold text-purple-600">{selectedPlan.name}</span> plan
+            <p className="text-gray-600">
+              Upload your payment proof for {selectedPlan.name} plan
             </p>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Plan Summary - Enhanced */}
+          {/* Plan Summary */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="sticky top-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="relative overflow-hidden">
-                <div className={`absolute inset-0 bg-gradient-to-r ${selectedPlan.color} opacity-10`}></div>
-                <CardTitle className="flex items-center gap-3 relative z-10">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${selectedPlan.color} text-white flex items-center justify-center text-lg font-bold shadow-lg`}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-full ${selectedPlan.color} text-white flex items-center justify-center text-sm font-bold`}>
                     {selectedPlan.icon}
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold">{selectedPlan.name}</div>
-                    {selectedPlan.popular && (
-                      <div className="flex items-center gap-1 text-sm text-amber-600">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span>Most Popular</span>
-                      </div>
-                    )}
-                  </div>
+                  {selectedPlan.name}
                 </CardTitle>
-                <CardDescription className="relative z-10 text-gray-600">
-                  {selectedPlan.description}
-                </CardDescription>
+                <CardDescription>{selectedPlan.description}</CardDescription>
               </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="space-y-6">
-                  {/* Price Display */}
-                  <div className="text-center py-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
-                    <div className="text-sm text-gray-500 mb-1">Price</div>
-                    <div className="flex items-center justify-center gap-2">
-                      <IndianRupee className="w-6 h-6 text-gray-700" />
-                      <span className="text-4xl font-bold text-gray-900">{selectedPlan.price}</span>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">per {selectedPlan.duration}</div>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Price:</span>
+                    <span className="font-bold text-lg">{formatPrice(selectedPlan.price)}</span>
                   </div>
-
-                  <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                    <span className="text-gray-600 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Duration
-                    </span>
-                    <span className="font-semibold text-gray-900">{selectedPlan.duration}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Duration:</span>
+                    <span className="font-medium">{selectedPlan.duration}</span>
                   </div>
-
                   {selectedPlan.trialDays && (
-                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                      <span className="text-gray-600 flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        Trial Period
-                      </span>
-                      <span className="font-semibold text-green-600">{selectedPlan.trialDays} days</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Trial:</span>
+                      <span className="text-green-600 font-medium">{selectedPlan.trialDays} days</span>
                     </div>
                   )}
-
-                  <div className="pt-4">
-                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      Features Included
-                    </h4>
-                    <ul className="space-y-3">
-                      {selectedPlan.features.slice(0, 4).map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{feature}</span>
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-2">Features:</h4>
+                    <ul className="space-y-1 text-sm text-gray-600">
+                      {selectedPlan.features.slice(0, 3).map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                          {feature}
                         </li>
                       ))}
-                      {selectedPlan.features.length > 4 && (
-                        <li className="text-sm text-blue-600 font-medium pl-7">
-                          +{selectedPlan.features.length - 4} more features
-                        </li>
+                      {selectedPlan.features.length > 3 && (
+                        <li className="text-blue-600">+{selectedPlan.features.length - 3} more features</li>
                       )}
                     </ul>
                   </div>
@@ -434,204 +384,148 @@ export default function PaymentUploadPage() {
             </Card>
           </motion.div>
 
-          {/* Payment Form - Enhanced */}
+          {/* Payment Form */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
             className="lg:col-span-2"
           >
-            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-white" />
-                  </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-green-600" />
                   Payment Details
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription>
                   Please provide your payment information and upload proof of payment
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-8">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Payment Method Selection - Enhanced */}
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Payment Method Selection */}
                   <div>
-                    <Label className="text-base font-semibold text-gray-900 mb-4 block">Select Payment Method</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        { id: 'UPI', name: 'UPI', icon: Smartphone, desc: 'PhonePe, GPay, PayTM' },
-                        { id: 'Bank Transfer', name: 'Bank Transfer', icon: Building2, desc: 'NEFT, IMPS, RTGS' },
-                        { id: 'Cash', name: 'Cash', icon: DollarSign, desc: 'Direct cash payment' }
-                      ].map((method) => (
-                        <motion.div
-                          key={method.id}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                    <Label>Payment Method</Label>
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      {['UPI', 'Bank Transfer', 'Cash'].map((method) => (
+                        <Button
+                          key={method}
+                          type="button"
+                          variant={formData.paymentMethod === method ? 'default' : 'outline'}
+                          onClick={() => handleInputChange('paymentMethod', method)}
+                          className="w-full"
                         >
-                          <Button
-                            type="button"
-                            variant={formData.paymentMethod === method.id ? 'default' : 'outline'}
-                            onClick={() => handleInputChange('paymentMethod', method.id)}
-                            className={`w-full h-auto p-4 flex flex-col items-center gap-3 ${
-                              formData.paymentMethod === method.id 
-                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg' 
-                                : 'hover:border-blue-300 hover:bg-blue-50'
-                            }`}
-                          >
-                            <method.icon className="w-6 h-6" />
-                            <div className="text-center">
-                              <div className="font-medium">{method.name}</div>
-                              <div className="text-xs opacity-75">{method.desc}</div>
-                            </div>
-                          </Button>
-                        </motion.div>
+                          {method}
+                        </Button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Transaction ID */}
                     <div>
-                      <Label htmlFor="transactionId" className="text-base font-semibold text-gray-900">
-                        Transaction ID <span className="text-red-500">*</span>
-                      </Label>
+                      <Label htmlFor="transactionId">Transaction ID *</Label>
                       <Input
                         id="transactionId"
                         type="text"
                         placeholder="Enter transaction ID"
                         value={formData.transactionId}
                         onChange={(e) => handleInputChange('transactionId', e.target.value)}
-                        className={`mt-2 h-12 ${errors.transactionId ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                        className={errors.transactionId ? 'border-red-500' : ''}
                       />
                       {errors.transactionId && (
-                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.transactionId}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.transactionId}</p>
                       )}
                     </div>
 
                     {/* Amount */}
                     <div>
-                      <Label htmlFor="amount" className="text-base font-semibold text-gray-900">
-                        Amount (₹) <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="relative mt-2">
-                        <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="amount"
-                          type="number"
-                          placeholder="Enter amount"
-                          value={formData.amount}
-                          onChange={(e) => handleInputChange('amount', e.target.value)}
-                          className={`pl-10 h-12 ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
-                        />
-                      </div>
+                      <Label htmlFor="amount">Amount (₹) *</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        placeholder="Enter amount"
+                        value={formData.amount}
+                        onChange={(e) => handleInputChange('amount', e.target.value)}
+                        className={errors.amount ? 'border-red-500' : ''}
+                      />
                       {errors.amount && (
-                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.amount}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.amount}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Payer Name */}
                     <div>
-                      <Label htmlFor="payerName" className="text-base font-semibold text-gray-900">
-                        Payer Name <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="relative mt-2">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="payerName"
-                          type="text"
-                          placeholder="Enter payer name"
-                          value={formData.payerName}
-                          onChange={(e) => handleInputChange('payerName', e.target.value)}
-                          className={`pl-10 h-12 ${errors.payerName ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
-                        />
-                      </div>
+                      <Label htmlFor="payerName">Payer Name *</Label>
+                      <Input
+                        id="payerName"
+                        type="text"
+                        placeholder="Enter payer name"
+                        value={formData.payerName}
+                        onChange={(e) => handleInputChange('payerName', e.target.value)}
+                        className={errors.payerName ? 'border-red-500' : ''}
+                      />
                       {errors.payerName && (
-                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.payerName}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.payerName}</p>
                       )}
                     </div>
 
                     {/* Payer Email */}
                     <div>
-                      <Label htmlFor="payerEmail" className="text-base font-semibold text-gray-900">
-                        Payer Email <span className="text-red-500">*</span>
-                      </Label>
+                      <Label htmlFor="payerEmail">Payer Email *</Label>
                       <Input
                         id="payerEmail"
                         type="email"
                         placeholder="Enter payer email"
                         value={formData.payerEmail}
                         onChange={(e) => handleInputChange('payerEmail', e.target.value)}
-                        className={`mt-2 h-12 ${errors.payerEmail ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                        className={errors.payerEmail ? 'border-red-500' : ''}
                       />
                       {errors.payerEmail && (
-                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.payerEmail}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.payerEmail}</p>
                       )}
                     </div>
                   </div>
 
                   {/* Payer Phone */}
                   <div>
-                    <Label htmlFor="payerPhone" className="text-base font-semibold text-gray-900">
-                      Payer Phone <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="payerPhone">Payer Phone *</Label>
                     <Input
                       id="payerPhone"
                       type="tel"
                       placeholder="Enter 10-digit phone number"
                       value={formData.payerPhone}
                       onChange={(e) => handleInputChange('payerPhone', e.target.value)}
-                      className={`mt-2 h-12 ${errors.payerPhone ? 'border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                      className={errors.payerPhone ? 'border-red-500' : ''}
                     />
                     {errors.payerPhone && (
-                      <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {errors.payerPhone}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">{errors.payerPhone}</p>
                     )}
                   </div>
 
-                  {/* Payment Screenshot - Enhanced */}
+                  {/* Payment Screenshot */}
                   <div>
-                    <Label htmlFor="screenshot" className="text-base font-semibold text-gray-900">
-                      Payment Screenshot <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="screenshot">Payment Screenshot *</Label>
                     <div className="mt-2">
                       <div className="flex items-center justify-center w-full">
                         <label
                           htmlFor="screenshot"
-                          className={`relative flex flex-col items-center justify-center w-full h-80 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 ${
-                            errors.screenshot 
-                              ? 'border-red-300 bg-red-50 hover:bg-red-100' 
-                              : 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-blue-400'
-                          }`}
+                          className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 ${errors.screenshot ? 'border-red-500' : ''}`}
                         >
                           {previewUrl ? (
                             <div className="relative w-full h-full">
                               <img
                                 src={previewUrl}
                                 alt="Payment screenshot"
-                                className="w-full h-full object-contain rounded-2xl p-4"
+                                className="w-full h-full object-contain rounded-lg"
                               />
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="sm"
-                                className="absolute top-4 right-4 shadow-lg"
+                                className="absolute top-2 right-2"
                                 onClick={() => {
                                   setFormData(prev => ({ ...prev, screenshot: null }))
                                   setPreviewUrl(null)
@@ -642,13 +536,11 @@ export default function PaymentUploadPage() {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-                                <Upload className="w-8 h-8 text-white" />
-                              </div>
-                              <p className="mb-2 text-lg font-medium text-gray-700">
+                              <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                              <p className="mb-2 text-sm text-gray-500">
                                 <span className="font-semibold">Click to upload</span> or drag and drop
                               </p>
-                              <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
                             </div>
                           )}
                           <input
@@ -661,59 +553,54 @@ export default function PaymentUploadPage() {
                         </label>
                       </div>
                       {errors.screenshot && (
-                        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.screenshot}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.screenshot}</p>
                       )}
                     </div>
                   </div>
 
                   {/* Notes */}
                   <div>
-                    <Label htmlFor="notes" className="text-base font-semibold text-gray-900">
-                      Additional Notes (Optional)
-                    </Label>
+                    <Label htmlFor="notes">Additional Notes (Optional)</Label>
                     <textarea
                       id="notes"
-                      className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-24"
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
                       placeholder="Any additional information about your payment"
                       value={formData.notes}
                       onChange={(e) => handleInputChange('notes', e.target.value)}
                     />
                   </div>
 
-                  {/* Alert - Enhanced */}
-                  <Alert className="bg-blue-50 border-blue-200">
-                    <AlertCircle className="h-5 w-5 text-blue-600" />
-                    <AlertDescription className="text-blue-800">
-                      <strong>Review Process:</strong> Your payment will be reviewed by our team within 24 hours. You'll receive an email confirmation once your payment is approved and your account is activated.
+                  {/* Alert */}
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Your payment will be reviewed by our team within 24 hours. You'll receive an email once your payment is approved.
                     </AlertDescription>
                   </Alert>
 
-                  {/* Submit Button - Enhanced */}
-                  <div className="flex justify-end gap-4 pt-4">
+                  {/* Submit Button */}
+                  <div className="flex justify-end gap-4">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => router.push('/subscription')}
-                      className="h-12 px-8 border-2 hover:bg-gray-50"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="h-12 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg"
+                      className="bg-green-600 hover:bg-green-700"
                     >
                       {isSubmitting ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                          Submitting Payment...
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Submitting...
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-5 h-5 mr-3" />
+                          <CheckCircle className="w-4 h-4 mr-2" />
                           Submit Payment Proof
                         </>
                       )}

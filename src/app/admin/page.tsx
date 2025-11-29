@@ -31,6 +31,7 @@ import { ActivityMonitor } from '@/components/activity-monitor'
 import { DataCharts } from '@/components/data-charts'
 import { AddClientModal } from '@/components/admin/AddClientModal'
 import { ActionsDropdown } from '@/components/admin/ActionsDropdown'
+import { PaymentModeToggle } from '@/components/admin/PaymentModeToggle'
 
 // --- 🛡️ SAFETY FUNCTIONS ---
 const safeRender = (val: any) => {
@@ -284,26 +285,26 @@ export default function AdminDashboard() {
       setSubscriptionPlans([
         {
           name: "Basic Plan",
-          price: 4000,
+          price: 999,
           duration: "monthly",
           features: ["Up to 50 members", "Basic transactions", "Email support"],
           color: "bg-blue-500",
           description: "Perfect for small societies"
         },
         {
-          name: "Professional Plan", 
-          price: 7000,
+          name: "Standard Plan", 
+          price: 1999,
           duration: "monthly",
           features: ["Up to 200 members", "Advanced transactions", "Priority support"],
-          color: "bg-purple-500",
-          description: "Great for growing societies"
+          color: "bg-cyan-500",
+          description: "Great for medium societies"
         },
         {
-          name: "Enterprise Plan",
-          price: 10000,
+          name: "Premium Plan",
+          price: 4999,
           duration: "monthly", 
           features: ["Unlimited members", "Advanced analytics", "24/7 support"],
-          color: "bg-amber-500",
+          color: "bg-purple-500",
           description: "Best for large societies"
         }
       ]);
@@ -323,7 +324,7 @@ export default function AdminDashboard() {
           plan: item.plan,
           status: item.status,
           expiryDate: item.subscriptionEndsAt || item.trialEndsAt || 'N/A',
-          revenue: item.plan === 'trial' ? '₹0' : item.plan === 'basic' ? '₹4000' : item.plan === 'professional' ? '₹7000' : item.plan === 'enterprise' ? '₹10000' : '₹0',
+          revenue: item.plan === 'basic' ? '₹0' : item.plan === 'professional' ? '₹99' : item.plan === 'enterprise' ? '₹299' : '₹0',
           subscriptionEndsAt: item.subscriptionEndsAt,
           trialEndsAt: item.trialEndsAt,
           memberCount: item.memberCount
@@ -1252,6 +1253,15 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
+                {/* Payment Mode Toggle */}
+                <PaymentModeToggle 
+                  isAdmin={user?.role === 'ADMIN' || user?.role === 'admin'}
+                  onModeChange={(mode) => {
+                    console.log('Payment mode changed to:', mode)
+                    // Optional: You can add additional logic here
+                  }}
+                />
+
                 {/* Quick Actions and Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="backdrop-blur-xl bg-white/5 border-white/10">
@@ -2093,9 +2103,9 @@ export default function AdminDashboard() {
                   <CardContent>
                     <div className="space-y-3">
                       {[
-                        { client: 'Acme Corporation', amount: '₹10000', plan: 'Enterprise Plan', date: '2024-11-01', status: 'completed' },
-                        { client: 'TechStart Inc', amount: '₹4000', plan: 'Basic Plan', date: '2024-11-01', status: 'completed' },
-                        { client: 'Global Enterprises', amount: '₹7000', plan: 'Professional Plan', date: '2024-10-31', status: 'completed' },
+                        { client: 'Acme Corporation', amount: '₹1,999', plan: 'Standard Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'TechStart Inc', amount: '₹999', plan: 'Basic Plan', date: '2024-11-01', status: 'completed' },
+                        { client: 'Global Enterprises', amount: '₹4,999', plan: 'Premium Plan', date: '2024-10-31', status: 'completed' },
                         { client: 'StartupHub', amount: '₹0', plan: 'Trial', date: '2024-10-30', status: 'pending' }
                       ].map((transaction, index) => (
                         <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white/5">

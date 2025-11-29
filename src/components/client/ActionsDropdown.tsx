@@ -140,11 +140,11 @@ export function ActionsDropdown({ client, onAction, onDelete }: ActionsDropdownP
 
   const getPlanPrice = (plan: string) => {
     const prices = {
-      BASIC: '₹4,000',
-      PRO: '₹7,000',
-      ENTERPRISE: '₹10,000'
+      BASIC: '$99',
+      PRO: '$299',
+      ENTERPRISE: '$999'
     }
-    return prices[plan as keyof typeof prices] || '₹0'
+    return prices[plan as keyof typeof prices] || '$0'
   }
 
   return (

@@ -1,27 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getClientAuth } from '@/lib/client-auth'
+import { db } from '@/lib/db'
+import jwt from 'jsonwebtoken'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+// Helper function to verify JWT token
+function verifyToken(request: NextRequest) {
+  const token = request.cookies.get('auth-token')?.value || 
+                request.headers.get('Authorization')?.replace('Bearer ', '')
+
+  if (!token) {
+    return null
+  }
+
+  try {
+    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
+  } catch (error) {
+    return null
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify client authentication using the same method as client verify
-    const auth = await getClientAuth(request)
-    
-    if (!auth.authenticated) {
+    // Verify user authentication
+    const user = verifyToken(request)
+    if (!user) {
       return NextResponse.json(
-        { error: auth.error || 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
     // Get user details with society account
-    const { db } = await import('@/lib/db')
     const userDetails = await db.user.findUnique({
-      where: { id: auth.user.id },
+      where: { id: user.userId },
       include: { 
         societyAccount: true,
         paymentProofs: {
           orderBy: { createdAt: 'desc' },
           take: 10
+        },
+        notifications: {
+          orderBy: { createdAt: 'desc' },
+          take: 20
         }
       }
     })
@@ -88,7 +109,14 @@ export async function GET(request: NextRequest) {
     }))
 
     // Format notifications
-    const notifications = []
+    const notifications = userDetails.notifications.map(notification => ({
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      createdAt: notification.createdAt.toISOString(),
+      isRead: notification.isRead
+    }))
 
     // Determine current plan
     let currentPlan = 'TRIAL'

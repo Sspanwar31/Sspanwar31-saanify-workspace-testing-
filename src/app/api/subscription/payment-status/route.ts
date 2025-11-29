@@ -1,87 +1,71 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import jwt from 'jsonwebtoken'
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
+async function getUserFromToken(request: Request) {
+  const token = request.headers.get("cookie")?.split("auth-token=")[1]?.split(";")[0] || 
+                request.headers.get("authorization")?.replace("Bearer ", "");
 
   if (!token) {
-    return null
+    return null;
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
     const user = await db.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, name: true, email: true }
-    })
+    });
     
-    return user
+    return user;
   } catch (error) {
-    return null
+    return null;
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    // Get authenticated user
-    const user = await getUserFromToken(request)
-    
+    // Get authenticated user using existing JWT system
+    const user = await getUserFromToken(request);
+
+    // ❗ If no login → do NOT return 401
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+        { authenticated: false, paymentStatus: "unknown" },
+        { status: 200 }
+      );
     }
 
-    // Get the most recent pending payment for this user
+    // If logged-in → return actual payment status
+    // Get the most recent payment for this user
     const payment = await db.paymentProof.findFirst({
       where: { 
         userId: user.id,
         status: { in: ['pending', 'approved', 'rejected'] }
       },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+      orderBy: { createdAt: 'desc' }
+    });
 
+    let paymentStatus: string;
     if (!payment) {
-      return NextResponse.json(
-        { error: 'No payment found' },
-        { status: 404 }
-      )
+      paymentStatus = "not-paid";
+    } else {
+      paymentStatus = payment.status; // "pending", "approved", or "rejected"
     }
 
-    return NextResponse.json({
-      success: true,
-      payment: {
-        id: payment.id,
-        status: payment.status,
-        plan: payment.plan,
-        amount: payment.amount,
-        transactionId: payment.txnId,
-        submittedAt: payment.createdAt.toISOString(),
-        reviewedAt: payment.updatedAt.toISOString(),
-        adminNotes: payment.status === 'rejected' ? 'Payment rejected. Please contact support.' : null,
-        rejectionReason: payment.status === 'rejected' ? 'Payment could not be verified. Please upload a valid payment proof.' : null
-      }
-    })
+    return NextResponse.json(
+      { authenticated: true, paymentStatus },
+      { status: 200 }
+    );
 
   } catch (error) {
-    console.error('Payment status check error:', error)
+    console.error("PAYMENT STATUS ERROR:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { authenticated: false, paymentStatus: "unknown" },
+      { status: 200 }
+    );
   }
 }

@@ -33,7 +33,6 @@ export default function MembersPage() {
   const [members, setMembers] = useState(membersData)
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
@@ -43,9 +42,8 @@ export default function MembersPage() {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.membershipId.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === 'all' || member.role === selectedRole
     const matchesStatus = selectedStatus === 'all' || member.status === selectedStatus
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesStatus
   })
 
   // Calculate statistics
@@ -112,19 +110,6 @@ export default function MembersPage() {
       description: 'Member data is being exported to CSV',
       duration: 3000
     })
-  }
-
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      ADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
-      MEMBER: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-      TREASURER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
-    }
-    return (
-      <Badge className={variants[role as keyof typeof variants] || variants.MEMBER}>
-        {role}
-      </Badge>
-    )
   }
 
   const getStatusBadge = (status: string) => {
@@ -271,17 +256,6 @@ export default function MembersPage() {
               />
             </div>
           </div>
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="All Roles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="MEMBER">Member</SelectItem>
-              <SelectItem value="TREASURER">Treasurer</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-full md:w-40">
               <SelectValue placeholder="All Status" />
@@ -306,7 +280,6 @@ export default function MembersPage() {
           members={filteredMembers}
           onEdit={handleEditMember}
           onDelete={handleDeleteMember}
-          getRoleBadge={getRoleBadge}
           getStatusBadge={getStatusBadge}
         />
       </motion.div>

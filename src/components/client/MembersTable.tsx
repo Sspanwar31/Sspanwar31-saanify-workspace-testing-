@@ -31,12 +31,12 @@ interface Member {
   name: string
   email: string
   phone: string
-  role: 'ADMIN' | 'MEMBER' | 'TREASURER'
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   membershipId: string
   joinDate: string
   lastLogin: string | null
   address: string
+  fatherHusbandName: string
   avatar?: string
   loanCount?: number
   savingsAmount?: number
@@ -46,7 +46,6 @@ interface MembersTableProps {
   members: Member[]
   onEdit: (member: Member) => void
   onDelete: (memberId: string) => void
-  getRoleBadge: (role: string) => React.ReactNode
   getStatusBadge: (status: string) => React.ReactNode
 }
 
@@ -54,7 +53,6 @@ const MembersTable = ({
   members, 
   onEdit, 
   onDelete, 
-  getRoleBadge, 
   getStatusBadge 
 }: MembersTableProps) => {
   const [sortField, setSortField] = useState<keyof Member>('name')
@@ -125,11 +123,11 @@ const MembersTable = ({
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                  onClick={() => handleSort('role')}
+                  onClick={() => handleSort('fatherHusbandName')}
                 >
                   <div className="flex items-center gap-2">
-                    <span>Role</span>
-                    {sortField === 'role' && (
+                    <span>Father/Husband</span>
+                    {sortField === 'fatherHusbandName' && (
                       <span className="text-xs text-slate-400">
                         {sortDirection === 'asc' ? '↑' : '↓'}
                       </span>
@@ -207,7 +205,9 @@ const MembersTable = ({
                     </div>
                   </TableCell>
                   <TableCell>
-                    {getRoleBadge(member.role)}
+                    <div className="font-medium text-slate-900 dark:text-white">
+                      {member.fatherHusbandName || 'Not provided'}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(member.status)}

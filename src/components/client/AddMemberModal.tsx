@@ -9,19 +9,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { User, Mail, Phone, MapPin, Calendar, Building, AlertCircle } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { isBlockedRole } from '@/lib/auth-middleware'
 
 interface Member {
   id?: string
   name: string
   email: string
   phone: string
-  role: 'ADMIN' | 'MEMBER' | 'TREASURER'
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   membershipId: string
   address: string
+  fatherHusbandName: string
   joinDate?: string
   lastLogin?: string | null
 }
@@ -38,10 +37,10 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
     name: '',
     email: '',
     phone: '',
-    role: 'MEMBER',
     status: 'ACTIVE',
     membershipId: '',
     address: '',
+    fatherHusbandName: '',
     joinDate: new Date().toISOString().split('T')[0],
     lastLogin: null
   })
@@ -57,10 +56,10 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
         name: '',
         email: '',
         phone: '',
-        role: 'MEMBER',
         status: 'ACTIVE',
         membershipId: '',
         address: '',
+        fatherHusbandName: '',
         joinDate: new Date().toISOString().split('T')[0],
         lastLogin: null
       })
@@ -99,11 +98,6 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
       newErrors.address = 'Address is required'
     } else if (formData.address.trim().length < 10) {
       newErrors.address = 'Address must be at least 10 characters'
-    }
-
-    // SECURITY: Validate role is not blocked
-    if (isBlockedRole(formData.role)) {
-      newErrors.role = 'Superadmin role is not allowed'
     }
 
     setErrors(newErrors)
@@ -145,15 +139,6 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
   }
 
   const handleInputChange = (field: keyof Member, value: string) => {
-    // SECURITY: Block superadmin role assignment at UI level
-    if (field === 'role' && isBlockedRole(value)) {
-      toast.error('🚫 SUPERADMIN CREATION BLOCKED', {
-        description: 'Superadmin role cannot be assigned for security reasons.',
-        duration: 4000
-      })
-      return // Prevent the blocked role from being set
-    }
-    
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
@@ -280,32 +265,17 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
                   )}
                 </div>
 
-                {/* Role */}
+                {/* Father/Husband Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Role
+                  <Label htmlFor="fatherHusbandName" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Father/Husband Name
                   </Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={(value: 'ADMIN' | 'MEMBER' | 'TREASURER') => 
-                      handleInputChange('role', value)
-                    }
-                  >
-                    <SelectTrigger className={errors.role ? 'border-red-500' : ''}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MEMBER">Member</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="TREASURER">Treasurer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.role && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {errors.role}
-                    </p>
-                  )}
+                  <Input
+                    id="fatherHusbandName"
+                    placeholder="Enter father or husband name"
+                    value={formData.fatherHusbandName}
+                    onChange={(e) => handleInputChange('fatherHusbandName', e.target.value)}
+                  />
                 </div>
 
                 {/* Status */}
@@ -371,12 +341,10 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
                     </p>
                   </div>
                   <div>
-                    <span className="text-slate-500 dark:text-slate-400">Role:</span>
-                    <div className="mt-1">
-                      <Badge variant="secondary">
-                        {formData.role}
-                      </Badge>
-                    </div>
+                    <span className="text-slate-500 dark:text-slate-400">Father/Husband:</span>
+                    <p className="font-medium text-slate-900 dark:text-white">
+                      {formData.fatherHusbandName || 'Not provided'}
+                    </p>
                   </div>
                   <div>
                     <span className="text-slate-500 dark:text-slate-400">Status:</span>

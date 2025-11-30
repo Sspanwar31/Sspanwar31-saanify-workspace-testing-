@@ -3,7 +3,7 @@
 import { PaymentModeToggle } from '@/components/admin/PaymentModeToggle'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,17 @@ interface SubscriptionPlan {
   bgLight: string
   monthlyPrice?: number
   yearlyPrice?: number
+}
+
+interface UserData {
+  id: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'CLIENT' | 'USER'
+  trialEndsAt?: string | null
+  subscriptionEndsAt?: string | null
+  societyAccountId?: string | null
+  authenticated: boolean
 }
 
 const PLANS: SubscriptionPlan[] = [
@@ -146,211 +157,214 @@ const PLANS: SubscriptionPlan[] = [
   }
 ]
 
-// Mock user data - in real app, this would come from API/auth context
-const mockUserData = {
-  trialEndsAt: '2025-12-13', // ISO date string
-  subscriptionStatus: 'TRIAL' as 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'NONE'
+// API function to fetch user data
+const fetchUserData = async (): Promise<UserData | null> => {
+  try {
+    const response = await fetch('/api/auth/check-session')
+    if (!response.ok) return null
+    const data = await response.json()
+    if (!data.authenticated || !data.user) return null
+
+    return {
+      id: data.user.id,
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role || 'USER',
+      trialEndsAt: data.user.trialEndsAt,
+      subscriptionEndsAt: data.user.subscriptionEndsAt,
+      societyAccountId: data.user.societyAccountId,
+      authenticated: true
+    }
+  } catch (error) {
+    console.error('Error fetching user data:', error)
+    return null
+  }
 }
 
-// Get real user data from API or use mock
-const getUserData = () => {
-  // In real implementation, this would fetch from API
-  // For now, return mock data to match the screenshot
-  return mockUserData
+// API function to fetch payment mode
+const fetchPaymentMode = async () => {
+  const response = await fetch('/api/admin/payment-mode')
+  if (!response.ok) throw new Error('Failed to fetch payment mode')
+  return response.json()
+}
+
+// API function to update payment mode
+const updatePaymentModeAPI = async (mode: 'MANUAL' | 'RAZORPAY') => {
+  const response = await fetch('/api/admin/payment-mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode }),
+  })
+  if (!response.ok) throw new Error('Failed to update payment mode')
+  return response.json()
 }
 
 export default function SubscriptionSelectPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isYearly, setIsYearly] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [trialStatus, setTrialStatus] = useState<{
-    isValid: boolean
-    daysRemaining: number | null
-    isExpired: boolean
-  }>({
-    isValid: false,
-    daysRemaining: null,
-    isExpired: false
-  })
 
-  // Load payment mode from environment or API using TanStack Query
-  const { 
-    data: paymentData, 
-    isLoading: isPaymentModeLoading, 
-    error: paymentModeError 
-  } = useQuery({
-    queryKey: ['payment-mode'],
-    queryFn: async () => {
-      // First try to get from environment (for SSR)
-      const envMode = process.env.NEXT_PUBLIC_PAYMENT_MODE
-      
-      if (envMode && ['MANUAL', 'RAZORPAY'].includes(envMode)) {
-        return { mode: envMode as 'MANUAL' | 'RAZORPAY' }
-      } else {
-        // Fallback to API call (client-side only)
-        if (typeof window !== 'undefined') {
-          const response = await fetch('/api/admin/payment-mode')
-          if (!response.ok) {
-            throw new Error('Failed to fetch payment mode')
-          }
-          return response.json()
-        }
-        // Fallback for SSR
-        return { mode: 'MANUAL' as 'MANUAL' | 'RAZORPAY' }
-      }
-    },
-    refetchInterval: 30000, // Refresh every 30 seconds
+  const { data: userData, isLoading: isUserLoading, error: userError } = useQuery({
+    queryKey: ['user-session'],
+    queryFn: fetchUserData,
+    retry: 1,
     refetchOnWindowFocus: true,
-    retry: 3,
   })
 
-  // Get payment mode from query data
-  const paymentMode = paymentData?.mode || null
+  const { data: paymentData, isLoading: isPaymentModeLoading, error: paymentModeError } = useQuery({
+    queryKey: ['payment-mode'],
+    queryFn: fetchPaymentMode,
+    retry: 3,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  })
 
-  // Calculate trial status
-  useEffect(() => {
-    const userData = getUserData()
-    if (userData.trialEndsAt) {
-      const trialEnd = new Date(userData.trialEndsAt)
-      const now = new Date()
-      const diffTime = trialEnd.getTime() - now.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      setTrialStatus({
-        isValid: diffDays > 0,
-        daysRemaining: diffDays > 0 ? diffDays : null,
-        isExpired: diffDays <= 0
+  const updatePaymentModeMutation = useMutation({
+    mutationFn: updatePaymentModeAPI,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['payment-mode'] })
+      toast.success('Payment Mode Updated', {
+        description: `Payment processing switched to ${data.mode} mode`,
+        duration: 3000,
       })
-    }
-  }, [])
+    },
+    onError: (error) => {
+      console.error('Error updating payment mode:', error)
+      toast.error('Update Failed', {
+        description: 'Could not update payment mode. Please try again.',
+        duration: 3000,
+      })
+    },
+  })
 
-  // Check if user is coming from client dashboard and detect admin
+  const isAdmin = userData?.role === 'ADMIN'
+  const paymentMode = paymentData?.mode || null
+  const isAuthenticated = userData?.authenticated || false
+
+  const trialStatus = { isValid: false, daysRemaining: null as number | null, isExpired: false }
+  if (userData?.trialEndsAt) {
+    const trialEnd = new Date(userData.trialEndsAt)
+    const now = new Date()
+    const diffDays = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    trialStatus.isValid = diffDays > 0
+    trialStatus.daysRemaining = diffDays > 0 ? diffDays : null
+    trialStatus.isExpired = diffDays <= 0
+  }
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const referrer = document.referrer
       const path = window.location.pathname
-      
-      // Simple check if user is coming from client area
       setIsClient(path.includes('/client') || referrer.includes('/client'))
-      
-      // Check if user is admin (in real app, this would come from auth context)
-      const checkAdminStatus = async () => {
-        try {
-          const response = await fetch('/api/auth/check-session')
-          if (response.ok) {
-            const data = await response.json()
-            setIsAdmin(data.user?.role === 'ADMIN')
-          }
-        } catch (error) {
-          console.error('Error checking admin status:', error)
-        }
-      }
-      
-      checkAdminStatus()
     }
   }, [])
 
-  const handlePlanSelect = (planId: string) => {
-    setSelectedPlan(planId)
-  }
+  const handlePlanSelect = (planId: string) => setSelectedPlan(planId)
 
   const createRazorpayOrder = async (plan: SubscriptionPlan) => {
     try {
       const amount = isYearly ? plan.yearlyPrice || plan.monthlyPrice! * 12 : plan.monthlyPrice!
-      
       const response = await fetch('/api/payment/create-order', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planId: plan.id,
-          amount: amount,
-          currency: 'INR',
-          receipt: `receipt_${plan.id}_${Date.now()}`
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: plan.id, amount, currency: 'INR', receipt: `receipt_${plan.id}_${Date.now()}` }),
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment order')
-      }
-
+      if (!response.ok) throw new Error('Failed to create payment order')
       const data = await response.json()
-      console.log('Razorpay order created:', data)
       
-      // In a real implementation, you would initialize Razorpay here
-      // For demo purposes, we'll just show success
-      toast.success('Payment Order Created', {
-        description: `Order ID: ${data.order.id}`,
-        duration: 5000,
-      })
+      if (typeof window !== 'undefined') {
+        const options = {
+          key: data.key_id,
+          amount: data.amount,
+          currency: data.currency,
+          name: "Saanify",
+          order_id: data.order.id,
+          handler: async function(paymentResponse: any) {
+            const verify = await fetch("/api/subscription/verify-razorpay", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_signature: paymentResponse.razorpay_signature
+              })
+            }).then(r => r.json())
 
+            if (verify?.token) {
+              localStorage.setItem("auth-token", verify.token)
+              document.cookie = `auth-token=${verify.token}; path=/; max-age=86400; secure=true; samesite=lax`
+              toast.success('Payment Successful', { description: 'Your subscription has been activated!', duration: 3000 })
+              setTimeout(() => router.push("/client/dashboard"), 1000)
+            } else {
+              toast.error('Verification Failed', { description: 'Payment verification failed. Please contact support.', duration: 5000 })
+            }
+          }
+        }
+        const razorpay = new (window as any).Razorpay(options)
+        razorpay.open()
+      }
       return data
     } catch (error) {
       console.error('Error creating Razorpay order:', error)
+      toast.error('Payment Error', { description: 'Failed to initialize payment. Please try again.', duration: 3000 })
       throw error
+    }
+  }
+
+  const handleMockPayment = async (plan: SubscriptionPlan) => {
+    const amount = isYearly ? plan.yearlyPrice || plan.monthlyPrice! * 12 : plan.monthlyPrice!
+    const res = await fetch('/api/payment/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        planId: plan.id,
+        amount: amount,
+      })
+    })
+    
+    const data = await res.json()
+
+    if (data.success) {
+      toast.success("💰 Mock Payment Success — Subscription Activated!", {
+        description: 'Your subscription has been activated successfully!',
+        duration: 3000
+      })
+      // yaha aap DB update API call karwa sakte ho (status=ACTIVE)
+      setTimeout(() => router.push("/client/dashboard"), 1000)
+    } else {
+      toast.error('Payment Failed', {
+        description: 'Mock payment failed. Please try again.',
+        duration: 3000
+      })
     }
   }
 
   const handleContinue = async (planId: string) => {
     if (isLoading) return
-
     const plan = PLANS.find(p => p.id === planId)
     if (!plan) return
-
     setIsLoading(true)
     setSelectedPlan(planId)
 
     try {
       if (planId === 'trial') {
-        // Handle trial signup
-        if (isClient) {
-          // Existing user activating trial
-          toast.success('Trial Activated', {
-            description: 'Your 15-day trial has been activated',
-            duration: 3000,
-          })
-          setTimeout(() => {
-            router.push('/client/dashboard')
-          }, 1000)
+        if (isAuthenticated && isClient) {
+          toast.success('Trial Activated', { description: 'Your 15-day trial has been activated', duration: 3000 })
+          setTimeout(() => router.push('/client/dashboard'), 1000)
         } else {
-          // New user signup
           router.push(`/auth/signup?plan=${planId}`)
         }
       } else {
-        // Paid plan selection
-        if (!paymentMode) {
-          toast.error('Payment Mode Not Configured', {
-            description: 'Please contact admin to configure payment settings',
-            duration: 5000,
-          })
-          setIsLoading(false)
-          return
-        }
-
-        if (paymentMode === 'MANUAL') {
-          // Redirect to manual payment upload
-          router.push(`/subscription/payment-upload?plan=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`)
-        } else if (paymentMode === 'RAZORPAY') {
-          // Create Razorpay order
-          await createRazorpayOrder(plan)
-          
-          // In real implementation, initialize Razorpay checkout
-          // For demo, redirect to waiting page
-          setTimeout(() => {
-            router.push('/subscription/waiting')
-          }, 2000)
-        }
+        // For mock payment, directly call handleMockPayment
+        await handleMockPayment(plan)
       }
     } catch (error) {
       console.error('Error handling plan selection:', error)
-      toast.error('Error', {
-        description: 'Failed to process your request. Please try again.',
-        duration: 3000,
-      })
+      setSelectedPlan(null)
+      toast.error('Error', { description: 'Failed to process your request. Please try again.', duration: 3000 })
     } finally {
       setIsLoading(false)
     }
@@ -358,63 +372,58 @@ export default function SubscriptionSelectPage() {
 
   const getPlanPrice = (plan: SubscriptionPlan) => {
     if (plan.id === 'trial') return plan.price
-    
-    const price = isYearly 
-      ? (plan.yearlyPrice || plan.monthlyPrice! * 12)
-      : plan.monthlyPrice!
-    
+    const price = isYearly ? (plan.yearlyPrice || plan.monthlyPrice! * 12) : plan.monthlyPrice!
     return `₹${price.toLocaleString('en-IN')}`
   }
 
-  const getPlanDuration = (plan: SubscriptionPlan) => {
-    if (plan.id === 'trial') return plan.duration
-    return isYearly ? 'per year' : 'per month'
+  const getPlanDuration = (plan: SubscriptionPlan) => plan.id === 'trial' ? plan.duration : isYearly ? 'per year' : 'per month'
+
+  const getPaymentModeIcon = () => !paymentMode ? <Settings className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />
+  const getPaymentModeText = () => !paymentMode ? 'Payment mode not configured' : 'Instant payment available'
+  const getSubscriptionStatus = () => {
+    if (!userData) return 'NONE'
+    if (trialStatus.isValid) return 'TRIAL'
+    if (trialStatus.isExpired) return 'EXPIRED'
+    if (userData.subscriptionEndsAt && new Date(userData.subscriptionEndsAt) > new Date()) return 'ACTIVE'
+    return 'NONE'
   }
 
-  const getPaymentModeIcon = () => {
-    if (!paymentMode) return <Settings className="h-4 w-4" />
-    return <CreditCard className="h-4 w-4" />
-  }
-
-  const getPaymentModeText = () => {
-    if (!paymentMode) return 'Payment mode not configured'
-    return 'Instant payment available'
-  }
+  const subscriptionStatus = getSubscriptionStatus()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Header */}
       <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">S</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Saanify</span>
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-sm">S</span>
             </div>
-            <div className="flex items-center space-x-3">
-              {isClient && (
-                <Button variant="outline" size="sm" onClick={() => router.push('/client/dashboard')}>
-                  Back to Dashboard
-                </Button>
-              )}
-              <Link href="/login">
-                <Button variant="outline" size="sm" className="border-blue-200 hover:border-blue-300 hover:bg-blue-50">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Saanify</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            {isClient && isAuthenticated && (
+              <Button variant="outline" size="sm" onClick={() => router.push('/client/dashboard')}>Back to Dashboard</Button>
+            )}
+            <Link href="/login">
+              <Button variant="outline" size="sm" className="border-blue-200 hover:border-blue-300 hover:bg-blue-50">Sign In</Button>
+            </Link>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {paymentModeError && (
+          <Alert className="border-2 border-red-200 bg-red-50 mb-4">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              Failed to load payment mode. Admin needs to configure it.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Compact Trial Status Alert */}
-        {isClient && (() => {
-          const userData = getUserData()
-          return userData.subscriptionStatus === 'TRIAL'
-        })() && (
+        {isAuthenticated && subscriptionStatus === 'TRIAL' && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -434,7 +443,7 @@ export default function SubscriptionSelectPage() {
                 <div>
                   {trialStatus.isExpired ? (
                     <span className="font-medium text-red-800">
-                      Trial expired on {new Date(getUserData().trialEndsAt!).toLocaleDateString()}
+                      Trial expired on {userData?.trialEndsAt ? new Date(userData.trialEndsAt).toLocaleDateString() : 'unknown date'}
                     </span>
                   ) : trialStatus.isValid ? (
                     <span className="font-medium text-green-800">
@@ -456,255 +465,258 @@ export default function SubscriptionSelectPage() {
           </motion.div>
         )}
 
-  
-
-        {/* Compact Hero Section */}
-        <div className="text-center mb-6">
-          <div className="mb-3">
-            <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Current Subscription</span>
+        {/* Loading State */}
+        {isUserLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="text-slate-600">Loading subscription plans...</span>
+            </div>
           </div>
-          
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 leading-tight">
-            Choose Your
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Perfect Plan</span>
-          </h1>
-          <p className="text-base text-slate-600 max-w-2xl mx-auto">
-            Select the subscription that best fits your society needs
-          </p>
-        </div>
+        )}
 
-        {/* Payment Mode Status for Admins */}
-        {isAdmin && paymentMode && (
+        {/* Error State */}
+        {userError && !isUserLoading && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="flex items-center justify-center">
-              <div className={cn(
-                "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border",
-                paymentMode === 'MANUAL' 
-                  ? "bg-yellow-50 text-yellow-800 border-yellow-200" 
-                  : "bg-green-50 text-green-800 border-green-200"
-              )}>
-                {paymentMode === 'MANUAL' ? (
-                  <>
-                    <Settings className="h-4 w-4" />
-                    <span>Manual Payment Mode Active</span>
-                    <Badge variant="secondary" className="text-xs">Users upload receipts</Badge>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4" />
-                    <span>Razorpay Gateway Active</span>
-                    <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">Instant payments</Badge>
-                  </>
-                )}
-              </div>
-            </div>
+            <Alert className="border-2 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                Failed to load user information. Please refresh page and try again.
+              </AlertDescription>
+            </Alert>
           </motion.div>
         )}
 
-        {/* Payment Mode Loading/Error State */}
-        {isPaymentModeLoading && (
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 text-slate-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Loading payment configuration...</span>
-            </div>
-          </div>
+        {/* Payment Mode Status for Admins */}
+        {isAdmin && paymentMode && !isPaymentModeLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Alert className="border-2 border-blue-200 bg-blue-50">
+              {getPaymentModeIcon()}
+              <AlertDescription className="flex items-center justify-between">
+                <span className="font-medium text-blue-800">
+                  {getPaymentModeText()}
+                </span>
+                <Badge variant="outline" className="border-blue-300 text-blue-700">
+                  {paymentMode === 'MANUAL' ? '📋 Manual' : '⚡ Razorpay'}
+                </Badge>
+              </AlertDescription>
+            </Alert>
+          </motion.div>
         )}
 
-        {paymentModeError && (
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">Payment configuration unavailable</span>
-            </div>
-          </div>
-        )}
-
-        {/* Compact Pricing Cards */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {PLANS.map((plan, index) => {
-              const Icon = plan.icon
-              const isDisabled = plan.id !== 'trial' && (!paymentMode || isPaymentModeLoading)
-              const isSelected = selectedPlan === plan.id
+        {!isUserLoading && (
+          <>
+            {/* Compact Hero Section */}
+            <div className="text-center mb-6">
+              <div className="mb-3">
+                <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">
+                  {isAuthenticated ? `Current Subscription: ${subscriptionStatus}` : 'Choose Your Plan'}
+                </span>
+              </div>
               
-              return (
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 leading-tight">
+                Choose Your
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Perfect Plan</span>
+              </h1>
+              <p className="text-base text-slate-600 max-w-2xl mx-auto">
+                Select subscription that best fits your society needs
+              </p>
+            </div>
+
+            {/* Billing Toggle */}
+            <div className="flex justify-center mb-8">
+              <div className="bg-white rounded-lg border p-1 shadow-sm">
+                <button
+                  onClick={() => setIsYearly(false)}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                    !isYearly 
+                      ? "bg-blue-600 text-white shadow-sm" 
+                      : "text-slate-600 hover:text-slate-900"
+                  )}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setIsYearly(true)}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                    isYearly 
+                      ? "bg-blue-600 text-white shadow-sm" 
+                      : "text-slate-600 hover:text-slate-900"
+                  )}
+                >
+                  Yearly (Save 20%)
+                </button>
+              </div>
+            </div>
+
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {PLANS.map((plan, index) => (
                 <motion.div
                   key={plan.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="w-full"
+                  whileHover={{ y: -5 }}
+                  className="relative"
                 >
-                  <Card 
-                    className={`relative h-full transition-all duration-300 hover:shadow-lg cursor-pointer border-2 ${
-                      isSelected 
-                        ? 'ring-2 ring-blue-500/30 border-blue-500 shadow-lg' 
-                        : plan.popular 
-                          ? 'border-blue-200 hover:border-blue-400' 
-                          : isDisabled
-                            ? 'border-slate-200 opacity-60 cursor-not-allowed'
-                            : 'border-slate-200 hover:border-slate-300'
-                    } bg-white`}
-                    onClick={() => !isDisabled && handlePlanSelect(plan.id)}
-                  >
-                    {isDisabled && (
-                      <div className="absolute inset-0 bg-slate-100/80 backdrop-blur-sm z-10 rounded-lg flex items-center justify-center">
-                        <div className="text-center">
-                          <AlertCircle className="h-6 w-6 text-slate-400 mx-auto mb-1" />
-                          <p className="text-xs font-medium text-slate-600">
-                            {isPaymentModeLoading ? 'Loading...' : 'Payment Disabled'}
-                          </p>
-                        </div>
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 px-3 py-1 text-xs font-semibold">
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  <Card className={cn(
+                    "h-full cursor-pointer transition-all duration-300 border-2",
+                    selectedPlan === plan.id 
+                      ? "border-blue-500 shadow-xl scale-105" 
+                      : "border-slate-200 hover:border-slate-300 hover:shadow-lg",
+                    plan.popular && selectedPlan !== plan.id && "border-blue-200"
+                  )}>
+                    <CardHeader className={cn(
+                      "text-center pb-4",
+                      plan.bgLight,
+                      plan.popular && "bg-gradient-to-br from-blue-50 to-purple-50"
+                    )}>
+                      <div className="mx-auto mb-3 h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg"
+                           style={{ backgroundImage: `linear-gradient(to bottom right, ${plan.gradient})` }}>
+                        <plan.icon className="h-6 w-6 text-white" />
                       </div>
-                    )}
-                    
-                    <CardHeader className="text-center pb-3">
-                      {/* Plan Name */}
-                      <CardTitle className="text-lg font-bold text-slate-900 mb-2">
+                      <CardTitle className="text-xl font-bold text-slate-900 mb-1">
                         {plan.name}
                       </CardTitle>
-                      
-                      {/* Price */}
-                      <div className="space-y-1">
-                        <div className="flex items-baseline justify-center space-x-1">
-                          <span className="text-2xl font-bold text-slate-900">{getPlanPrice(plan)}</span>
-                          {plan.id !== 'trial' && (
-                            <span className="text-slate-500 text-xs">/{getPlanDuration(plan).split(' ')[1]}</span>
-                          )}
-                        </div>
-                        {plan.id === 'trial' && (
-                          <div className="text-xs text-slate-500 font-medium">{plan.duration}</div>
-                        )}
+                      <div className="mb-2">
+                        <span className="text-3xl font-bold text-slate-900">
+                          {getPlanPrice(plan)}
+                        </span>
+                        <span className="text-slate-600 ml-1">
+                          {getPlanDuration(plan)}
+                        </span>
                       </div>
-                      
-                      {/* Description */}
-                      <CardDescription className="text-slate-600 text-xs mt-1 leading-relaxed">
+                      <CardDescription className="text-slate-600 text-sm">
                         {plan.description}
                       </CardDescription>
                     </CardHeader>
-
-                    <CardContent className="space-y-2 pb-3 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-                      {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span className="text-xs text-slate-700 leading-tight">{feature}</span>
-                        </div>
-                      ))}
+                    
+                    <CardContent className="pt-4">
+                      <ul className="space-y-3 mb-6">
+                        {plan.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-start space-x-2">
+                            <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-slate-700">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </CardContent>
-
-                    <CardFooter className="pt-1">
-                      <Button 
-                        className={`w-full py-2 text-sm font-semibold transition-all duration-300 ${
-                          isSelected 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
-                            : plan.popular
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                              : isDisabled
-                                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                                : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-lg'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (!isDisabled) {
-                            handleContinue(plan.id)
-                          }
-                        }}
-                        disabled={isLoading || isDisabled || isPaymentModeLoading}
+                    
+                    <CardFooter className="pt-2">
+                      <Button
+                        onClick={() => handleContinue(plan.id)}
+                        disabled={isLoading || (plan.id !== 'trial' && isPaymentModeLoading)}
+                        className={cn(
+                          "w-full font-medium transition-all duration-200",
+                          plan.popular 
+                            ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" 
+                            : "",
+                          selectedPlan === plan.id && "ring-2 ring-blue-500 ring-offset-2"
+                        )}
+                        variant={plan.popular ? "default" : "outline"}
                       >
-                        {(isLoading && isSelected) ? (
-                          <span className="flex items-center">
-                            <Loader2 className="animate-spin h-3 w-3 mr-1" />
+                        {isLoading && selectedPlan === plan.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Processing...
-                          </span>
-                        ) : isPaymentModeLoading ? (
-                          <span className="flex items-center">
-                            <Loader2 className="animate-spin h-3 w-3 mr-1" />
-                            Loading...
-                          </span>
+                          </>
+                        ) : plan.id === 'trial' && isClient ? (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            Activate Trial
+                          </>
                         ) : (
-                          <span className="flex items-center">
-                            {plan.id === 'trial' ? 'Start Free Trial' : 
-                             isDisabled ? 'Payment Disabled' : 
-                             'Pay Now'}
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                          </span>
+                          <>
+                            {plan.cta}
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
                         )}
                       </Button>
                     </CardFooter>
                   </Card>
                 </motion.div>
-              )
-            })}
-          </div>
-        </div>
+              ))}
+            </div>
 
-        {/* Compact Trust Badges */}
-        <div className="mb-6">
-          <div className="text-center mb-4">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Why Choose Saanify?</h2>
-            <p className="text-sm text-slate-600 max-w-xl mx-auto">
-              Trusted by societies across India for reliable management solutions
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="text-center group">
-              <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Users className="h-5 w-5 text-white" />
+            {/* Trust Indicators */}
+            <div className="mb-12">
+              <div className="max-w-4xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="text-center group">
+                    <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Shield className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-xl font-bold text-slate-900 mb-1">Secure</div>
+                    <div className="text-xs text-slate-600">Payment</div>
+                  </div>
+                  <div className="text-center group">
+                    <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Headphones className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-xl font-bold text-slate-900 mb-1">24/7</div>
+                    <div className="text-xs text-slate-600">Support</div>
+                  </div>
+                  <div className="text-center group">
+                    <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-xl font-bold text-slate-900 mb-1">Unlimited</div>
+                    <div className="text-xs text-slate-600">Users</div>
+                  </div>
+                  <div className="text-center group">
+                    <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-xl font-bold text-slate-900 mb-1">15+</div>
+                    <div className="text-xs text-slate-600">Days Free Trial</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-xl font-bold text-slate-900 mb-1">1000+</div>
-              <div className="text-xs text-slate-600">Happy Users</div>
             </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-xl font-bold text-slate-900 mb-1">Secure</div>
-              <div className="text-xs text-slate-600">Payment</div>
-            </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Headphones className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-xl font-bold text-slate-900 mb-1">24/7</div>
-              <div className="text-xs text-slate-600">Support</div>
-            </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-xl font-bold text-slate-900 mb-1">15+</div>
-              <div className="text-xs text-slate-600">Days Free Trial</div>
-            </div>
-          </div>
-        </div>
 
-        {/* Compact Admin Settings */}
-        {isAdmin && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mb-6"
-          >
-            <div className="max-w-3xl mx-auto">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Settings</h2>
-                <p className="text-sm text-slate-600">
-                  Manage payment processing modes and subscription settings
-                </p>
-              </div>
-              <PaymentModeToggle 
-                currentMode={paymentMode}
-                onModeChange={(mode) => setPaymentMode(mode)}
-                isAdmin={isAdmin}
-              />
-            </div>
-          </motion.div>
+            {/* Compact Admin Settings */}
+            {isAdmin && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="mb-6"
+              >
+                <div className="max-w-3xl mx-auto">
+                  <div className="text-center mb-4">
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Settings</h2>
+                    <p className="text-sm text-slate-600">
+                      Manage payment processing modes and subscription settings
+                    </p>
+                  </div>
+                  <PaymentModeToggle 
+                    currentMode={paymentMode}
+                    onModeChange={(mode) => updatePaymentModeMutation.mutate(mode)}
+                    isAdmin={isAdmin}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </div>

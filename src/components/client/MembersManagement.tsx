@@ -45,9 +45,9 @@ interface Member {
   name: string
   email: string
   phone: string
-  role: 'ADMIN' | 'MEMBER' | 'TREASURER'
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   joinedAt: string
+  fatherHusbandName: string
   profileImage?: string
   totalShares?: number
   lastLoginAt?: string
@@ -68,7 +68,6 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
   const [members, setMembers] = useState<EnhancedMember[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedRole, setSelectedRole] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('name')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
@@ -83,9 +82,9 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
           name: 'John Doe',
           email: 'john@example.com',
           phone: '+1234567890',
-          role: 'ADMIN',
           status: 'ACTIVE',
           joinedAt: '2024-01-15',
+          fatherHusbandName: 'Robert Doe',
           totalShares: 150,
           lastLoginAt: '2024-10-28',
           loanCount: 5,
@@ -98,9 +97,9 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
           name: 'Jane Smith',
           email: 'jane@example.com',
           phone: '+1234567891',
-          role: 'MEMBER',
           status: 'ACTIVE',
           joinedAt: '2024-02-20',
+          fatherHusbandName: 'William Smith',
           totalShares: 50,
           lastLoginAt: '2024-10-26',
           loanCount: 2,
@@ -113,9 +112,9 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
           name: 'Bob Johnson',
           email: 'bob@example.com',
           phone: '+1234567892',
-          role: 'MEMBER',
           status: 'PENDING',
           joinedAt: '2024-03-15',
+          fatherHusbandName: 'James Johnson',
           totalShares: 25,
           lastLoginAt: '2024-10-15',
           loanCount: 0,
@@ -128,9 +127,9 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
           name: 'Mary Williams',
           email: 'mary@example.com',
           phone: '+1234567893',
-          role: 'TREASURER',
           status: 'ACTIVE',
           joinedAt: '2024-04-10',
+          fatherHusbandName: 'David Williams',
           totalShares: 75,
           lastLoginAt: '2024-10-28',
           loanCount: 3,
@@ -153,16 +152,13 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === 'all' || member.role === selectedRole
-    return matchesSearch && matchesRole
+    return matchesSearch
   })
 
   const sortedMembers = [...filteredMembers].sort((a, b) => {
     switch (sortBy) {
       case 'name':
         return a.name.localeCompare(b.name)
-      case 'role':
-        return a.role.localeCompare(b.role)
       case 'joinedAt':
         return new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
       default:
@@ -175,11 +171,6 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
     currentPage * itemsPerPage
   )
 
-  const handleRoleChange = (role: string) => {
-    setSelectedRole(role)
-    setCurrentPage(1)
-  }
-
   const handleSortChange = (sort: string) => {
     setSortBy(sort)
     setCurrentPage(1)
@@ -188,20 +179,6 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
   const handleSearch = (term: string) => {
     setSearchTerm(term)
     setCurrentPage(1)
-  }
-
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      ADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border-emerald-200',
-      MEMBER: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200',
-      TREASURER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200'
-    }
-    
-    return (
-      <Badge className={cn(variants[role as keyof typeof variants] || variants.MEMBER, 'font-medium')}>
-        {role}
-      </Badge>
-    )
   }
 
   const getStatusBadge = (status: string) => {
@@ -225,14 +202,12 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
     const active = members.filter(m => m.status === 'ACTIVE').length
     const inactive = members.filter(m => m.status === 'INACTIVE').length
     const pending = members.filter(m => m.status === 'PENDING').length
-    const trial = members.filter(m => m.role === 'TREASURER').length
     
     return {
       total,
       active,
       inactive,
       pending,
-      trial,
       activePercentage: total > 0 ? ((active / total) * 100).toFixed(1) : '0%'
     }
   }

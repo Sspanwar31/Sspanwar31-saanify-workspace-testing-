@@ -27,7 +27,7 @@ export default function UnifiedLoginPage() {
   // Demo credentials
   const demoCredentials = {
     admin: {
-      email: 'admin@saanify.com',
+      email: 'ADMIN@saanify.com',
       password: 'admin123'
     },
     client: {
@@ -348,7 +348,7 @@ export default function UnifiedLoginPage() {
                   className="w-full bg-amber-500/20 border-amber-500/30 text-amber-200 hover:bg-amber-500/30 hover:border-amber-500/50 transition-all duration-300"
                 >
                   <Crown className="w-4 h-4 mr-2" />
-                  Admin Demo (admin@saanify.com)
+                  Admin Demo (ADMIN@saanify.com)
                 </Button>
                 <Button
                   onClick={handleQuickClientLogin}

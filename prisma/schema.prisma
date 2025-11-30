@@ -213,3 +213,109 @@ model AutomationLog {
 
   @@map("automation_logs")
 }
+
+/// /////////////////////////////////////////////////
+/// SOCIETY MANAGEMENT SYSTEM
+/// /////////////////////////////////////////////////
+
+/// 1. Members (Root Table)
+model Member {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String?
+  address     String?
+  joiningDate DateTime @default(now())
+  status      String   @default("active") // active/inactive
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  loans       Loan[]
+  passbook    PassbookEntry[]
+
+  @@index([status])
+  @@index([joiningDate])
+  @@map("members")
+}
+
+/// 2. Loans
+model Loan {
+  id                String   @id @default(uuid())
+  memberId          String
+  loanAmount        Float
+  interestRate      Float    @default(1.0) // 1% auto
+  loanDate          DateTime @default(now())
+  nextDueDate       DateTime // loan_date → next month auto
+  status            String   @default("active") // Active/Closed
+  remainingBalance  Float
+  overrideEnabled   Boolean  @default(false) // override enable for >80% rule
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  passbookEntries   PassbookEntry[]
+
+  @@index([memberId])
+  @@index([status])
+  @@index([nextDueDate])
+  @@map("loans")
+}
+
+/// 3. Passbook
+model PassbookEntry {
+  id                String   @id @default(uuid())
+  memberId          String
+  depositAmount     Float?   // manual
+  loanInstallment   Float?   // manual input
+  interestAuto      Float?   // show only if loan active
+  fineAuto          Float?   // if date >15 → Rs.10/day
+  mode              String   // cash / online
+  loanRequestId     String?  // toggle
+  transactionDate   DateTime @default(now())
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  loan              Loan?    @relation(fields: [loanRequestId], references: [id])
+
+  @@index([memberId])
+  @@index([transactionDate])
+  @@index([mode])
+  @@map("passbook_entries")
+}
+
+/// 4. Expenses
+model Expense {
+  id          String   @id @default(uuid())
+  title       String
+  amount      Float
+  mode        String   // cash/online/bank
+  date        DateTime @default(now())
+  type        String   // expense/income
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([date])
+  @@map("expenses")
+}
+
+/// 5. Admin Fund (Personal balance ledger)
+model AdminFund {
+  id                  String   @id @default(uuid())
+  fundIn              Float?   // increase society backup
+  fundOut             Float?   // admin withdraw
+  description         String?
+  transactionDate     DateTime @default(now())
+  remainingBalance    Float    // track remaining
+  mustClearWithin3Yr  Boolean  @default(true) // track 3 year rule
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([transactionDate])
+  @@map("admin_funds")
+}

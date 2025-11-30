@@ -1,299 +1,495 @@
-// Mock Reports Data for Saanify Society Management Platform
+// Enhanced Reports Module with Comprehensive Profit/Loss Calculations
+// Future-ready for API integration
 
-export interface ReportItem {
-  id: string
-  type: 'member' | 'loan' | 'income' | 'expense' | 'maturity'
-  memberId?: string
-  memberName?: string
-  amount: number
-  date: string
-  status: 'active' | 'completed' | 'pending' | 'overdue' | 'paid'
-  description: string
-  category?: string
-  dueDate?: string
-}
+import { membersData } from './membersData'
+import { loansData } from './loansData'
+import { passbookData } from './passbookData'
+import { expensesData, incomeData } from './expensesData'
+import { adminFundData } from './adminFundData'
 
-export interface ReportSummary {
-  totalMembers: number
-  totalLoans: number
-  totalIncome: number
-  totalExpenses: number
-  totalMaturityDue: number
+export interface ProfitLossStatement {
   period: string
-}
-
-export interface ChartData {
-  income: { month: string; amount: number }[]
-  expenses: { month: string; amount: number }[]
-  loanDistribution: { type: string; amount: number; count: number }[]
-}
-
-// Mock report items
-export const mockReports: ReportItem[] = [
-  // Member reports
-  {
-    id: 'r1',
-    type: 'member',
-    memberId: 'm1',
-    memberName: 'Rajesh Kumar',
-    amount: 5000,
-    date: '2024-01-15',
-    status: 'active',
-    description: 'New member registration fee',
-    category: 'Registration'
-  },
-  {
-    id: 'r2',
-    type: 'member',
-    memberId: 'm2',
-    memberName: 'Priya Sharma',
-    amount: 5000,
-    date: '2024-01-20',
-    status: 'active',
-    description: 'New member registration fee',
-    category: 'Registration'
-  },
-  {
-    id: 'r3',
-    type: 'member',
-    memberId: 'm3',
-    memberName: 'Amit Patel',
-    amount: 5000,
-    date: '2024-02-01',
-    status: 'active',
-    description: 'New member registration fee',
-    category: 'Registration'
-  },
-
-  // Loan reports
-  {
-    id: 'r4',
-    type: 'loan',
-    memberId: 'm1',
-    memberName: 'Rajesh Kumar',
-    amount: 50000,
-    date: '2024-01-25',
-    status: 'active',
-    description: 'Personal loan - 12 months tenure',
-    category: 'Personal Loan',
-    dueDate: '2025-01-25'
-  },
-  {
-    id: 'r5',
-    type: 'loan',
-    memberId: 'm2',
-    memberName: 'Priya Sharma',
-    amount: 75000,
-    date: '2024-02-10',
-    status: 'active',
-    description: 'Emergency loan - 18 months tenure',
-    category: 'Emergency Loan',
-    dueDate: '2025-08-10'
-  },
-  {
-    id: 'r6',
-    type: 'loan',
-    memberId: 'm4',
-    memberName: 'Sunita Reddy',
-    amount: 30000,
-    date: '2024-02-15',
-    status: 'completed',
-    description: 'Education loan - 6 months tenure',
-    category: 'Education Loan',
-    dueDate: '2024-08-15'
-  },
-
-  // Income reports
-  {
-    id: 'r7',
-    type: 'income',
-    amount: 25000,
-    date: '2024-01-31',
-    status: 'paid',
-    description: 'Monthly maintenance collection',
-    category: 'Maintenance'
-  },
-  {
-    id: 'r8',
-    type: 'income',
-    amount: 15000,
-    date: '2024-02-05',
-    status: 'paid',
-    description: 'Event hall rental income',
-    category: 'Rental Income'
-  },
-  {
-    id: 'r9',
-    type: 'income',
-    amount: 8000,
-    date: '2024-02-10',
-    status: 'paid',
-    description: 'Parking fees collection',
-    category: 'Parking'
-  },
-  {
-    id: 'r10',
-    type: 'income',
-    amount: 12000,
-    date: '2024-02-15',
-    status: 'pending',
-    description: 'Late payment fees',
-    category: 'Penalty'
-  },
-
-  // Expense reports
-  {
-    id: 'r11',
-    type: 'expense',
-    amount: 18000,
-    date: '2024-02-01',
-    status: 'paid',
-    description: 'Security guard salaries',
-    category: 'Salaries'
-  },
-  {
-    id: 'r12',
-    type: 'expense',
-    amount: 8500,
-    date: '2024-02-05',
-    status: 'paid',
-    description: 'Electricity bill payment',
-    category: 'Utilities'
-  },
-  {
-    id: 'r13',
-    type: 'expense',
-    amount: 12000,
-    date: '2024-02-10',
-    status: 'paid',
-    description: 'Water bill payment',
-    category: 'Utilities'
-  },
-  {
-    id: 'r14',
-    type: 'expense',
-    amount: 6500,
-    date: '2024-02-12',
-    status: 'pending',
-    description: 'Garden maintenance',
-    category: 'Maintenance'
-  },
-
-  // Maturity reports
-  {
-    id: 'r15',
-    type: 'maturity',
-    memberId: 'm5',
-    memberName: 'Vikram Singh',
-    amount: 45000,
-    date: '2024-02-15',
-    status: 'overdue',
-    description: 'Fixed deposit maturity - 1 year',
-    category: 'Fixed Deposit',
-    dueDate: '2024-02-10'
-  },
-  {
-    id: 'r16',
-    type: 'maturity',
-    memberId: 'm6',
-    memberName: 'Anjali Gupta',
-    amount: 32000,
-    date: '2024-02-20',
-    status: 'pending',
-    description: 'Recurring deposit maturity - 6 months',
-    category: 'Recurring Deposit',
-    dueDate: '2024-02-25'
-  },
-  {
-    id: 'r17',
-    type: 'maturity',
-    memberId: 'm1',
-    memberName: 'Rajesh Kumar',
-    amount: 55000,
-    date: '2024-03-01',
-    status: 'pending',
-    description: 'Fixed deposit maturity - 1 year',
-    category: 'Fixed Deposit',
-    dueDate: '2024-03-05'
+  income: {
+    loanInterest: number
+    lateFines: number
+    depositInterest: number
+    otherIncome: number
+    totalIncome: number
   }
-]
-
-// Report summary data
-export const mockReportSummary: ReportSummary = {
-  totalMembers: 156,
-  totalLoans: 1245000,
-  totalIncome: 285000,
-  totalExpenses: 142000,
-  totalMaturityDue: 287000,
-  period: 'Jan 2024 - Mar 2024'
-}
-
-// Chart data for visualizations
-export const mockChartData: ChartData = {
-  income: [
-    { month: 'Jan', amount: 85000 },
-    { month: 'Feb', amount: 92000 },
-    { month: 'Mar', amount: 108000 }
-  ],
-  expenses: [
-    { month: 'Jan', amount: 45000 },
-    { month: 'Feb', amount: 48000 },
-    { month: 'Mar', amount: 49000 }
-  ],
-  loanDistribution: [
-    { type: 'Personal Loan', amount: 450000, count: 12 },
-    { type: 'Emergency Loan', amount: 320000, count: 8 },
-    { type: 'Education Loan', amount: 280000, count: 6 },
-    { type: 'Business Loan', amount: 195000, count: 4 }
-  ]
-}
-
-// Report type options
-export const reportTypes = [
-  { value: 'all', label: 'All Reports' },
-  { value: 'member', label: 'Members' },
-  { value: 'loan', label: 'Loans' },
-  { value: 'income', label: 'Income' },
-  { value: 'expense', label: 'Expenses' },
-  { value: 'maturity', label: 'Maturity' }
-]
-
-// Status color mapping
-export const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'completed':
-    case 'paid':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-    case 'pending':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-    case 'overdue':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+  expenses: {
+    operatingExpenses: number
+    administrativeExpenses: number
+    maintenanceExpenses: number
+    loanLossProvision: number
+    totalExpenses: number
+  }
+  profit: {
+    grossProfit: number
+    netProfit: number
+    profitMargin: number
+  }
+  metrics: {
+    returnOnAssets: number
+    returnOnEquity: number
+    operatingRatio: number
   }
 }
 
-// Type color mapping
-export const getTypeColor = (type: string) => {
-  switch (type) {
-    case 'member':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-    case 'loan':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-    case 'income':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'expense':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-    case 'maturity':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+export interface MemberPerformanceReport {
+  memberId: string
+  memberName: string
+  joinDate: string
+  totalDeposits: number
+  totalLoans: number
+    currentBalance: number
+    timelyEMIPayments: number
+    delayedEMIPayments: number
+    finesPaid: number
+    creditScore: number
+  status: 'excellent' | 'good' | 'average' | 'poor'
+}
+
+export interface LoanPerformanceReport {
+  loanId: string
+  memberId: string
+  memberName: string
+  amount: number
+    interestRate: number
+    duration: number
+    emi: number
+    totalInterest: number
+    paidEMIs: number
+    pendingEMIs: number
+    paidAmount: number
+    pendingAmount: number
+    overdueDays: number
+    status: 'performing' | 'delayed' | 'npl' | 'closed'
+    performance: 'excellent' | 'good' | 'average' | 'poor'
+}
+
+export interface SocietyFinancialReport {
+  period: string
+  totalAssets: number
+  totalLiabilities: number
+  netWorth: number
+  liquidity: {
+    currentAssets: number
+    currentLiabilities: number
+    currentRatio: number
+    quickRatio: number
+  }
+  efficiency: {
+    assetTurnover: number
+    loanToDepositRatio: number
+    operatingEfficiency: number
+  }
+  profitability: {
+    returnOnAssets: number
+    returnOnEquity: number
+    netInterestMargin: number
   }
 }
 
-// Currency formatter
+export interface TrendAnalysis {
+  period: string
+  deposits: number
+  loans: number
+  expenses: number
+  income: number
+  profit: number
+  members: number
+  growthRates: {
+    depositGrowth: number
+    loanGrowth: number
+    expenseGrowth: number
+    incomeGrowth: number
+    profitGrowth: number
+    memberGrowth: number
+  }
+}
+
+// Calculate comprehensive profit/loss statement
+export const getProfitLossStatement = (
+  startDate: string, 
+  endDate: string
+): ProfitLossStatement => {
+  // Filter data by date range
+  const periodPassbook = passbookData.filter(entry => 
+    entry.date >= startDate && entry.date <= endDate
+  )
+  const periodExpenses = expensesData.filter(expense => 
+    expense.date >= startDate && expense.date <= endDate && expense.status === 'approved'
+  )
+  const periodIncome = incomeData.filter(income => 
+    income.date >= startDate && income.date <= endDate && income.status === 'approved'
+  )
+  const periodLoans = loansData.filter(loan => 
+    loan.start_date >= startDate && loan.start_date <= endDate && loan.status === 'active'
+  )
+
+  // Calculate income components
+  const loanInterest = periodLoans.reduce((sum, loan) => {
+    const totalInterest = (loan.emi * loan.duration) - loan.amount
+    const monthlyInterest = totalInterest / loan.duration
+    return sum + monthlyInterest
+  }, 0)
+
+  const lateFines = periodPassbook
+    .filter(entry => entry.reference === 'fine')
+    .reduce((sum, entry) => sum + entry.amount, 0)
+
+  const depositInterest = periodIncome
+    .filter(inc => inc.category === 'interest')
+    .reduce((sum, inc) => sum + inc.amount, 0)
+
+  const otherIncome = periodIncome
+    .filter(inc => inc.category !== 'interest')
+    .reduce((sum, inc) => sum + inc.amount, 0)
+
+  const totalIncome = loanInterest + lateFines + depositInterest + otherIncome
+
+  // Calculate expense components
+  const operatingExpenses = periodExpenses
+    .filter(expense => ['maintenance', 'repair', 'utilities'].includes(expense.category))
+    .reduce((sum, expense) => sum + expense.amount, 0)
+
+  const administrativeExpenses = periodExpenses
+    .filter(expense => ['salary', 'tax', 'insurance'].includes(expense.category))
+    .reduce((sum, expense) => sum + expense.amount, 0)
+
+  const maintenanceExpenses = periodExpenses
+    .filter(expense => expense.category === 'maintenance')
+    .reduce((sum, expense) => sum + expense.amount, 0)
+
+  // Calculate loan loss provision (1% of outstanding loans)
+  const outstandingLoans = loansData
+    .filter(loan => loan.status === 'active')
+    .reduce((sum, loan) => sum + loan.remaining_balance, 0)
+  const loanLossProvision = Math.round(outstandingLoans * 0.01)
+
+  const totalExpenses = operatingExpenses + administrativeExpenses + maintenanceExpenses + loanLossProvision
+
+  // Calculate profit metrics
+  const grossProfit = totalIncome - operatingExpenses
+  const netProfit = grossProfit - administrativeExpenses - maintenanceExpenses - loanLossProvision
+  const profitMargin = totalIncome > 0 ? Math.round((netProfit / totalIncome) * 100) : 0
+
+  // Calculate financial metrics
+  const totalAssets = periodPassbook
+    .filter(entry => entry.type === 'credit')
+    .reduce((sum, entry) => sum + entry.amount, 0)
+
+  const totalLiabilities = outstandingLoans
+  const returnOnAssets = totalAssets > 0 ? Math.round((netProfit / totalAssets) * 100) : 0
+  const returnOnEquity = totalAssets > totalLiabilities ? 
+    Math.round((netProfit / (totalAssets - totalLiabilities)) * 100) : 0
+  const operatingRatio = totalIncome > 0 ? Math.round((totalExpenses / totalIncome) * 100) : 0
+
+  return {
+    period: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+    income: {
+      loanInterest,
+      lateFines,
+      depositInterest,
+      otherIncome,
+      totalIncome
+    },
+    expenses: {
+      operatingExpenses,
+      administrativeExpenses,
+      maintenanceExpenses,
+      loanLossProvision,
+      totalExpenses
+    },
+    profit: {
+      grossProfit,
+      netProfit,
+      profitMargin
+    },
+    metrics: {
+      returnOnAssets,
+      returnOnEquity,
+      operatingRatio
+    }
+  }
+}
+
+// Generate member performance report
+export const getMemberPerformanceReport = (): MemberPerformanceReport[] => {
+  return membersData.map(member => {
+    const memberPassbook = passbookData.filter(entry => entry.memberId === member.id)
+    const memberLoans = loansData.filter(loan => loan.memberId === member.id)
+
+    const totalDeposits = memberPassbook
+      .filter(entry => entry.reference === 'deposit')
+      .reduce((sum, entry) => sum + entry.amount, 0)
+
+    const totalLoans = memberLoans
+      .reduce((sum, loan) => sum + loan.amount, 0)
+
+    const currentBalance = memberPassbook.length > 0 ? 
+      Math.max(...memberPassbook.map(entry => entry.balance)) : 0
+
+    const timelyEMIPayments = memberPassbook
+      .filter(entry => entry.reference === 'emi_payment')
+      .length
+
+    const delayedEMIPayments = memberPassbook
+      .filter(entry => entry.reference === 'fine')
+      .length
+
+    const finesPaid = memberPassbook
+      .filter(entry => entry.reference === 'fine')
+      .reduce((sum, entry) => sum + entry.amount, 0)
+
+    // Calculate credit score (0-100)
+    let creditScore = 750 // Base score
+    if (member.status === 'active') creditScore += 50
+    if (totalDeposits > 50000) creditScore += 25
+    if (delayedEMIPayments === 0) creditScore += 50
+    if (delayedEMIPayments > 0) creditScore -= delayedEMIPayments * 10
+    if (finesPaid > 0) creditScore -= Math.min(finesPaid / 100, 25)
+    creditScore = Math.max(300, Math.min(900, creditScore))
+
+    // Determine status
+    let status: 'excellent' | 'good' | 'average' | 'poor'
+    if (creditScore >= 800) status = 'excellent'
+    else if (creditScore >= 700) status = 'good'
+    else if (creditScore >= 600) status = 'average'
+    else status = 'poor'
+
+    return {
+      memberId: member.id,
+      memberName: member.name,
+      joinDate: member.join_date,
+      totalDeposits,
+      totalLoans,
+      currentBalance,
+      timelyEMIPayments,
+      delayedEMIPayments,
+      finesPaid,
+      creditScore,
+      status
+    }
+  })
+}
+
+// Generate loan performance report
+export const getLoanPerformanceReport = (): LoanPerformanceReport[] => {
+  return loansData.map(loan => {
+    const member = membersData.find(m => m.id === loan.memberId)
+    const totalInterest = (loan.emi * loan.duration) - loan.amount
+    const paidAmount = loan.emi * (loan.duration - Math.ceil(loan.remaining_balance / loan.emi))
+    const pendingAmount = loan.remaining_balance
+
+    // Calculate overdue days
+    const today = new Date()
+    const nextEMIDate = new Date(loan.next_emi_date)
+    const overdueDays = nextEMIDate < today ? 
+      Math.ceil((today.getTime() - nextEMIDate.getTime()) / (1000 * 60 * 60 * 24)) : 0
+
+    // Determine loan status
+    let status: 'performing' | 'delayed' | 'npl' | 'closed'
+    if (loan.status === 'completed') status = 'closed'
+    else if (overdueDays > 90) status = 'npl'
+    else if (overdueDays > 30) status = 'delayed'
+    else status = 'performing'
+
+    // Determine performance rating
+    let performance: 'excellent' | 'good' | 'average' | 'poor'
+    if (status === 'closed' && overdueDays === 0) performance = 'excellent'
+    else if (status === 'performing') performance = 'good'
+    else if (status === 'delayed') performance = 'average'
+    else performance = 'poor'
+
+    return {
+      loanId: loan.id,
+      memberId: loan.memberId,
+      memberName: member?.name || 'Unknown',
+      amount: loan.amount,
+      interestRate: loan.interest,
+      duration: loan.duration,
+      emi: loan.emi,
+      totalInterest,
+      paidEMIs: loan.duration - Math.ceil(loan.remaining_balance / loan.emi),
+      pendingEMIs: Math.ceil(loan.remaining_balance / loan.emi),
+      paidAmount,
+      pendingAmount,
+      overdueDays,
+      status,
+      performance
+    }
+  })
+}
+
+// Generate society financial report
+export const getSocietyFinancialReport = (): SocietyFinancialReport => {
+  const totalDeposits = passbookData
+    .filter(entry => entry.reference === 'deposit')
+    .reduce((sum, entry) => sum + entry.amount, 0)
+
+  const totalLoanAmount = loansData
+    .filter(loan => loan.status === 'active')
+    .reduce((sum, loan) => sum + loan.amount, 0)
+
+  const totalOutstandingLoans = loansData
+    .filter(loan => loan.status === 'active')
+    .reduce((sum, loan) => sum + loan.remaining_balance, 0)
+
+  const totalExpenses = expensesData
+    .filter(expense => expense.status === 'approved')
+    .reduce((sum, expense) => sum + expense.amount, 0)
+
+  const totalAssets = totalDeposits
+  const totalLiabilities = totalOutstandingLoans
+  const netWorth = totalAssets - totalLiabilities
+
+  // Liquidity ratios
+  const currentAssets = totalDeposits - totalOutstandingLoans
+  const currentLiabilities = totalOutstandingLoans
+  const currentRatio = currentLiabilities > 0 ? Math.round((currentAssets / currentLiabilities) * 100) / 100 : 0
+  const quickRatio = currentLiabilities > 0 ? Math.round(((currentAssets - 0) / currentLiabilities) * 100) / 100 : 0
+
+  // Efficiency ratios
+  const assetTurnover = totalAssets > 0 ? Math.round((totalLoanAmount / totalAssets) * 100) / 100 : 0
+  const loanToDepositRatio = totalDeposits > 0 ? Math.round((totalOutstandingLoans / totalDeposits) * 100) / 100 : 0
+  const operatingEfficiency = totalLoanAmount > 0 ? 
+    Math.round(((totalLoanAmount - totalExpenses) / totalLoanAmount) * 100) : 0
+
+  // Profitability ratios
+  const netIncome = totalLoanAmount - totalExpenses
+  const returnOnAssets = totalAssets > 0 ? Math.round((netIncome / totalAssets) * 100) : 0
+  const returnOnEquity = netWorth > 0 ? Math.round((netIncome / netWorth) * 100) : 0
+  const netInterestMargin = totalLoanAmount > 0 ? 
+    Math.round(((totalLoanAmount * 0.12 - totalExpenses) / totalLoanAmount) * 100) : 0
+
+  return {
+    period: `As of ${formatDate(new Date().toISOString().split('T')[0])}`,
+    totalAssets,
+    totalLiabilities,
+    netWorth,
+    liquidity: {
+      currentAssets,
+      currentLiabilities,
+      currentRatio,
+      quickRatio
+    },
+    efficiency: {
+      assetTurnover,
+      loanToDepositRatio,
+      operatingEfficiency
+    },
+    profitability: {
+      returnOnAssets,
+      returnOnEquity,
+      netInterestMargin
+    }
+  }
+}
+
+// Generate trend analysis
+export const getTrendAnalysis = (months: number = 12): TrendAnalysis[] => {
+  const trend = []
+  const now = new Date()
+  
+  for (let i = months - 1; i >= 0; i--) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    const startDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).toISOString().split('T')[0]
+    const endDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString().split('T')[0]
+    
+    // Calculate month-specific metrics
+    const monthDeposits = passbookData
+      .filter(entry => entry.reference === 'deposit' && entry.date >= startDate && entry.date <= endDate)
+      .reduce((sum, entry) => sum + entry.amount, 0)
+    
+    const monthLoans = loansData
+      .filter(loan => loan.start_date >= startDate && loan.start_date <= endDate)
+      .reduce((sum, loan) => sum + loan.amount, 0)
+    
+    const monthExpenses = expensesData
+      .filter(expense => expense.date >= startDate && expense.date <= endDate && expense.status === 'approved')
+      .reduce((sum, expense) => sum + expense.amount, 0)
+    
+    const monthIncome = incomeData
+      .filter(inc => inc.date >= startDate && inc.date <= endDate && inc.status === 'approved')
+      .reduce((sum, inc) => sum + inc.amount, 0)
+    
+    const monthProfit = monthIncome - monthExpenses
+    
+    const monthMembers = membersData
+      .filter(member => member.join_date >= startDate && member.join_date <= endDate)
+      .length
+
+    // Calculate growth rates (compared to previous month)
+    let growthRates = {
+      depositGrowth: 0,
+      loanGrowth: 0,
+      expenseGrowth: 0,
+      incomeGrowth: 0,
+      profitGrowth: 0,
+      memberGrowth: 0
+    }
+
+    if (i < months - 1) { // Not the first month, so we can calculate growth
+      const prevMonthData = trend[trend.length - 1]
+      if (prevMonthData) {
+        growthRates = {
+          depositGrowth: prevMonthData.deposits > 0 ? 
+            Math.round(((monthDeposits - prevMonthData.deposits) / prevMonthData.deposits) * 100) : 0,
+          loanGrowth: prevMonthData.loans > 0 ? 
+            Math.round(((monthLoans - prevMonthData.loans) / prevMonthData.loans) * 100) : 0,
+          expenseGrowth: prevMonthData.expenses > 0 ? 
+            Math.round(((monthExpenses - prevMonthData.expenses) / prevMonthData.expenses) * 100) : 0,
+          incomeGrowth: prevMonthData.income > 0 ? 
+            Math.round(((monthIncome - prevMonthData.income) / prevMonthData.income) * 100) : 0,
+          profitGrowth: prevMonthData.profit !== 0 ? 
+            Math.round(((monthProfit - prevMonthData.profit) / Math.abs(prevMonthData.profit)) * 100) : 0,
+          memberGrowth: prevMonthData.members > 0 ? 
+            Math.round(((monthMembers - prevMonthData.members) / prevMonthData.members) * 100) : 0
+        }
+      }
+    }
+
+    trend.push({
+      period: monthName,
+      deposits: monthDeposits,
+      loans: monthLoans,
+      expenses: monthExpenses,
+      income: monthIncome,
+      profit: monthProfit,
+      members: monthMembers,
+      growthRates
+    })
+  }
+  
+  return trend
+}
+
+// Generate comprehensive annual report
+export const getAnnualReport = (year: number) => {
+  const startDate = `${year}-01-01`
+  const endDate = `${year}-12-31`
+  
+  return {
+    profitLoss: getProfitLossStatement(startDate, endDate),
+    memberPerformance: getMemberPerformanceReport(),
+    loanPerformance: getLoanPerformanceReport(),
+    societyFinancial: getSocietyFinancialReport(),
+    trendAnalysis: getTrendAnalysis(12)
+  }
+}
+
+// Format date for display
+export const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+// Format currency for display
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -303,11 +499,73 @@ export const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
-// Date formatter
-export const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+// Performance color mapping
+export const getPerformanceColor = (performance: string) => {
+  switch (performance) {
+    case 'excellent':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+    case 'good':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+    case 'average':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+    case 'poor':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+  }
+}
+
+// Status color mapping
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'performing':
+    case 'active':
+    case 'approved':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+    case 'delayed':
+    case 'pending':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+    case 'npl':
+    case 'rejected':
+    case 'closed':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+  }
+}
+
+// API-ready functions for future integration
+export const reportsAPI = {
+  getProfitLoss: async (startDate: string, endDate: string) => {
+    return Promise.resolve(getProfitLossStatement(startDate, endDate))
+  },
+  
+  getMemberPerformance: async () => {
+    return Promise.resolve(getMemberPerformanceReport())
+  },
+  
+  getLoanPerformance: async () => {
+    return Promise.resolve(getLoanPerformanceReport())
+  },
+  
+  getSocietyFinancial: async () => {
+    return Promise.resolve(getSocietyFinancialReport())
+  },
+  
+  getTrendAnalysis: async (months?: number) => {
+    return Promise.resolve(getTrendAnalysis(months))
+  },
+  
+  getAnnualReport: async (year: number) => {
+    return Promise.resolve(getAnnualReport(year))
+  }
+}
+
+export default {
+  getProfitLossStatement,
+  getMemberPerformanceReport,
+  getLoanPerformanceReport,
+  getSocietyFinancialReport,
+  getTrendAnalysis,
+  getAnnualReport
 }

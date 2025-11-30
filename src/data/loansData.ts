@@ -1,254 +1,150 @@
-// Mock Loans Data for Saanify Society Management Platform
+// Future-Proof Loans Data for Saanify Society Management Platform
+// Ready for Database Integration with UUID member linking
+// ENHANCED: Added deposit references and validation
 
 export interface Loan {
-  id: string
-  member: string
-  memberId: string
-  loanAmount: number
-  interestRate: number
-  totalInstallments: number
-  paidInstallments: number
-  startDate: string
-  endDate: string
-  status: 'PENDING' | 'APPROVED' | 'CLOSED' | 'REJECTED'
+  id: string // UUID for future DB integration
+  memberId: string // Links to members.id (UUID)
+  amount: number
+  interest: number // Annual interest rate in %
+  duration: number // Duration in months
+  emi: number // Calculated EMI amount
+  status: 'pending' | 'approved' | 'active' | 'completed' | 'rejected'
+  remaining_balance: number
+  start_date: string // yyyy-mm-dd format
+  end_date: string // yyyy-mm-dd format
+  next_emi_date: string // yyyy-mm-dd format
   description?: string
-  createdAt: string
-  updatedAt: string
+  approved_by?: string
+  approved_date?: string
+  created_at: string
+  updated_at: string
+  deposit_reference?: string // Reference to passbook deposit entry
+  member_deposit_amount: number // Total deposit amount for 80% calculation
 }
 
-export interface LoanStats {
-  totalLoans: number
-  activeLoans: number
-  pendingApprovals: number
-  closedLoans: number
-  totalAmount: number
-}
-
-export interface Member {
-  id: string
-  name: string
-  email: string
-  phone: string
-}
-
-// Mock members data for dropdown
-export const membersData: Member[] = [
-  { id: 'M001', name: 'Rajesh Kumar', email: 'rajesh.kumar@email.com', phone: '+91 98765 43210' },
-  { id: 'M002', name: 'Priya Sharma', email: 'priya.sharma@email.com', phone: '+91 98765 43211' },
-  { id: 'M003', name: 'Amit Patel', email: 'amit.patel@email.com', phone: '+91 98765 43212' },
-  { id: 'M004', name: 'Sunita Reddy', email: 'sunita.reddy@email.com', phone: '+91 98765 43213' },
-  { id: 'M005', name: 'Vikram Singh', email: 'vikram.singh@email.com', phone: '+91 98765 43214' },
-  { id: 'M006', name: 'Anjali Gupta', email: 'anjali.gupta@email.com', phone: '+91 98765 43215' },
-  { id: 'M007', name: 'Mahesh Kumar', email: 'mahesh.kumar@email.com', phone: '+91 98765 43216' },
-  { id: 'M008', name: 'Kavita Devi', email: 'kavita.devi@email.com', phone: '+91 98765 43217' },
-]
-
-// Mock loans data
+// Enhanced loans data with deposit references and validation
 export const loansData: Loan[] = [
   {
-    id: 'L001',
-    member: 'Rajesh Kumar',
-    memberId: 'M001',
-    loanAmount: 50000,
-    interestRate: 12,
-    totalInstallments: 12,
-    paidInstallments: 3,
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    status: 'APPROVED',
+    id: 'loan-uuid-001',
+    memberId: 'uuid-001',
+    amount: 40000,
+    interest: 12,
+    duration: 12,
+    emi: 3553.95,
+    status: 'active',
+    remaining_balance: 35540,
+    start_date: '2024-01-15',
+    end_date: '2025-01-15',
+    next_emi_date: '2024-12-15',
     description: 'Personal loan for home renovation',
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-15T14:30:00Z'
+    approved_by: 'admin-001',
+    approved_date: '2024-01-14',
+    created_at: '2024-01-10T10:00:00Z',
+    updated_at: '2024-11-15T14:30:00Z',
+    deposit_reference: 'pb-uuid-001',
+    member_deposit_amount: 50000
   },
   {
-    id: 'L002',
-    member: 'Jane Smith',
-    memberId: 'M002',
-    loanAmount: 80000,
-    interestRate: 10,
-    totalInstallments: 24,
-    paidInstallments: 10,
-    startDate: '2024-03-01',
-    endDate: '2026-02-28',
-    status: 'APPROVED',
+    id: 'loan-uuid-002',
+    memberId: 'uuid-002',
+    amount: 60000,
+    interest: 10,
+    duration: 18,
+    emi: 3603.42,
+    status: 'active',
+    remaining_balance: 47255,
+    start_date: '2024-03-01',
+    end_date: '2025-08-01',
+    next_emi_date: '2024-12-01',
     description: 'Business expansion loan',
-    createdAt: '2024-02-15T09:30:00Z',
-    updatedAt: '2024-03-01T11:00:00Z'
+    approved_by: 'admin-001',
+    approved_date: '2024-02-28',
+    created_at: '2024-02-20T09:30:00Z',
+    updated_at: '2024-11-01T16:45:00Z',
+    deposit_reference: 'pb-uuid-004',
+    member_deposit_amount: 75000
   },
   {
-    id: 'L003',
-    member: 'Amit Patel',
-    memberId: 'M003',
-    loanAmount: 30000,
-    interestRate: 15,
-    totalInstallments: 6,
-    paidInstallments: 6,
-    startDate: '2024-01-15',
-    endDate: '2024-07-15',
-    status: 'CLOSED',
+    id: 'loan-uuid-003',
+    memberId: 'uuid-003',
+    amount: 25000,
+    interest: 15,
+    duration: 6,
+    emi: 4350.85,
+    status: 'completed',
+    remaining_balance: 0,
+    start_date: '2024-01-15',
+    end_date: '2024-07-15',
+    next_emi_date: '',
     description: 'Emergency medical loan',
-    createdAt: '2024-01-10T16:45:00Z',
-    updatedAt: '2024-07-15T10:20:00Z'
+    approved_by: 'admin-001',
+    approved_date: '2024-01-14',
+    created_at: '2024-01-10T16:45:00Z',
+    updated_at: '2024-07-15T10:20:00Z',
+    deposit_reference: 'pb-uuid-006',
+    member_deposit_amount: 30000
   },
   {
-    id: 'L004',
-    member: 'Sunita Reddy',
-    memberId: 'M004',
-    loanAmount: 120000,
-    interestRate: 8,
-    totalInstallments: 36,
-    paidInstallments: 0,
-    startDate: '2024-04-01',
-    endDate: '2027-03-31',
-    status: 'PENDING',
+    id: 'loan-uuid-004',
+    memberId: 'uuid-005',
+    amount: 80000,
+    interest: 8,
+    duration: 24,
+    emi: 3618.18,
+    status: 'pending',
+    remaining_balance: 86880,
+    start_date: '2025-11-30',
+    end_date: '2027-11-30',
+    next_emi_date: '2025-12-30',
     description: 'Education loan for higher studies',
-    createdAt: '2024-03-20T13:15:00Z',
-    updatedAt: '2024-03-20T13:15:00Z'
+    approved_by: '',
+    approved_date: '',
+    created_at: '2024-11-20T13:15:00Z',
+    updated_at: '2024-11-20T13:15:00Z',
+    deposit_reference: 'pb-deposit-uuid-005',
+    member_deposit_amount: 100000
   },
   {
-    id: 'L005',
-    member: 'Vikram Singh',
-    memberId: 'M005',
-    loanAmount: 60000,
-    interestRate: 11,
-    totalInstallments: 18,
-    paidInstallments: 8,
-    startDate: '2024-02-01',
-    endDate: '2025-07-31',
-    status: 'APPROVED',
-    description: 'Vehicle loan',
-    createdAt: '2024-01-25T12:00:00Z',
-    updatedAt: '2024-02-01T09:30:00Z'
-  },
-  {
-    id: 'L006',
-    member: 'Anjali Gupta',
-    memberId: 'M006',
-    loanAmount: 45000,
-    interestRate: 13,
-    totalInstallments: 12,
-    paidInstallments: 2,
-    startDate: '2024-03-15',
-    endDate: '2025-02-28',
-    status: 'APPROVED',
+    id: 'loan-uuid-005',
+    memberId: 'uuid-006',
+    amount: 35000,
+    interest: 11,
+    duration: 12,
+    emi: 3093.36,
+    status: 'active',
+    remaining_balance: 18500,
+    start_date: '2024-06-01',
+    end_date: '2025-06-01',
+    next_emi_date: '2024-12-01',
     description: 'Home appliance loan',
-    createdAt: '2024-03-10T15:30:00Z',
-    updatedAt: '2024-03-15T10:45:00Z'
+    approved_by: 'admin-001',
+    approved_date: '2024-05-30',
+    created_at: '2024-05-25T15:30:00Z',
+    updated_at: '2024-11-01T09:15:00Z',
+    deposit_reference: 'pb-deposit-uuid-006',
+    member_deposit_amount: 43750
   },
   {
-    id: 'L007',
-    member: 'Mahesh Kumar',
-    memberId: 'M007',
-    loanAmount: 90000,
-    interestRate: 9,
-    totalInstallments: 30,
-    paidInstallments: 5,
-    startDate: '2024-01-10',
-    endDate: '2026-06-30',
-    status: 'APPROVED',
+    id: 'loan-uuid-006',
+    memberId: 'uuid-007',
+    amount: 50000,
+    interest: 9,
+    duration: 15,
+    emi: 3536.82,
+    status: 'active',
+    remaining_balance: 28437,
+    start_date: '2024-04-10',
+    end_date: '2025-07-10',
+    next_emi_date: '2024-12-10',
     description: 'Agricultural loan',
-    createdAt: '2024-01-05T11:20:00Z',
-    updatedAt: '2024-01-10T14:00:00Z'
-  },
-  {
-    id: 'L008',
-    member: 'Kavita Devi',
-    memberId: 'M008',
-    loanAmount: 25000,
-    interestRate: 14,
-    totalInstallments: 9,
-    paidInstallments: 0,
-    startDate: '2024-04-15',
-    endDate: '2025-01-15',
-    status: 'REJECTED',
-    description: 'Personal loan request',
-    createdAt: '2024-04-10T16:00:00Z',
-    updatedAt: '2024-04-12T09:15:00Z'
+    approved_by: 'admin-001',
+    approved_date: '2024-04-08',
+    created_at: '2024-04-05T11:20:00Z',
+    updated_at: '2024-11-10T14:00:00Z',
+    deposit_reference: 'pb-deposit-uuid-007',
+    member_deposit_amount: 62500
   }
 ]
-
-// Calculate loan statistics
-export const getLoanStats = (loans: Loan[]): LoanStats => {
-  const totalLoans = loans.length
-  const activeLoans = loans.filter(loan => loan.status === 'APPROVED').length
-  const pendingApprovals = loans.filter(loan => loan.status === 'PENDING').length
-  const closedLoans = loans.filter(loan => loan.status === 'CLOSED').length
-  const totalAmount = loans.reduce((sum, loan) => sum + loan.loanAmount, 0)
-
-  return {
-    totalLoans,
-    activeLoans,
-    pendingApprovals,
-    closedLoans,
-    totalAmount
-  }
-}
-
-// Status color mapping
-export const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'APPROVED':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'PENDING':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-    case 'CLOSED':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-    case 'REJECTED':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-  }
-}
-
-// Currency formatter
-export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
-// Date formatter
-export const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
-}
-
-// Generate unique loan ID
-export const generateLoanId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase()
-  const random = Math.random().toString(36).substring(2, 5).toUpperCase()
-  return `L${timestamp}${random}`
-}
-
-// Validation functions
-export const validateLoanForm = (loan: Partial<Loan>) => {
-  const errors: string[] = []
-
-  if (!loan.memberId) errors.push('Member is required')
-  if (!loan.loanAmount || loan.loanAmount <= 0) errors.push('Loan amount must be greater than 0')
-  if (!loan.interestRate || loan.interestRate < 0) errors.push('Interest rate must be 0 or greater')
-  if (!loan.totalInstallments || loan.totalInstallments <= 0) errors.push('Total installments must be greater than 0')
-  if (loan.paidInstallments !== undefined && loan.paidInstallments < 0) errors.push('Paid installments cannot be negative')
-  if (!loan.startDate) errors.push('Start date is required')
-  if (!loan.endDate) errors.push('End date is required')
-  
-  if (loan.startDate && loan.endDate) {
-    const start = new Date(loan.startDate)
-    const end = new Date(loan.endDate)
-    if (start >= end) errors.push('End date must be after start date')
-  }
-
-  if (loan.paidInstallments !== undefined && loan.totalInstallments && loan.paidInstallments > loan.totalInstallments) {
-    errors.push('Paid installments cannot exceed total installments')
-  }
-
-  return errors
-}
 
 export default loansData

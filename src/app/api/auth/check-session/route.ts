@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken'
 import { db } from "@/lib/db";
 
 // Ensure this matches the secret used in your Login API

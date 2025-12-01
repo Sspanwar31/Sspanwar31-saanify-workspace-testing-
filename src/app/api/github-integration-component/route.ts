@@ -3,7 +3,7 @@ import GitHubIntegration from '@/components/github/GitHubIntegration'
 
 export async function GET() {
   try {
-    // Return the GitHub integration component as HTML
+    // Return to GitHub integration component as HTML with secure iframe policies
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +11,23 @@ export async function GET() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Integration - Saanify</title>
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+        https://cdn.tailwindcss.com 
+        https://unpkg.com/react@18/umd/react.production.min.js
+        https://unpkg.com/react-dom@18/umd/react-dom.production.min.js
+        https://unpkg.com/framer-motion@10/dist/framer-motion.umd.js
+        https://unpkg.com/lucide@latest/dist/umd/lucide.js;
+      style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+      img-src 'self' data: https:;
+      font-src 'self' data:;
+      connect-src 'self' https://api.github.com;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    ">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -69,6 +86,16 @@ export async function GET() {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Security: Prevent iframes and external content */
+        iframe, object, embed {
+            display: none !important;
+        }
+        
+        /* Secure any dynamically created content */
+        [data-external], [data-iframe] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +116,59 @@ export async function GET() {
     </div>
     
     <script>
+        // Security: Prevent iframe injection
+        (function() {
+            'use strict';
+            
+            // Override createElement to prevent iframe creation
+            const originalCreateElement = document.createElement;
+            document.createElement = function(tagName) {
+                const element = originalCreateElement.call(this, tagName);
+                if (tagName.toLowerCase() === 'iframe') {
+                    console.warn('Blocked iframe creation for security');
+                    return document.createElement('div'); // Return safe element
+                }
+                return element;
+            };
+            
+            // Prevent dynamic script injection
+            const originalWrite = document.write;
+            document.write = function(content) {
+                // Check for iframe patterns
+                if (content && content.toLowerCase().includes('<iframe')) {
+                    console.warn('Blocked iframe injection via document.write');
+                    return;
+                }
+                return originalWrite.call(this, content);
+            };
+            
+            // Monitor for dynamically added iframes
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) { // Element node
+                            if (node.tagName === 'IFRAME' || node.tagName === 'OBJECT' || node.tagName === 'EMBED') {
+                                console.warn('Removed potentially unsafe element:', node.tagName);
+                                node.remove();
+                            }
+                            
+                            // Check for iframes within added nodes
+                            const iframes = node.querySelectorAll ? node.querySelectorAll('iframe, object, embed') : [];
+                            iframes.forEach(function(iframe) {
+                                console.warn('Removed potentially unsafe nested element:', iframe.tagName);
+                                iframe.remove();
+                            });
+                        }
+                    });
+                });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        })();
+        
         // Auto-close after successful setup or after timeout
         setTimeout(() => {
             window.close();
@@ -100,6 +180,12 @@ export async function GET() {
                 window.close();
             }
         });
+        
+        // Set secure window properties
+        Object.defineProperty(window, 'frameElement', {
+            value: null,
+            writable: false
+        });
     </script>
 </body>
 </html>
@@ -108,6 +194,11 @@ export async function GET() {
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none';",
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), payment=(), clipboard-write=(), web-share=(), publickey-credentials-get=(), publickey-credentials-create=(), fullscreen=(), accelerometer=(), gyroscope=(), magnetometer=(), geolocation=()'
       },
     })
   } catch (error) {

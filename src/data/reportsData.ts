@@ -561,7 +561,7 @@ export const reportsAPI = {
   }
 }
 
-export default {
+const reportsDataExport = {
   getProfitLossStatement,
   getMemberPerformanceReport,
   getLoanPerformanceReport,
@@ -569,3 +569,59 @@ export default {
   getTrendAnalysis,
   getAnnualReport
 }
+
+// Sample reports data array for the reports page
+export const reportsData = [
+  {
+    id: 'report-1',
+    title: 'Monthly Financial Report',
+    type: 'FINANCIAL',
+    period: 'November 2024',
+    status: 'completed',
+    generatedAt: '2024-11-30T10:30:00Z',
+    size: '2.4 MB',
+    downloads: 15
+  },
+  {
+    id: 'report-2',
+    title: 'Member Performance Analysis',
+    type: 'MEMBER',
+    period: 'Q4 2024',
+    status: 'completed',
+    generatedAt: '2024-11-28T15:45:00Z',
+    size: '1.8 MB',
+    downloads: 8
+  },
+  {
+    id: 'report-3',
+    title: 'Loan Portfolio Summary',
+    type: 'LOAN',
+    period: 'November 2024',
+    status: 'pending',
+    generatedAt: '2024-11-25T09:15:00Z',
+    size: '3.1 MB',
+    downloads: 0
+  },
+  {
+    id: 'report-4',
+    title: 'Expense Breakdown Report',
+    type: 'EXPENSE',
+    period: 'October 2024',
+    status: 'completed',
+    generatedAt: '2024-11-20T14:20:00Z',
+    size: '1.2 MB',
+    downloads: 12
+  },
+  {
+    id: 'report-5',
+    title: 'Society Annual Summary',
+    type: 'SUMMARY',
+    period: '2024',
+    status: 'completed',
+    generatedAt: '2024-11-15T11:00:00Z',
+    size: '5.7 MB',
+    downloads: 23
+  }
+]
+
+export default reportsDataExport

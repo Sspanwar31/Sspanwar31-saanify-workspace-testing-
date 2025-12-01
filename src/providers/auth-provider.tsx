@@ -113,8 +113,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
   }, [router])
 
-  // Check auth on mount only (avoid infinite re-renders)
+  // Check auth on mount and pathname changes (but prevent infinite loops)
   useEffect(() => {
+    let isMounted = true
+    
     // Only run on mount for significant auth-related paths
     const isAuthRelatedPath = pathname?.startsWith('/login') || 
                              pathname?.startsWith('/signup') || 
@@ -126,7 +128,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       if (typeof window !== 'undefined') {
         try {
           const storedUser = localStorage.getItem('user')
-          if (storedUser) {
+          if (storedUser && isMounted) {
             const parsedUser = JSON.parse(storedUser)
             setUser(parsedUser)
             setIsLoading(false)
@@ -139,55 +141,87 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
       // Then verify with server (with a small delay to ensure cookies are set)
       const timer = setTimeout(() => {
-        checkAuth()
+        if (isMounted) {
+          checkAuth()
+        }
       }, 100)
 
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+        isMounted = false
+      }
+    } else {
+      // For non-auth paths, just set loading to false after checking localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const storedUser = localStorage.getItem('user')
+          if (storedUser && isMounted) {
+            const parsedUser = JSON.parse(storedUser)
+            setUser(parsedUser)
+          }
+        } catch (error) {
+          console.error('Failed to parse stored user', error)
+          localStorage.removeItem('user')
+        }
+      }
+      if (isMounted) {
+        setIsLoading(false)
+      }
+      return () => {
+        isMounted = false
+      }
     }
-  }, []) // Remove pathname dependency to prevent infinite re-renders
+  }, [pathname]) // Add pathname dependency but with proper cleanup
 
   // Set up periodic session refresh (every 5 minutes)
   useEffect(() => {
+    // Only set up interval if user exists and not loading
+    if (!user || isLoading) return
+
     const interval = setInterval(() => {
-      // Only refresh if we have a user and don't trigger state changes unnecessarily
-      if (user && !isLoading) {
-        // Silent refresh without triggering loading states
-        fetch('/api/auth/check-session', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          cache: 'no-store' 
-        }).then(res => {
-          if (res.ok) {
-            return res.json()
-          }
-          throw new Error('Session check failed')
-        }).then(data => {
-          if (data.authenticated && data.user) {
-            // Only update if user data actually changed - compare individual fields
-            const currentUserId = user?.id
-            const currentUserEmail = user?.email  
-            const currentUserRole = user?.role
+      // Silent refresh without triggering loading states
+      fetch('/api/auth/check-session', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store' 
+      }).then(res => {
+        if (res.ok) {
+          return res.json()
+        }
+        throw new Error('Session check failed')
+      }).then(data => {
+        if (data.authenticated && data.user) {
+          // Only update if user data actually changed - compare entire user object
+          setUser(prevUser => {
+            // Deep comparison of essential fields to prevent unnecessary updates
+            const hasChanged = !prevUser || 
+              prevUser.id !== data.user.id ||
+              prevUser.email !== data.user.email || 
+              prevUser.role !== data.user.role ||
+              prevUser.subscriptionStatus !== data.user.subscriptionStatus ||
+              prevUser.subscriptionEndsAt !== data.user.subscriptionEndsAt ||
+              prevUser.trialEndsAt !== data.user.trialEndsAt
             
-            if (data.user.id !== currentUserId || 
-                data.user.email !== currentUserEmail || 
-                data.user.role !== currentUserRole) {
-              setUser(data.user)
+            if (hasChanged) {
+              // Store updated user in localStorage
               if (typeof window !== 'undefined') {
                 localStorage.setItem('user', JSON.stringify(data.user))
               }
+              return data.user
             }
-          }
-        }).catch(error => {
-          console.error("Periodic session check failed", error)
-          // Don't automatically log out on periodic check failure
-          // This prevents unnecessary logouts due to network issues
-        })
-      }
+            return prevUser // Return previous user if no changes
+          })
+        }
+      }).catch(error => {
+        console.error("Periodic session check failed", error)
+        // Don't automatically log out on periodic check failure
+        // This prevents unnecessary logouts due to network issues
+      })
     }, 5 * 60 * 1000) // 5 minutes
 
     return () => clearInterval(interval)
-  }, [user?.id, isLoading]) // Depend only on user ID and loading state
+  }, [user?.id, isLoading]) // Only depend on user ID and loading state
 
   return (
     <AuthContext.Provider value={{ user, isLoading, logout, refreshSession }}>

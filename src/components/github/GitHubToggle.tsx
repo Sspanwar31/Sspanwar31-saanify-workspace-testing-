@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Github, 
@@ -82,7 +82,7 @@ export default function GitHubToggle() {
   const [isRestoring, setIsRestoring] = useState(false)
 
   // Load config from localStorage
-  useState(() => {
+  useEffect(() => {
     const savedConfig = localStorage.getItem('github-config')
     if (savedConfig) {
       const parsed = JSON.parse(savedConfig)
@@ -102,63 +102,8 @@ export default function GitHubToggle() {
   }, [])
 
   const handleOpenGitHub = () => {
-    // Open GitHub integration in a new window
-    const width = 900
-    const height = 700
-    const left = (window.screen.width - width) / 2
-    const top = (window.screen.height - height) / 2
-    
-    const newWindow = window.open(
-      '',
-      'githubIntegration',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    )
-    
-    if (newWindow) {
-      // Open the integration component in the new window
-      newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>GitHub Integration - Saanify</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
-            .container { max-width: 800px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .logo { font-size: 2rem; font-weight: bold; color: #1e40af; margin-bottom: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div class="logo">🔗 Saanify GitHub Integration</div>
-              <p class="text-gray-600">Manage your GitHub repository integration</p>
-            </div>
-            <div id="integration-content">
-              <p>Loading GitHub integration...</p>
-            </div>
-          </div>
-          <script>
-            // Load the integration component
-            fetch('/api/github-integration-component')
-              .then(response => response.text())
-              .then(html => {
-                document.getElementById('integration-content').innerHTML = html;
-              })
-              .catch(error => {
-                document.getElementById('integration-content').innerHTML = 
-                  '<div class="text-red-600">Failed to load GitHub integration. Please try again.</div>';
-              });
-          </script>
-        </body>
-        </html>
-      `)
-      newWindow.document.close()
-    } else {
-      // Fallback: open in same window
-      setIsOpen(true)
-    }
+    // Open GitHub integration directly in the current page
+    setIsOpen(true)
   }
 
   // Reset configuration
@@ -413,7 +358,7 @@ export default function GitHubToggle() {
     }
   }
 
-  useState(() => {
+  useEffect(() => {
     if (showHistory && isConfigured) {
       loadBackupHistory()
     }
@@ -431,6 +376,7 @@ export default function GitHubToggle() {
             onClick={handleOpenGitHub}
             size="lg"
             className="bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3 border border-slate-700 relative group"
+            data-github-toggle
           >
             <Github className="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
             GitHub

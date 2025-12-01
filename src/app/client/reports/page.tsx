@@ -24,7 +24,7 @@ import { reportsData } from '@/data/reportsData'
 import { toast } from 'sonner'
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState(reportsData)
+  const [reports, setReports] = useState(reportsData || [])
   const [loading, setLoading] = useState(false)
   const [selectedType, setSelectedType] = useState<string>('all')
   const [selectedPeriod, setSelectedPeriod] = useState<string>('month')
@@ -32,14 +32,15 @@ export default function ReportsPage() {
 
   // Calculate statistics based on enhanced reports data
   const stats = useMemo(() => ({
-    totalReports: reports.length,
-    completedReports: reports.filter(r => r.status === 'completed').length,
-    pendingReports: reports.filter(r => r.status === 'pending').length,
-    totalDownloads: reports.reduce((sum, r) => sum + r.downloads, 0)
+    totalReports: reports?.length || 0,
+    completedReports: reports?.filter(r => r.status === 'completed').length || 0,
+    pendingReports: reports?.filter(r => r.status === 'pending').length || 0,
+    totalDownloads: reports?.reduce((sum, r) => sum + (r.downloads || 0), 0) || 0
   }), [reports])
 
   // Filter reports
   const filteredReports = useMemo(() => {
+    if (!reports || reports.length === 0) return []
     return reports.filter(report => {
       const matchesType = selectedType === 'all' || report.type === selectedType
       return matchesType
@@ -61,7 +62,7 @@ export default function ReportsPage() {
         downloads: 0
       }
       
-      setReports([newReport, ...reports])
+      setReports(prevReports => [newReport, ...(prevReports || [])])
       setIsGenerating(false)
       toast.success('✅ Report Generated', {
         description: `${type} report has been generated successfully`,
@@ -70,11 +71,11 @@ export default function ReportsPage() {
     }, 2000)
   }
 
-  const handleDownloadReport = (reportId: number, format: 'pdf' | 'csv') => {
+  const handleDownloadReport = (reportId: string, format: 'pdf' | 'csv') => {
     // In a real application, this would trigger file download
-    setReports(reports.map(report => 
+    setReports(prevReports => (prevReports || []).map(report => 
       report.id === reportId 
-        ? { ...report, downloads: report.downloads + 1 }
+        ? { ...report, downloads: (report.downloads || 0) + 1 }
         : report
     ))
     

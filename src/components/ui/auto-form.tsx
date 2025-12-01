@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,25 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Deep comparison utility function
+const isDeepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true
+  if (obj1 == null || obj2 == null) return obj1 === obj2
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2
+  
+  const keys1 = Object.keys(obj1)
+  const keys2 = Object.keys(obj2)
+  
+  if (keys1.length !== keys2.length) return false
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false
+    if (!isDeepEqual(obj1[key], obj2[key])) return false
+  }
+  
+  return true
+}
 
 interface FieldConfig {
   type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'date' | 'hidden' | 'text-with-button' | 'conditional'
@@ -58,31 +77,73 @@ export default function AutoForm({
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Refs to track previous values for deep comparison
+  const prevEditingDataRef = useRef<Record<string, any> | null>(null)
+  const prevFieldsRef = useRef<Record<string, FieldConfig>>({})
+  const prevExcludeFieldsRef = useRef<string[]>([])
+  const isInitializingRef = useRef(false)
 
-  // Initialize form data
+  // Initialize form data with deep comparison to prevent infinite loops
   useEffect(() => {
-    if (editingData) {
-      const filteredData = { ...editingData }
-      excludeFields.forEach(field => delete filteredData[field])
-      setFormData(filteredData)
-    } else {
-      const initialData: Record<string, any> = {}
-      Object.keys(fields).forEach(key => {
-        if (!excludeFields.includes(key)) {
-          const field = fields[key]
-          if (field.type === 'select') {
-            initialData[key] = field.options?.[0] || ''
-          } else if (field.type === 'date') {
-            initialData[key] = new Date().toISOString().split('T')[0]
-          } else {
-            initialData[key] = ''
-          }
-        }
-      })
-      setFormData(initialData)
+    // Prevent recursive initialization
+    if (isInitializingRef.current) return
+    
+    // Deep comparison checks to prevent unnecessary re-initialization
+    const editingDataChanged = !isDeepEqual(editingData, prevEditingDataRef.current)
+    const fieldsChanged = !isDeepEqual(fields, prevFieldsRef.current)
+    const excludeFieldsChanged = !isDeepEqual(excludeFields, prevExcludeFieldsRef.current)
+    
+    // Only proceed if something actually changed
+    if (!editingDataChanged && !fieldsChanged && !excludeFieldsChanged) {
+      return
     }
-    setErrors({})
-  }, [editingData, isOpen, fields, excludeFields])
+    
+    isInitializingRef.current = true
+    
+    try {
+      if (editingData) {
+        const filteredData = { ...editingData }
+        excludeFields.forEach(field => delete filteredData[field])
+        
+        // Only update form data if it actually changed
+        if (!isDeepEqual(filteredData, formData)) {
+          setFormData(filteredData)
+        }
+      } else {
+        const initialData: Record<string, any> = {}
+        Object.keys(fields).forEach(key => {
+          if (!excludeFields.includes(key)) {
+            const field = fields[key]
+            if (field.type === 'select') {
+              initialData[key] = field.options?.[0] || ''
+            } else if (field.type === 'date') {
+              initialData[key] = new Date().toISOString().split('T')[0]
+            } else {
+              initialData[key] = ''
+            }
+          }
+        })
+        
+        // Only update form data if it actually changed
+        if (!isDeepEqual(initialData, formData)) {
+          setFormData(initialData)
+        }
+      }
+      
+      // Only clear errors if they exist
+      if (Object.keys(errors).length > 0) {
+        setErrors({})
+      }
+      
+      // Update refs for next comparison
+      prevEditingDataRef.current = editingData
+      prevFieldsRef.current = { ...fields }
+      prevExcludeFieldsRef.current = [...excludeFields]
+    } finally {
+      isInitializingRef.current = false
+    }
+  }, [editingData, isOpen, fields, excludeFields, formData, errors])
 
   const validateField = (key: string, value: string): string | null => {
     const field = fields[key]
@@ -168,19 +229,26 @@ export default function AutoForm({
     }
   }
 
-  const handleInputChange = (key: string, value: string) => {
-    const newFormData = { ...formData, [key]: value }
-    setFormData(newFormData)
-    
-    // Call parent callback for form data changes (for EMI calculation)
-    if (onFormDataChange) {
-      onFormDataChange(newFormData)
-    }
-    
-    if (errors[key]) {
-      setErrors(prev => ({ ...prev, [key]: '' }))
-    }
-  }
+  const handleInputChange = useCallback((key: string, value: string) => {
+    setFormData(prevFormData => {
+      const newFormData = { ...prevFormData, [key]: value }
+      
+      // Only call parent callback if value actually changed
+      if (onFormDataChange && !isDeepEqual(prevFormData[key], value)) {
+        // Use setTimeout to break the synchronous update cycle
+        setTimeout(() => {
+          onFormDataChange(newFormData)
+        }, 0)
+      }
+      
+      // Clear error for this field if it exists
+      if (errors[key]) {
+        setErrors(prev => ({ ...prev, [key]: '' }))
+      }
+      
+      return newFormData
+    })
+  }, [onFormDataChange, errors])
 
   const renderField = (key: string, field: FieldConfig) => {
     const value = formData[key] || ''

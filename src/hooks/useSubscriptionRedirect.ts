@@ -15,68 +15,76 @@ export function useSubscriptionRedirect() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
 
   useEffect(() => {
-    checkSubscriptionAndRedirect()
-  }, [])
-
-  const checkSubscriptionAndRedirect = async () => {
-    try {
-      // Get current path
-      const currentPath = window.location.pathname
+    let isMounted = true
+    
+    const checkSubscriptionAndRedirect = async () => {
+      if (!isMounted) return
       
-      // Skip redirect for public pages and auth pages
-      const publicPaths = [
-        '/',
-        '/login',
-        '/auth/signup',
-        '/subscription/select-plan',
-        '/subscription/payment-upload'
-      ]
-      
-      if (publicPaths.some(path => currentPath.startsWith(path))) {
-        setIsLoading(false)
-        return
-      }
-
-      // Check if user is authenticated
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth-token='))
-        ?.split('=')[1]
-
-      if (!token) {
-        // Redirect to subscription selection if not authenticated
-        if (!currentPath.startsWith('/login') && !currentPath.startsWith('/auth/')) {
-          router.push('/subscription/select-plan')
-        }
-        setIsLoading(false)
-        return
-      }
-
-      // Fetch subscription status
-      const response = await fetch('/api/client/subscription', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setSubscriptionStatus(data)
+      try {
+        // Get current path
+        const currentPath = window.location.pathname
         
-        // Apply redirection logic
-        applyRedirectionLogic(data, currentPath, router)
-      } else {
-        // If failed to get subscription, redirect to subscription selection
-        router.push('/subscription/select-plan')
+        // Skip redirect for public pages and auth pages
+        const publicPaths = [
+          '/',
+          '/login',
+          '/auth/signup',
+          '/subscription/select-plan',
+          '/subscription/payment-upload'
+        ]
+        
+        if (publicPaths.some(path => currentPath.startsWith(path))) {
+          if (isMounted) setIsLoading(false)
+          return
+        }
+
+        // Check if user is authenticated
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1]
+
+        if (!token) {
+          // Redirect to subscription selection if not authenticated
+          if (!currentPath.startsWith('/login') && !currentPath.startsWith('/auth/')) {
+            if (isMounted) router.push('/subscription/select-plan')
+          }
+          if (isMounted) setIsLoading(false)
+          return
+        }
+
+        // Fetch subscription status
+        const response = await fetch('/api/client/subscription', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (isMounted) setSubscriptionStatus(data)
+          
+          // Apply redirection logic
+          if (isMounted) applyRedirectionLogic(data, currentPath, router)
+        } else {
+          // If failed to get subscription, redirect to subscription selection
+          if (isMounted) router.push('/subscription/select-plan')
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+        // On error, redirect to subscription selection
+        if (isMounted) router.push('/subscription/select-plan')
+      } finally {
+        if (isMounted) setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Error checking subscription:', error)
-      // On error, redirect to subscription selection
-      router.push('/subscription/select-plan')
-    } finally {
-      setIsLoading(false)
     }
-  }
+
+    checkSubscriptionAndRedirect()
+    
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const applyRedirectionLogic = (
     subscription: SubscriptionStatus,
@@ -136,55 +144,63 @@ export function useRequireSubscription() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    checkSubscription()
-  }, [])
+    let isMounted = true
+    
+    const checkSubscription = async () => {
+      if (!isMounted) return
+      
+      try {
+        // Check if user is authenticated
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1]
 
-  const checkSubscription = async () => {
-    try {
-      // Check if user is authenticated
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth-token='))
-        ?.split('=')[1]
-
-      if (!token) {
-        router.push('/subscription/select-plan')
-        return
-      }
-
-      // Fetch subscription status
-      const response = await fetch('/api/client/subscription', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+        if (!token) {
+          if (isMounted) router.push('/subscription/select-plan')
+          return
         }
-      })
 
-      if (!response.ok) {
-        router.push('/subscription/select-plan')
-        return
+        // Fetch subscription status
+        const response = await fetch('/api/client/subscription', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          if (isMounted) router.push('/subscription/select-plan')
+          return
+        }
+
+        const data = await response.json()
+        const { status, daysRemaining } = data
+
+        // Check if user has valid subscription
+        const hasValidSubscription = 
+          status === 'ACTIVE' || 
+          (status === 'TRIAL' && daysRemaining && daysRemaining > 0) ||
+          status === 'PENDING_PAYMENT'
+
+        if (hasValidSubscription) {
+          if (isMounted) setIsAuthorized(true)
+        } else {
+          if (isMounted) router.push('/subscription/select-plan')
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+        if (isMounted) router.push('/subscription/select-plan')
+      } finally {
+        if (isMounted) setIsLoading(false)
       }
-
-      const data = await response.json()
-      const { status, daysRemaining } = data
-
-      // Check if user has valid subscription
-      const hasValidSubscription = 
-        status === 'ACTIVE' || 
-        (status === 'TRIAL' && daysRemaining && daysRemaining > 0) ||
-        status === 'PENDING_PAYMENT'
-
-      if (hasValidSubscription) {
-        setIsAuthorized(true)
-      } else {
-        router.push('/subscription/select-plan')
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error)
-      router.push('/subscription/select-plan')
-    } finally {
-      setIsLoading(false)
     }
-  }
+
+    checkSubscription()
+    
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   return {
     isAuthorized,

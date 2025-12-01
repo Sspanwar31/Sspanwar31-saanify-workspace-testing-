@@ -67,7 +67,7 @@ class APIClient {
   ): Promise<APIResponse<T>> {
     try {
       // In development, return mock data
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODEENV === 'development') {
         return this.mockResponse<T>(endpoint)
       }
 

@@ -1,35 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { 
   DollarSign, 
   TrendingUp, 
   TrendingDown, 
   Plus, 
-  Minus,
-  AlertCircle,
-  CheckCircle,
   Wallet,
   PiggyBank,
   Target,
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
-  Filter,
   Download,
-  Eye
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
+import AutoTable from '@/components/ui/auto-table'
+import { adminFundData } from '@/data/adminFundData'
 import { toast } from 'sonner'
 
 interface FundTransaction {
@@ -42,6 +36,8 @@ interface FundTransaction {
   reference?: string
   approvedBy?: string
   status: 'pending' | 'approved' | 'rejected'
+  created_at?: string
+  updated_at?: string
 }
 
 interface FundSummary {
@@ -56,127 +52,121 @@ interface FundSummary {
 }
 
 export default function AdminFundManagement() {
-  const [transactions, setTransactions] = useState<FundTransaction[]>([])
-  const [fundSummary, setFundSummary] = useState<FundSummary | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [transactions, setTransactions] = useState<FundTransaction[]>(adminFundData)
+  const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showAddDialog, setShowAddDialog] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
-  useEffect(() => {
-    fetchFundData()
-  }, [])
+  // Calculate fund summary based on enhanced data
+  const fundSummary = useMemo(() => {
+    const credits = transactions.filter(t => t.type === 'credit')
+    const debits = transactions.filter(t => t.type === 'debit')
+    
+    const totalContributions = credits
+      .filter(t => t.category === 'contribution')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    const totalExpenses = debits
+      .filter(t => t.category === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    const investments = credits
+      .filter(t => t.category === 'investment')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    const reserves = credits
+      .filter(t => t.category === 'reserve')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    const emergencyFund = credits
+      .filter(t => t.category === 'emergency')
+      .reduce((sum, t) => sum + t.amount, 0)
 
-  const fetchFundData = async () => {
-    try {
-      setLoading(true)
-      
-      // Mock fund summary
-      const mockSummary: FundSummary = {
-        totalBalance: 2500000,
-        totalContributions: 3200000,
-        totalExpenses: 450000,
-        investments: 800000,
-        reserves: 500000,
-        emergencyFund: 250000,
-        monthChange: 150000,
-        monthChangePercent: 6.5
-      }
+    const totalBalance = credits.reduce((sum, t) => sum + t.amount, 0) - 
+                        debits.reduce((sum, t) => sum + t.amount, 0)
 
-      // Mock transactions
-      const mockTransactions: FundTransaction[] = [
-        {
-          id: '1',
-          type: 'credit',
-          category: 'contribution',
-          amount: 50000,
-          description: 'Monthly member contributions',
-          date: '2024-01-15',
-          reference: 'MC-2024-01',
-          approvedBy: 'Admin',
-          status: 'approved'
-        },
-        {
-          id: '2',
-          type: 'debit',
-          category: 'expense',
-          amount: 15000,
-          description: 'Office rent payment',
-          date: '2024-01-10',
-          reference: 'EXP-2024-01',
-          approvedBy: 'Admin',
-          status: 'approved'
-        },
-        {
-          id: '3',
-          type: 'credit',
-          category: 'investment',
-          amount: 100000,
-          description: 'Fixed deposit investment',
-          date: '2024-01-08',
-          reference: 'INV-2024-01',
-          approvedBy: 'Admin',
-          status: 'approved'
-        },
-        {
-          id: '4',
-          type: 'debit',
-          category: 'emergency',
-          amount: 25000,
-          description: 'Emergency maintenance fund',
-          date: '2024-01-05',
-          reference: 'EMR-2024-01',
-          status: 'pending'
-        },
-        {
-          id: '5',
-          type: 'credit',
-          category: 'reserve',
-          amount: 75000,
-          description: 'Reserve fund allocation',
-          date: '2024-01-03',
-          reference: 'RES-2024-01',
-          approvedBy: 'Admin',
-          status: 'approved'
-        }
-      ]
-
-      setFundSummary(mockSummary)
-      setTransactions(mockTransactions)
-    } catch (error) {
-      toast.error('Failed to fetch fund data')
-    } finally {
-      setLoading(false)
+    return {
+      totalBalance,
+      totalContributions,
+      totalExpenses,
+      investments,
+      reserves,
+      emergencyFund,
+      monthChange: totalBalance * 0.065, // Mock 6.5% growth
+      monthChangePercent: 6.5
     }
+  }, [transactions])
+
+  // Filter transactions
+  const filteredTransactions = useMemo(() => {
+    if (filter === 'all') return transactions
+    return transactions.filter(transaction => 
+      transaction.type === filter || transaction.category === filter
+    )
+  }, [transactions, filter])
+
+  const handleAddTransaction = (newTransaction: any) => {
+    const transactionWithId = {
+      ...newTransaction,
+      id: `fund-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    
+    setTransactions([...transactions, transactionWithId])
+    toast.success('✅ Transaction Added', {
+      description: `Fund transaction has been added successfully`,
+      duration: 3000
+    })
+  }
+
+  const handleRefresh = () => {
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      toast.success('🔄 Data Refreshed', {
+        description: 'Fund data has been refreshed',
+        duration: 2000
+      })
+    }, 1000)
+  }
+
+  const handleExport = () => {
+    toast.info('📊 Export Started', {
+      description: 'Fund data is being exported to CSV',
+      duration: 3000
+    })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount)
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+    const variants = {
+      approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+      rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
     }
+    return variants[status as keyof typeof variants] || variants.pending
   }
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'contribution': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'expense': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      case 'investment': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'reserve': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-      case 'emergency': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+    const variants = {
+      contribution: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      expense: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+      investment: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+      reserve: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      emergency: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
     }
+    return variants[category as keyof typeof variants] || variants.contribution
   }
-
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesFilter = filter === 'all' || transaction.type === filter || transaction.category === filter
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.reference?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesFilter && matchesSearch
-  })
 
   if (loading) {
     return (
@@ -186,97 +176,53 @@ export default function AdminFundManagement() {
     )
   }
 
-  if (!fundSummary) {
-    return <div>No fund data available</div>
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Fund Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage society funds and transactions</p>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="mb-8"
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+              <Wallet className="h-8 w-8 text-emerald-600" />
+              Admin Fund Management
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">
+              Manage society funds, contributions, and financial reserves
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Report
+            </Button>
+            <Button
+              onClick={() => handleAddTransaction({})}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Transaction
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Transaction
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
-                <DialogDescription>
-                  Record a new fund transaction.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="type" className="text-right">
-                    Type
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit">Credit</SelectItem>
-                      <SelectItem value="debit">Debit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">
-                    Category
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="contribution">Contribution</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
-                      <SelectItem value="investment">Investment</SelectItem>
-                      <SelectItem value="reserve">Reserve</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="amount" className="text-right">
-                    Amount
-                  </Label>
-                  <Input id="amount" type="number" placeholder="Enter amount" className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Textarea id="description" placeholder="Enter description" className="col-span-3" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => {
-                  toast.success('Transaction added successfully')
-                  setShowAddDialog(false)
-                }}>
-                  Add Transaction
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+      </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -287,265 +233,287 @@ export default function AdminFundManagement() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Main Balance Card */}
-          <Card className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-6 w-6" />
-                Total Fund Balance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold mb-2">₹{fundSummary.totalBalance.toLocaleString()}</div>
-              <div className="flex items-center gap-2 text-emerald-100">
-                {fundSummary.monthChangePercent > 0 ? (
-                  <ArrowUpRight className="h-4 w-4" />
-                ) : (
-                  <ArrowDownRight className="h-4 w-4" />
-                )}
-                <span>
-                  ₹{fundSummary.monthChange.toLocaleString()} ({fundSummary.monthChangePercent}%) this month
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Card className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-6 w-6" />
+                  Total Fund Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold mb-2">
+                  {formatCurrency(fundSummary.totalBalance)}
+                </div>
+                <div className="flex items-center gap-2 text-emerald-100">
+                  {fundSummary.monthChangePercent > 0 ? (
+                    <ArrowUpRight className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4" />
+                  )}
+                  <span>
+                    {formatCurrency(fundSummary.monthChange)} ({fundSummary.monthChangePercent}%) this month
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Fund Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Contributions</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">₹{fundSummary.totalContributions.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  All time contributions
-                </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Contributions</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(fundSummary.totalContributions)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <TrendingDown className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">₹{fundSummary.totalExpenses.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  All time expenses
-                </p>
+
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Expenses</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      {formatCurrency(fundSummary.totalExpenses)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                    <TrendingDown className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Investments</CardTitle>
-                <PiggyBank className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">₹{fundSummary.investments.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Current investments
-                </p>
+
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Investments</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {formatCurrency(fundSummary.investments)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <PiggyBank className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Reserve Fund</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">₹{fundSummary.reserves.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  Reserve + Emergency
-                </p>
+
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Reserve Fund</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {formatCurrency(fundSummary.reserves + fundSummary.emergencyFund)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                    <Target className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
 
           {/* Fund Allocation */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Fund Allocation</CardTitle>
-              <CardDescription>
-                Current fund distribution across categories
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Available Balance</span>
-                  <span className="text-sm">₹{(fundSummary.totalBalance - fundSummary.investments - fundSummary.reserves - fundSummary.emergencyFund).toLocaleString()}</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle>Fund Allocation</CardTitle>
+                <CardDescription>Current fund distribution across categories</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Available Balance</span>
+                    <span className="text-sm">{formatCurrency(fundSummary.totalBalance)}</span>
+                  </div>
+                  <Progress value={100} className="h-2" />
                 </div>
-                <Progress value={(fundSummary.totalBalance - fundSummary.investments - fundSummary.reserves - fundSummary.emergencyFund) / fundSummary.totalBalance * 100} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Investments</span>
-                  <span className="text-sm">₹{fundSummary.investments.toLocaleString()}</span>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Investments</span>
+                    <span className="text-sm">{formatCurrency(fundSummary.investments)}</span>
+                  </div>
+                  <Progress value={(fundSummary.investments / fundSummary.totalBalance) * 100} className="h-2" />
                 </div>
-                <Progress value={fundSummary.investments / fundSummary.totalBalance * 100} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Reserve Fund</span>
-                  <span className="text-sm">₹{fundSummary.reserves.toLocaleString()}</span>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Reserve Fund</span>
+                    <span className="text-sm">{formatCurrency(fundSummary.reserves + fundSummary.emergencyFund)}</span>
+                  </div>
+                  <Progress value={((fundSummary.reserves + fundSummary.emergencyFund) / fundSummary.totalBalance) * 100} className="h-2" />
                 </div>
-                <Progress value={fundSummary.reserves / fundSummary.totalBalance * 100} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Emergency Fund</span>
-                  <span className="text-sm">₹{fundSummary.emergencyFund.toLocaleString()}</span>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle>Quick Stats</CardTitle>
+                <CardDescription>Key performance indicators</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm">Total Transactions</span>
+                  <span className="text-sm font-medium">{transactions.length}</span>
                 </div>
-                <Progress value={fundSummary.emergencyFund / fundSummary.totalBalance * 100} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex justify-between">
+                  <span className="text-sm">Pending Approvals</span>
+                  <span className="text-sm font-medium">
+                    {transactions.filter(t => t.status === 'pending').length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Monthly Growth</span>
+                  <span className="text-sm font-medium text-emerald-600">
+                    +{fundSummary.monthChangePercent}%
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-6">
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filter:</span>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Transactions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Transactions</SelectItem>
+                  <SelectItem value="credit">Credits</SelectItem>
+                  <SelectItem value="debit">Debits</SelectItem>
+                  <SelectItem value="contribution">Contributions</SelectItem>
+                  <SelectItem value="expense">Expenses</SelectItem>
+                  <SelectItem value="investment">Investments</SelectItem>
+                  <SelectItem value="reserve">Reserves</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="credit">Credit</SelectItem>
-                <SelectItem value="debit">Debit</SelectItem>
-                <SelectItem value="contribution">Contributions</SelectItem>
-                <SelectItem value="expense">Expenses</SelectItem>
-                <SelectItem value="investment">Investments</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          </motion.div>
 
-          {/* Transactions Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>
-                Latest fund transactions and their status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Description</th>
-                      <th className="text-left p-2">Category</th>
-                      <th className="text-left p-2">Amount</th>
-                      <th className="text-left p-2">Status</th>
-                      <th className="text-left p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTransactions.map((transaction) => (
-                      <motion.tr
-                        key={transaction.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <td className="p-2">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span>{transaction.date}</span>
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <div>
-                            <div className="font-medium">{transaction.description}</div>
-                            {transaction.reference && (
-                              <div className="text-sm text-gray-500">{transaction.reference}</div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <Badge className={getCategoryColor(transaction.category)}>
-                            {transaction.category}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          <div className={`font-bold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <Badge className={getStatusColor(transaction.status)}>
-                            {transaction.status}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {transaction.status === 'pending' && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => toast.success('Transaction approved')}
-                              >
-                                Approve
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Transactions Table - Using AutoTable */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <AutoTable data={filteredTransactions} title="Admin Fund" />
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Monthly Trend</CardTitle>
-                <CardDescription>
-                  Fund balance over the last 6 months
-                </CardDescription>
+                <CardTitle>Transaction Trends</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-2" />
-                    <p>Chart visualization would go here</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">This Month</span>
+                    <span className="text-sm font-medium">{formatCurrency(fundSummary.monthChange)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Average Transaction</span>
+                    <span className="text-sm font-medium">
+                      {formatCurrency(fundSummary.totalBalance / transactions.length)}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
+
+            <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Category Distribution</CardTitle>
-                <CardDescription>
-                  Fund allocation by category
-                </CardDescription>
+                <CardTitle>Category Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <PiggyBank className="w-12 h-12 mx-auto mb-2" />
-                    <p>Pie chart would go here</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Contributions</span>
+                    <span className="text-sm font-medium">{formatCurrency(fundSummary.totalContributions)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Expenses</span>
+                    <span className="text-sm font-medium">{formatCurrency(fundSummary.totalExpenses)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Investments</span>
+                    <span className="text-sm font-medium">{formatCurrency(fundSummary.investments)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Reserves</span>
+                    <span className="text-sm font-medium">{formatCurrency(fundSummary.reserves + fundSummary.emergencyFund)}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle>Performance Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Growth Rate</span>
+                    <span className="text-sm font-medium text-emerald-600">+{fundSummary.monthChangePercent}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Transactions</span>
+                    <span className="text-sm font-medium">{transactions.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Success Rate</span>
+                    <span className="text-sm font-medium">
+                      {Math.round((transactions.filter(t => t.status === 'approved').length / transactions.length) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </TabsContent>
       </Tabs>
     </div>

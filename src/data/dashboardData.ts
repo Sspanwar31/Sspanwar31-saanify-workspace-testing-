@@ -96,14 +96,14 @@ export const getDashboardMetrics = (): DashboardMetrics => {
   // Calculate total outstanding loans
   const totalOutstandingLoans = loansData
     .filter(loan => loan.status === 'active')
-    .reduce((sum, loan) => sum + loan.remaining_balance, 0)
+    .reduce((sum, loan) => sum + loan.remainingBalance, 0)
 
   // Calculate available funds
   const availableFunds = totalDeposits - totalOutstandingLoans - expenseStats.totalExpenses
 
   // Calculate total EMI collected (from passbook debits with EMI reference)
   const totalEMICollected = passbookData
-    .filter(entry => entry.reference === 'emi_payment')
+    .filter(entry => entry.reference === 'emiPayment')
     .reduce((sum, entry) => sum + entry.amount, 0)
 
   // Calculate expense breakdown with percentages
@@ -140,13 +140,13 @@ export const getDashboardMetrics = (): DashboardMetrics => {
   // Calculate overdue EMIs
   const overdueEMIs = loansData.filter(loan => {
     if (loan.status !== 'active') return false
-    const nextEMIDate = new Date(loan.next_emi_date)
+    const nextEMIDate = new Date(loan.nextEmiDate)
     const today = new Date()
     return nextEMIDate < today
   }).length
 
   const totalOverdueAmount = loansData
-    .filter(loan => loan.status === 'active' && new Date(loan.next_emi_date) < new Date())
+    .filter(loan => loan.status === 'active' && new Date(loan.nextEmiDate) < new Date())
     .reduce((sum, loan) => sum + loan.emi, 0)
 
   // Calculate fund utilization
@@ -210,21 +210,21 @@ export const getRecentActivities = (limit: number = 10): RecentActivity[] => {
 
   // Add recent member activities
   membersData
-    .filter(member => new Date(member.createdAt || member.join_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+    .filter(member => new Date(member.createdAt || member.joinDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
     .forEach(member => {
       activities.push({
         id: member.id,
         type: 'member',
         title: 'New Member Joined',
         description: `${member.name} joined the society`,
-        date: member.createdAt || member.join_date,
+        date: member.createdAt || member.joinDate,
         status: 'success'
       })
     })
 
   // Add recent loan activities
   loansData
-    .filter(loan => new Date(loan.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+    .filter(loan => new Date(loan.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
     .forEach(loan => {
       const member = membersData.find(m => m.id === loan.memberId)
       activities.push({
@@ -233,14 +233,14 @@ export const getRecentActivities = (limit: number = 10): RecentActivity[] => {
         title: `Loan ${loan.status === 'pending' ? 'Applied' : loan.status === 'approved' ? 'Approved' : 'Updated'}`,
         description: `${member?.name || 'Unknown'} - ₹${loan.amount.toLocaleString('en-IN')}`,
         amount: loan.amount,
-        date: loan.created_at,
+        date: loan.createdAt,
         status: loan.status === 'pending' ? 'pending' : loan.status === 'rejected' ? 'error' : 'success'
       })
     })
 
   // Add recent deposit activities
   passbookData
-    .filter(entry => entry.reference === 'deposit' && new Date(entry.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+    .filter(entry => entry.reference === 'deposit' && new Date(entry.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
     .forEach(entry => {
       const member = membersData.find(m => m.id === entry.memberId)
       activities.push({
@@ -249,7 +249,7 @@ export const getRecentActivities = (limit: number = 10): RecentActivity[] => {
         title: 'Deposit Received',
         description: `${member?.name || 'Unknown'} deposited ₹${entry.amount.toLocaleString('en-IN')}`,
         amount: entry.amount,
-        date: entry.created_at,
+        date: entry.createdAt,
         status: 'success'
       })
     })
@@ -271,16 +271,16 @@ export const getRecentActivities = (limit: number = 10): RecentActivity[] => {
 
   // Add recent EMI activities
   passbookData
-    .filter(entry => entry.reference === 'emi_payment' && new Date(entry.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+    .filter(entry => entry.reference === 'emiPayment' && new Date(entry.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
     .forEach(entry => {
       const member = membersData.find(m => m.id === entry.memberId)
       activities.push({
         id: entry.id,
         type: 'emi',
         title: 'EMI Payment Received',
-        description: `${member?.name || 'Unknown'} paid EMI #${entry.emi_number}`,
+        description: `${member?.name || 'Unknown'} paid EMI #${entry.emiNumber}`,
         amount: entry.amount,
-        date: entry.created_at,
+        date: entry.createdAt,
         status: 'success'
       })
     })
@@ -303,11 +303,11 @@ export const getMemberLoanSummaries = (): MemberLoanSummary[] => {
       .reduce((sum, entry) => sum + entry.amount, 0)
 
     const totalLoans = memberLoans.reduce((sum, loan) => sum + loan.amount, 0)
-    const outstandingAmount = activeLoans.reduce((sum, loan) => sum + loan.remaining_balance, 0)
+    const outstandingAmount = activeLoans.reduce((sum, loan) => sum + loan.remainingBalance, 0)
 
     const nextLoan = activeLoans
-      .filter(loan => loan.next_emi_date)
-      .sort((a, b) => new Date(a.next_emi_date).getTime() - new Date(b.next_emi_date).getTime())[0]
+      .filter(loan => loan.nextEmiDate)
+      .sort((a, b) => new Date(a.nextEmiDate).getTime() - new Date(b.nextEmiDate).getTime())[0]
 
     return {
       memberId: member.id,
@@ -317,7 +317,7 @@ export const getMemberLoanSummaries = (): MemberLoanSummary[] => {
       currentBalance,
       activeLoanCount: activeLoans.length,
       outstandingAmount,
-      nextEMIDate: nextLoan?.next_emi_date,
+      nextEMIDate: nextLoan?.nextEmiDate,
       nextEMIAmount: nextLoan?.emi
     }
   })
@@ -356,7 +356,7 @@ export const getMonthlyTrend = (months: number = 6) => {
     
     const monthLoans = loansData
       .filter(loan => {
-        const loanDate = new Date(loan.created_at)
+        const loanDate = new Date(loan.createdAt)
         return loanDate.getMonth() === monthDate.getMonth() && 
                loanDate.getFullYear() === monthDate.getFullYear()
       })
@@ -382,7 +382,7 @@ export const getTopPerformers = () => {
       .reduce((sum, entry) => sum + entry.amount, 0)
     
     const timelyEMIs = passbookData
-      .filter(entry => entry.memberId === member.id && entry.reference === 'emi_payment')
+      .filter(entry => entry.memberId === member.id && entry.reference === 'emiPayment')
       .length
 
     return {

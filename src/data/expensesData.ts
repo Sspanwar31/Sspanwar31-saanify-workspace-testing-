@@ -7,42 +7,42 @@ export interface Expense {
   category: 'maintenance' | 'repair' | 'event' | 'salary' | 'utilities' | 'tax' | 'insurance' | 'other'
   subcategory?: string
   amount: number
-  mode: 'cash' | 'online' | 'cheque' | 'bank_transfer'
+  mode: 'cash' | 'online' | 'cheque' | 'bankTransfer'
   description: string
   vendor?: string
-  bill_number?: string
-  receipt_url?: string
-  approved_by?: string
+  billNumber?: string
+  receiptUrl?: string
+  approvedBy?: string
   status: 'pending' | 'approved' | 'rejected'
   recurring: boolean
-  recurring_frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
-  recurring_end_date?: string
+  recurringFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  recurringEnd_date?: string
   tags: string[]
-  added_by: string // User ID who added this expense
-  created_at: string
-  updated_at: string
+  addedBy: string // User ID who added this expense
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Income {
   id: string // UUID for future DB integration
   date: string // yyyy-mm-dd format
-  category: 'interest' | 'fine' | 'donation' | 'other_income'
+  category: 'interest' | 'fine' | 'donation' | 'otherIncome'
   subcategory?: string
   amount: number
-  mode: 'cash' | 'online' | 'cheque' | 'bank_transfer'
+  mode: 'cash' | 'online' | 'cheque' | 'bankTransfer'
   description: string
   source?: string
-  reference_id?: string // Reference to loan, member, etc.
-  receipt_url?: string
-  approved_by?: string
+  referenceId?: string // Reference to loan, member, etc.
+  receiptUrl?: string
+  approvedBy?: string
   status: 'pending' | 'approved' | 'rejected'
   recurring: boolean
-  recurring_frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
-  recurring_end_date?: string
+  recurringFrequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  recurringEnd_date?: string
   tags: string[]
-  added_by: string
-  created_at: string
-  updated_at: string
+  addedBy: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ExpenseStats {
@@ -93,15 +93,15 @@ export const expensesData: Expense[] = [
     mode: 'online',
     description: 'Monthly building maintenance and cleaning',
     vendor: 'ABC Maintenance Services',
-    bill_number: 'BMS-2024-11-001',
+    billNumber: 'BMS-2024-11-001',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: true,
-    recurring_frequency: 'monthly',
+    recurringFrequency: 'monthly',
     tags: ['maintenance', 'monthly', 'building'],
-    added_by: 'admin-001',
-    created_at: '2024-11-01T09:00:00Z',
-    updated_at: '2024-11-01T09:30:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-01T09:00:00Z',
+    updatedAt: '2024-11-01T09:30:00Z'
   },
   {
     id: 'exp-uuid-002',
@@ -112,15 +112,15 @@ export const expensesData: Expense[] = [
     mode: 'online',
     description: 'Monthly electricity bill for society',
     vendor: 'Electricity Board',
-    bill_number: 'EB-2024-11-042',
+    billNumber: 'EB-2024-11-042',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: true,
-    recurring_frequency: 'monthly',
+    recurringFrequency: 'monthly',
     tags: ['utilities', 'electricity', 'monthly'],
-    added_by: 'admin-001',
-    created_at: '2024-11-05T14:20:00Z',
-    updated_at: '2024-11-05T14:45:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-05T14:20:00Z',
+    updatedAt: '2024-11-05T14:45:00Z'
   },
   {
     id: 'exp-uuid-003',
@@ -128,17 +128,17 @@ export const expensesData: Expense[] = [
     category: 'salary',
     subcategory: 'staff',
     amount: 25000,
-    mode: 'bank_transfer',
+    mode: 'bankTransfer',
     description: 'Monthly salary for society staff - security, cleaner, accountant',
     vendor: 'Staff Payments',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: true,
-    recurring_frequency: 'monthly',
+    recurringFrequency: 'monthly',
     tags: ['salary', 'staff', 'monthly'],
-    added_by: 'admin-001',
-    created_at: '2024-11-10T11:00:00Z',
-    updated_at: '2024-11-10T11:30:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-10T11:00:00Z',
+    updatedAt: '2024-11-10T11:30:00Z'
   },
   {
     id: 'exp-uuid-004',
@@ -149,14 +149,14 @@ export const expensesData: Expense[] = [
     mode: 'cash',
     description: 'Emergency plumbing repair in block B',
     vendor: 'Quick Fix Plumbing',
-    bill_number: 'QFP-2024-11-023',
+    billNumber: 'QFP-2024-11-023',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: false,
     tags: ['repair', 'plumbing', 'emergency'],
-    added_by: 'admin-001',
-    created_at: '2024-11-12T16:45:00Z',
-    updated_at: '2024-11-12T17:15:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-12T16:45:00Z',
+    updatedAt: '2024-11-12T17:15:00Z'
   },
   {
     id: 'exp-uuid-005',
@@ -168,12 +168,12 @@ export const expensesData: Expense[] = [
     description: 'Diwali festival celebration - sweets, decorations, fireworks',
     vendor: 'Various Vendors',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: false,
     tags: ['event', 'festival', 'diwali'],
-    added_by: 'admin-001',
-    created_at: '2024-11-15T10:30:00Z',
-    updated_at: '2024-11-15T11:00:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-15T10:30:00Z',
+    updatedAt: '2024-11-15T11:00:00Z'
   },
   {
     id: 'exp-uuid-006',
@@ -184,33 +184,33 @@ export const expensesData: Expense[] = [
     mode: 'online',
     description: 'Annual property insurance premium',
     vendor: 'XYZ Insurance Company',
-    bill_number: 'INS-2024-11-001',
+    billNumber: 'INS-2024-11-001',
     status: 'pending',
     recurring: true,
-    recurring_frequency: 'yearly',
+    recurringFrequency: 'yearly',
     tags: ['insurance', 'property', 'annual'],
-    added_by: 'admin-001',
-    created_at: '2024-11-18T13:20:00Z',
-    updated_at: '2024-11-18T13:20:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-18T13:20:00Z',
+    updatedAt: '2024-11-18T13:20:00Z'
   },
   {
     id: 'exp-uuid-007',
     date: '2024-11-20',
     category: 'tax',
-    subcategory: 'property_tax',
+    subcategory: 'propertyTax',
     amount: 8000,
     mode: 'online',
     description: 'Quarterly property tax payment',
     vendor: 'Municipal Corporation',
-    bill_number: 'MCT-2024-Q3-001',
+    billNumber: 'MCT-2024-Q3-001',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: true,
-    recurring_frequency: 'quarterly',
+    recurringFrequency: 'quarterly',
     tags: ['tax', 'property', 'quarterly'],
-    added_by: 'admin-001',
-    created_at: '2024-11-20T09:15:00Z',
-    updated_at: '2024-11-20T09:45:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-20T09:15:00Z',
+    updatedAt: '2024-11-20T09:45:00Z'
   },
   {
     id: 'exp-uuid-008',
@@ -221,14 +221,14 @@ export const expensesData: Expense[] = [
     mode: 'online',
     description: 'Office supplies - stationery, printer ink, files',
     vendor: 'Office Depot',
-    bill_number: 'OD-2024-11-156',
+    billNumber: 'OD-2024-11-156',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: false,
     tags: ['office', 'supplies'],
-    added_by: 'admin-001',
-    created_at: '2024-11-22T15:30:00Z',
-    updated_at: '2024-11-22T16:00:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-22T15:30:00Z',
+    updatedAt: '2024-11-22T16:00:00Z'
   }
 ]
 
@@ -238,37 +238,37 @@ export const incomeData: Income[] = [
     id: 'inc-uuid-001',
     date: '2024-11-01',
     category: 'interest',
-    subcategory: 'deposit_interest',
+    subcategory: 'depositInterest',
     amount: 4500,
-    mode: 'bank_transfer',
+    mode: 'bankTransfer',
     description: 'Monthly interest on member deposits',
     source: 'Member Deposits',
     status: 'approved',
-    approved_by: 'system-001',
+    approvedBy: 'system-001',
     recurring: true,
-    recurring_frequency: 'monthly',
+    recurringFrequency: 'monthly',
     tags: ['interest', 'deposits', 'monthly'],
-    added_by: 'system-001',
-    created_at: '2024-11-01T00:00:00Z',
-    updated_at: '2024-11-01T00:00:00Z'
+    addedBy: 'system-001',
+    createdAt: '2024-11-01T00:00:00Z',
+    updatedAt: '2024-11-01T00:00:00Z'
   },
   {
     id: 'inc-uuid-002',
     date: '2024-11-05',
     category: 'fine',
-    subcategory: 'late_payment',
+    subcategory: 'latePayment',
     amount: 850,
     mode: 'cash',
     description: 'Late payment fines collected from members',
     source: 'Member Fines',
-    reference_id: 'member-uuid-001',
+    referenceId: 'member-uuid-001',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: false,
-    tags: ['fine', 'late_payment'],
-    added_by: 'admin-001',
-    created_at: '2024-11-05T14:20:00Z',
-    updated_at: '2024-11-05T14:20:00Z'
+    tags: ['fine', 'latePayment'],
+    addedBy: 'admin-001',
+    createdAt: '2024-11-05T14:20:00Z',
+    updatedAt: '2024-11-05T14:20:00Z'
   },
   {
     id: 'inc-uuid-003',
@@ -280,30 +280,30 @@ export const incomeData: Income[] = [
     description: 'Donation from local business for community development',
     source: 'Local Business',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: false,
     tags: ['donation', 'charity'],
-    added_by: 'admin-001',
-    created_at: '2024-11-10T11:30:00Z',
-    updated_at: '2024-11-10T12:00:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-10T11:30:00Z',
+    updatedAt: '2024-11-10T12:00:00Z'
   },
   {
     id: 'inc-uuid-004',
     date: '2024-11-15',
-    category: 'other_income',
+    category: 'otherIncome',
     subcategory: 'rental',
     amount: 12000,
-    mode: 'bank_transfer',
+    mode: 'bankTransfer',
     description: 'Monthly rental income from society hall',
     source: 'Hall Rental',
     status: 'approved',
-    approved_by: 'admin-001',
+    approvedBy: 'admin-001',
     recurring: true,
-    recurring_frequency: 'monthly',
+    recurringFrequency: 'monthly',
     tags: ['rental', 'hall', 'monthly'],
-    added_by: 'admin-001',
-    created_at: '2024-11-15T09:00:00Z',
-    updated_at: '2024-11-15T09:30:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-11-15T09:00:00Z',
+    updatedAt: '2024-11-15T09:30:00Z'
   }
 ]
 
@@ -410,7 +410,7 @@ export const getExpenseStats = (expenses: Expense[], income: Income[]): ExpenseS
   }
 
   // Calculate payment mode breakdown
-  const paymentModes = ['cash', 'online', 'cheque', 'bank_transfer']
+  const paymentModes = ['cash', 'online', 'cheque', 'bankTransfer']
   const paymentModeBreakdown = paymentModes.map(mode => ({
     mode,
     expenses: expenses.filter(e => e.mode === mode).reduce((sum, e) => sum + e.amount, 0),
@@ -568,7 +568,7 @@ export const getIncomeCategoryColor = (category: string) => {
       return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
     case 'donation':
       return 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300'
-    case 'other_income':
+    case 'otherIncome':
       return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
@@ -584,7 +584,7 @@ export const getPaymentModeColor = (mode: string) => {
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
     case 'cheque':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-    case 'bank_transfer':
+    case 'bankTransfer':
       return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
@@ -639,22 +639,22 @@ export const expenseAPI = {
     return Promise.resolve(getExpenseStats(expensesData, incomeData))
   },
   
-  createExpense: async (expense: Omit<Expense, 'id' | 'created_at' | 'updated_at'>): Promise<Expense> => {
+  createExpense: async (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>): Promise<Expense> => {
     const newExpense: Expense = {
       ...expense,
       id: generateExpenseId(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
     return Promise.resolve(newExpense)
   },
   
-  createIncome: async (income: Omit<Income, 'id' | 'created_at' | 'updated_at'>): Promise<Income> => {
+  createIncome: async (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>): Promise<Income> => {
     const newIncome: Income = {
       ...income,
       id: generateIncomeId(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
     return Promise.resolve(newIncome)
   }

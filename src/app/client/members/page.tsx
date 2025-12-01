@@ -9,57 +9,127 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Users, 
-  Search, 
   Plus, 
   Download, 
-  Upload, 
   RefreshCw, 
-  Filter,
   UserPlus,
   Shield,
   UserCheck,
   AlertCircle,
-  CheckCircle,
-  Edit,
-  Trash2,
-  MoreHorizontal
+  CheckCircle
 } from 'lucide-react'
-import MembersTable from '@/components/client/MembersTable'
-import AddMemberModal from '@/components/client/AddMemberModal'
+import AutoTable from '@/components/ui/auto-table'
+import AutoForm from '@/components/ui/auto-form'
 import { membersData } from '@/data/membersData'
 import { toast } from 'sonner'
 
 export default function MembersPage() {
   const [members, setMembers] = useState(membersData)
   const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
 
-  // Filter members based on search and filters
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.membershipId.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = selectedStatus === 'all' || member.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  // Helper function to generate membership ID
+  const generateMembershipId = () => {
+    const prefix = 'MEM'
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+    return `${prefix}${randomNum}`
+  }
+
+  // AutoForm field configuration
+  const memberFields = {
+    name: {
+      type: 'text',
+      label: 'Full Name',
+      placeholder: 'John Doe',
+      required: true,
+      validation: {
+        min: 2,
+        custom: (value: string) => {
+          if (!/^[a-zA-Z\s]+$/.test(value.trim())) {
+            return 'Name should only contain letters and spaces'
+          }
+          return null
+        }
+      }
+    },
+    email: {
+      type: 'email',
+      label: 'Email Address',
+      placeholder: 'john@example.com',
+      required: true,
+      validation: {
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      }
+    },
+    phone: {
+      type: 'tel',
+      label: 'Phone Number',
+      placeholder: '+1 (555) 123-4567',
+      required: true,
+      validation: {
+        pattern: /^[+]?[\d\s-()]+$/
+      }
+    },
+    status: {
+      type: 'select',
+      label: 'Status',
+      required: true,
+      options: ['ACTIVE', 'INACTIVE', 'PENDING']
+    },
+    membershipId: {
+      type: 'text-with-button',
+      label: 'Membership ID',
+      placeholder: 'MEM0001',
+      required: true,
+      buttonText: 'Generate',
+      onButtonClick: generateMembershipId,
+      validation: {
+        min: 3,
+        custom: (value: string) => {
+          if (!/^MEM\d+$/.test(value.trim())) {
+            return 'Membership ID should start with MEM followed by numbers'
+          }
+          return null
+        }
+      }
+    },
+    address: {
+      type: 'textarea',
+      label: 'Address',
+      placeholder: '123 Main Street, City, State 12345',
+      required: true,
+      validation: {
+        min: 10
+      }
+    },
+    fatherHusbandName: {
+      type: 'text',
+      label: 'Father/Husband Name',
+      placeholder: 'Enter father or husband name',
+      required: false
+    },
+    joinDate: {
+      type: 'date',
+      label: 'Join Date',
+      required: false
+    }
+  }
 
   // Calculate statistics
   const stats = {
     total: members.length,
-    active: members.filter(m => m.status === 'ACTIVE').length,
-    inactive: members.filter(m => m.status === 'INACTIVE').length,
-    pending: members.filter(m => m.status === 'PENDING').length
+    active: members.filter(m => m.status === 'active').length,
+    inactive: members.filter(m => m.status === 'inactive').length,
+    pending: members.filter(m => m.status === 'pending').length
   }
 
   const handleAddMember = (newMember: any) => {
     const memberWithId = {
       ...newMember,
-      id: `M${String(members.length + 1).padStart(3, '0')}`,
-      joinDate: new Date().toISOString().split('T')[0],
-      lastLogin: null
+      id: `uuid-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
     setMembers([...members, memberWithId])
     toast.success('✅ Member Added', {
@@ -74,7 +144,11 @@ export default function MembersPage() {
   }
 
   const handleUpdateMember = (updatedMember: any) => {
-    setMembers(members.map(m => m.id === updatedMember.id ? updatedMember : m))
+    setMembers(members.map(m => m.id === editingMember.id ? { 
+      ...editingMember, 
+      ...updatedMember, 
+      updatedAt: new Date().toISOString() 
+    } : m))
     toast.success('✅ Member Updated', {
       description: `${updatedMember.name} has been updated successfully`,
       duration: 3000
@@ -110,19 +184,6 @@ export default function MembersPage() {
       description: 'Member data is being exported to CSV',
       duration: 3000
     })
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      ACTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
-      INACTIVE: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300',
-      PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
-    }
-    return (
-      <Badge className={variants[status as keyof typeof variants] || variants.ACTIVE}>
-        {status}
-      </Badge>
-    )
   }
 
   return (
@@ -237,62 +298,35 @@ export default function MembersPage() {
         </Card>
       </motion.div>
 
-      {/* Filters and Search */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6"
-      >
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search members by name, email, or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="INACTIVE">Inactive</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </motion.div>
-
-      {/* Members Table */}
+      {/* Members Table - Using AutoTable */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
       >
-        <MembersTable
-          members={filteredMembers}
+        <AutoTable 
+          data={members} 
+          title="Members"
           onEdit={handleEditMember}
           onDelete={handleDeleteMember}
-          getStatusBadge={getStatusBadge}
         />
       </motion.div>
 
-      {/* Add Member Modal */}
-      <AddMemberModal
+      {/* Add/Edit Member Modal */}
+      <AutoForm
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false)
           setEditingMember(null)
         }}
         onSubmit={editingMember ? handleUpdateMember : handleAddMember}
-        editingMember={editingMember}
+        editingData={editingMember}
+        title={editingMember ? 'Edit Member' : 'Add New Member'}
+        description={editingMember 
+          ? 'Update member information below' 
+          : 'Fill in details to add a new member to the society'
+        }
+        fields={memberFields}
       />
     </div>
   )

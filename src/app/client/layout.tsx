@@ -13,7 +13,7 @@ interface ClientLayoutProps {
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false) // Set to false since we removed the loading effect
   const [error, setError] = useState<string | null>(null)
   const pathname = usePathname()
 
@@ -32,16 +32,16 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Handle navigation loading state
-  useEffect(() => {
-    setIsLoading(true)
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-      setError(null)
-    }, 300)
-    
-    return () => clearTimeout(timer)
-  }, [pathname])
+  // Handle navigation loading state - removed to prevent infinite re-renders
+  // useEffect(() => {
+  //   setIsLoading(true)
+  //   const timer = setTimeout(() => {
+  //     setIsLoading(false)
+  //     setError(null)
+  //   }, 300)
+  //   
+  //   return () => clearTimeout(timer)
+  // }, [pathname])
 
   const handleSignOut = () => {
     window.location.href = '/login'

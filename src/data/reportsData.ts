@@ -124,7 +124,7 @@ export const getProfitLossStatement = (
     income.date >= startDate && income.date <= endDate && income.status === 'approved'
   )
   const periodLoans = loansData.filter(loan => 
-    loan.start_date >= startDate && loan.start_date <= endDate && loan.status === 'active'
+    loan.startDate >= startDate && loan.startDate <= endDate && loan.status === 'active'
   )
 
   // Calculate income components
@@ -164,7 +164,7 @@ export const getProfitLossStatement = (
   // Calculate loan loss provision (1% of outstanding loans)
   const outstandingLoans = loansData
     .filter(loan => loan.status === 'active')
-    .reduce((sum, loan) => sum + loan.remaining_balance, 0)
+    .reduce((sum, loan) => sum + loan.remainingBalance, 0)
   const loanLossProvision = Math.round(outstandingLoans * 0.01)
 
   const totalExpenses = operatingExpenses + administrativeExpenses + maintenanceExpenses + loanLossProvision
@@ -231,7 +231,7 @@ export const getMemberPerformanceReport = (): MemberPerformanceReport[] => {
       Math.max(...memberPassbook.map(entry => entry.balance)) : 0
 
     const timelyEMIPayments = memberPassbook
-      .filter(entry => entry.reference === 'emi_payment')
+      .filter(entry => entry.reference === 'emiPayment')
       .length
 
     const delayedEMIPayments = memberPassbook
@@ -261,7 +261,7 @@ export const getMemberPerformanceReport = (): MemberPerformanceReport[] => {
     return {
       memberId: member.id,
       memberName: member.name,
-      joinDate: member.join_date,
+      joinDate: member.joinDate,
       totalDeposits,
       totalLoans,
       currentBalance,
@@ -279,12 +279,12 @@ export const getLoanPerformanceReport = (): LoanPerformanceReport[] => {
   return loansData.map(loan => {
     const member = membersData.find(m => m.id === loan.memberId)
     const totalInterest = (loan.emi * loan.duration) - loan.amount
-    const paidAmount = loan.emi * (loan.duration - Math.ceil(loan.remaining_balance / loan.emi))
-    const pendingAmount = loan.remaining_balance
+    const paidAmount = loan.emi * (loan.duration - Math.ceil(loan.remainingBalance / loan.emi))
+    const pendingAmount = loan.remainingBalance
 
     // Calculate overdue days
     const today = new Date()
-    const nextEMIDate = new Date(loan.next_emi_date)
+    const nextEMIDate = new Date(loan.nextEmiDate)
     const overdueDays = nextEMIDate < today ? 
       Math.ceil((today.getTime() - nextEMIDate.getTime()) / (1000 * 60 * 60 * 24)) : 0
 
@@ -311,8 +311,8 @@ export const getLoanPerformanceReport = (): LoanPerformanceReport[] => {
       duration: loan.duration,
       emi: loan.emi,
       totalInterest,
-      paidEMIs: loan.duration - Math.ceil(loan.remaining_balance / loan.emi),
-      pendingEMIs: Math.ceil(loan.remaining_balance / loan.emi),
+      paidEMIs: loan.duration - Math.ceil(loan.remainingBalance / loan.emi),
+      pendingEMIs: Math.ceil(loan.remainingBalance / loan.emi),
       paidAmount,
       pendingAmount,
       overdueDays,
@@ -334,7 +334,7 @@ export const getSocietyFinancialReport = (): SocietyFinancialReport => {
 
   const totalOutstandingLoans = loansData
     .filter(loan => loan.status === 'active')
-    .reduce((sum, loan) => sum + loan.remaining_balance, 0)
+    .reduce((sum, loan) => sum + loan.remainingBalance, 0)
 
   const totalExpenses = expensesData
     .filter(expense => expense.status === 'approved')
@@ -404,7 +404,7 @@ export const getTrendAnalysis = (months: number = 12): TrendAnalysis[] => {
       .reduce((sum, entry) => sum + entry.amount, 0)
     
     const monthLoans = loansData
-      .filter(loan => loan.start_date >= startDate && loan.start_date <= endDate)
+      .filter(loan => loan.startDate >= startDate && loan.startDate <= endDate)
       .reduce((sum, loan) => sum + loan.amount, 0)
     
     const monthExpenses = expensesData
@@ -418,7 +418,7 @@ export const getTrendAnalysis = (months: number = 12): TrendAnalysis[] => {
     const monthProfit = monthIncome - monthExpenses
     
     const monthMembers = membersData
-      .filter(member => member.join_date >= startDate && member.join_date <= endDate)
+      .filter(member => member.joinDate >= startDate && member.joinDate <= endDate)
       .length
 
     // Calculate growth rates (compared to previous month)

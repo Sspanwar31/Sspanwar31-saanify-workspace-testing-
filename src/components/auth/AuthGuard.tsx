@@ -62,7 +62,7 @@ export default function AuthGuard({ children, requiredRole = 'ADMIN', fallback }
     // User is authenticated and has correct role
     console.log('✅ AuthGuard: User authenticated and authorized')
     setIsRedirecting(false)
-  }, [user, isLoading, requiredRole, router, pathname])
+  }, [user, isLoading, requiredRole]) // Remove router and pathname from dependencies
 
   // Show loading state
   if (isLoading || isRedirecting) {

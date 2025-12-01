@@ -1,247 +1,327 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, DollarSign, TrendingUp, Calendar, CreditCard, RefreshCw } from 'lucide-react'
+import { Plus, DollarSign, TrendingUp, Calendar, CreditCard, RefreshCw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import AutoTable from '@/components/ui/auto-table'
+import { expensesData } from '@/data/expensesData'
+import { toast } from 'sonner'
 
 export default function ExpensesPage() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedType, setSelectedType] = useState('all')
+  const [expenses, setExpenses] = useState(expensesData)
+  const [loading, setLoading] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [selectedType, setSelectedType] = useState<string>('all')
 
-  // Mock data
-  const expenses = [
-    { id: 1, description: 'Maintenance Cost', amount: 5000, type: 'MAINTENANCE', date: '2024-01-15', status: 'COMPLETED' },
-    { id: 2, description: 'Electricity Bill', amount: 3000, type: 'UTILITY', date: '2024-01-14', status: 'COMPLETED' },
-    { id: 3, description: 'Water Supply', amount: 2000, type: 'UTILITY', date: '2024-01-13', status: 'PENDING' },
-    { id: 4, description: 'Security Services', amount: 4000, type: 'SECURITY', date: '2024-01-12', status: 'COMPLETED' },
-    { id: 5, description: 'Garden Maintenance', amount: 1500, type: 'MAINTENANCE', date: '2024-01-11', status: 'PENDING' }
-  ]
-
-  const stats = {
+  // Calculate statistics based on enhanced expenses data
+  const stats = useMemo(() => ({
     totalExpenses: expenses.reduce((sum, exp) => sum + exp.amount, 0),
-    thisMonthExpenses: 15500,
-    lastMonthExpenses: 12000,
-    pendingExpenses: expenses.filter(exp => exp.status === 'PENDING').length
+    maintenanceExpenses: expenses.filter(exp => exp.category === 'maintenance').reduce((sum, exp) => sum + exp.amount, 0),
+    utilityExpenses: expenses.filter(exp => exp.category === 'utility').reduce((sum, exp) => sum + exp.amount, 0),
+    pendingExpenses: expenses.filter(exp => exp.status === 'pending').length,
+    approvedExpenses: expenses.filter(exp => exp.status === 'approved').length
+  }), [expenses])
+
+  // Get unique categories for filter
+  const uniqueCategories = Array.from(new Set(expenses.map(exp => exp.category)))
+
+  // Filter expenses
+  const filteredExpenses = useMemo(() => {
+    if (selectedType === 'all') return expenses
+    return expenses.filter(expense => expense.category === selectedType)
+  }, [expenses, selectedType])
+
+  const handleAddExpense = (newExpense: any) => {
+    const expenseWithId = {
+      ...newExpense,
+      id: `exp-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`,
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    
+    setExpenses([...expenses, expenseWithId])
+    toast.success('✅ Expense Added', {
+      description: `Expense "${newExpense.description}" has been added successfully`,
+      duration: 3000
+    })
   }
 
-  const filteredExpenses = expenses.filter(expense => {
-    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = selectedType === 'all' || expense.type === selectedType
-    return matchesSearch && matchesType
-  })
+  const handleRefresh = () => {
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      toast.success('🔄 Data Refreshed', {
+        description: 'Expense data has been refreshed',
+        duration: 2000
+      })
+    }, 1000)
+  }
+
+  const handleExport = () => {
+    toast.info('📊 Export Started', {
+      description: 'Expense data is being exported to CSV',
+      duration: 3000
+    })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
+
+  const getCategoryBadge = (category: string) => {
+    const variants = {
+      maintenance: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+      utility: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
+      administrative: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+      security: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+    }
+    return (
+      <Badge className={variants[category as keyof typeof variants] || variants.maintenance}>
+        {category}
+      </Badge>
+    )
+  }
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
+      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300',
+      rejected: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+    }
+    return (
+      <Badge className={variants[status as keyof typeof variants] || variants.pending}>
+        {status}
+      </Badge>
+    )
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        className="mb-8"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Expenses Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Track and manage all society expenses
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+              <DollarSign className="h-8 w-8 text-orange-600" />
+              Expenses Management
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">
+              Track and manage all society expenses and costs
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </Button>
+          </div>
         </div>
-        
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Expense
-        </Button>
       </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-              <DollarSign className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.totalExpenses.toLocaleString()}</div>
-              <p className="text-xs text-blue-100">All time expenses</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+      {/* Statistics Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Expenses</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {formatCurrency(stats.totalExpenses)}
+                </p>
+              </div>
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                <DollarSign className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.thisMonthExpenses.toLocaleString()}</div>
-              <p className="text-xs text-green-100">+29% from last month</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Maintenance</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(stats.maintenanceExpenses)}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <CreditCard className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingExpenses}</div>
-              <p className="text-xs text-purple-100">Awaiting approval</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Utilities</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {formatCurrency(stats.utilityExpenses)}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <CreditCard className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-              <TrendingUp className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+18%</div>
-              <p className="text-xs text-orange-100">Monthly increase</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pending</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pendingExpenses}</p>
+              </div>
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Category Breakdown */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
+        {uniqueCategories.map((category, index) => {
+          const categoryExpenses = expenses.filter(exp => exp.category === category)
+          const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0)
+          
+          return (
+            <Card key={category} className="border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 capitalize">
+                      {category}
+                    </p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">
+                      {formatCurrency(categoryTotal)}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-slate-100 dark:bg-slate-900/20 rounded-lg">
+                    {getCategoryBadge(category)}
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  {categoryExpenses.length} transaction{categoryExpenses.length !== 1 ? 's' : ''}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </motion.div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Expenses</CardTitle>
-            <div className="flex items-center gap-4">
-              <Input
-                placeholder="Search expenses..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              >
-                <option value="all">All Types</option>
-                <option value="MAINTENANCE">Maintenance</option>
-                <option value="UTILITY">Utility</option>
-                <option value="SECURITY">Security</option>
-              </select>
-              <Button variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Amount</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredExpenses.map((expense) => (
-                  <tr key={expense.id} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{expense.description}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">₹{expense.amount.toLocaleString()}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={
-                        expense.type === 'MAINTENANCE' ? 'bg-blue-100 text-blue-800' :
-                        expense.type === 'UTILITY' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }>
-                        {expense.type}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{expense.date}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={
-                        expense.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }>
-                        {expense.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Button variant="ghost" size="sm">View</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6"
+      >
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Filter by Category:</span>
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {uniqueCategories.map(category => (
+                <SelectItem key={category} value={category}>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </motion.div>
 
-      {/* Add Expense Modal (Simple) */}
+      {/* Expenses Table - Using AutoTable */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <AutoTable data={filteredExpenses} title="Expenses" />
+      </motion.div>
+
+      {/* Add Expense Modal - Simplified for demo */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
+          >
             <h2 className="text-xl font-bold mb-4">Add New Expense</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <Input placeholder="Enter description" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
-                <Input type="number" placeholder="Enter amount" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                  <option value="MAINTENANCE">Maintenance</option>
-                  <option value="UTILITY">Utility</option>
-                  <option value="SECURITY">Security</option>
-                </select>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => setIsAddModalOpen(false)} variant="outline" className="flex-1">
-                  Cancel
-                </Button>
-                <Button onClick={() => setIsAddModalOpen(false)} className="flex-1">
-                  Add Expense
-                </Button>
-              </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              This is a simplified demo. In production, this would include category selection, amount validation, and approval workflow.
+            </p>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={() => setIsAddModalOpen(false)} 
+                variant="outline" 
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => setIsAddModalOpen(false)} 
+                className="flex-1"
+              >
+                Add Expense (Demo)
+              </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

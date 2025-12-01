@@ -1,408 +1,383 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Check, Crown, Zap, Building, Star, ArrowRight, Shield, Headphones, Users, TrendingUp } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Check, Crown, Users, Building2, Zap, Shield, Star } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
-const plans = [
+interface Plan {
+  id: string
+  name: string
+  price: number
+  period: string
+  description: string
+  icon: React.ReactNode
+  badge?: string
+  features: string[]
+  limits: {
+    users: number
+    storage: string
+    societies: number
+  }
+  popular?: boolean
+}
+
+const plans: Plan[] = [
   {
     id: 'trial',
     name: 'Trial',
-    price: 'Free',
-    duration: '15 Days',
-    description: 'Perfect for getting started and exploring our platform',
+    price: 0,
+    period: '15 days',
+    description: 'Perfect for exploring the platform',
+    icon: <Shield className="h-6 w-6" />,
     features: [
-      'Access to all basic features',
-      'Up to 3 users',
-      '15-day trial period',
-      'Email support',
-      'Basic analytics'
+      'Basic society management',
+      'Member management (up to 3)',
+      'Basic financial tracking',
+      'Limited support',
+      '1 GB storage'
     ],
-    icon: Zap,
-    badge: 'Free Trial',
-    badgeVariant: 'secondary' as const,
-    cta: 'Start Free Trial',
-    popular: false,
-    gradient: 'from-gray-500 to-gray-600',
-    bgLight: 'bg-gray-50'
+    limits: {
+      users: 3,
+      storage: '1 GB',
+      societies: 1
+    }
   },
   {
     id: 'basic',
     name: 'Basic',
-    price: '₹4,000',
-    duration: 'per month',
-    description: 'Great for small societies and growing organizations',
+    price: 4000,
+    period: 'per month',
+    description: 'Perfect for small communities',
+    icon: <Users className="h-6 w-6" />,
     features: [
-      'Everything in Trial',
-      'Up to 10 users',
-      'Advanced analytics',
-      'Priority email support',
-      'Data export',
-      'Monthly reports'
+      'All trial features',
+      'Member management (up to 10)',
+      'Advanced financial tracking',
+      'Basic reports & analytics',
+      'Email support',
+      '5 GB storage',
+      'Up to 3 societies'
     ],
-    icon: Crown,
-    badge: 'Most Popular',
-    badgeVariant: 'default' as const,
-    cta: 'Choose Basic',
-    popular: true,
-    gradient: 'from-blue-500 to-cyan-500',
-    bgLight: 'bg-blue-50'
+    limits: {
+      users: 10,
+      storage: '5 GB',
+      societies: 3
+    }
   },
   {
     id: 'pro',
     name: 'Pro',
-    price: '₹7,000',
-    duration: 'per month',
-    description: 'Advanced features for larger societies',
+    price: 7000,
+    period: 'per month',
+    description: 'Most popular choice for large communities',
+    icon: <Zap className="h-6 w-6" />,
+    badge: 'Most Popular',
     features: [
-      'Everything in Basic',
-      'Unlimited users',
+      'All basic features',
+      'Unlimited members',
+      'Advanced analytics dashboard',
       'Real-time collaboration',
-      'Phone & email support',
-      'Custom integrations',
-      'Advanced security',
+      'Priority support',
+      '20 GB storage',
+      'Up to 10 societies',
+      'Custom reports',
       'API access'
     ],
-    icon: Zap,
-    badge: 'Best Value',
-    badgeVariant: 'destructive' as const,
-    cta: 'Choose Pro',
-    popular: false,
-    gradient: 'from-purple-500 to-pink-500',
-    bgLight: 'bg-purple-50'
+    limits: {
+      users: 25,
+      storage: '20 GB',
+      societies: 10
+    },
+    popular: true
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '₹10,000',
-    duration: 'per month',
+    price: 10000,
+    period: 'per month',
     description: 'Complete solution for large organizations',
+    icon: <Building2 className="h-6 w-6" />,
+    badge: 'Complete Solution',
     features: [
-      'Everything in Pro',
+      'All pro features',
+      'Unlimited everything',
       'Dedicated account manager',
-      'Custom training',
-      'SLA guarantee',
-      'White-label options',
-      'On-premise deployment',
-      'Custom contracts'
+      '24/7 phone support',
+      '100 GB storage',
+      'Custom integrations',
+      'Advanced security features',
+      'Training & onboarding',
+      'SLA guarantee'
     ],
-    icon: Building,
-    badge: 'Premium',
-    badgeVariant: 'outline' as const,
-    cta: 'Choose Enterprise',
-    popular: false,
-    gradient: 'from-amber-500 to-orange-500',
-    bgLight: 'bg-amber-50'
+    limits: {
+      users: -1, // unlimited
+      storage: '100 GB',
+      societies: -1 // unlimited
+    }
   }
 ]
 
-export default function SubscriptionSelectPage() {
+export default function SubscriptionSelectPlan() {
   const router = useRouter()
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
 
-  // Save selected plan to localStorage
-  useEffect(() => {
-    if (selectedPlan) {
-      localStorage.setItem('selectedPlan', selectedPlan)
-    }
-  }, [selectedPlan])
-
-  const handlePlanSelect = (planId: string) => {
+  const handleSelectPlan = (planId: string) => {
     setSelectedPlan(planId)
   }
 
-  const handleContinue = (planId: string) => {
-    setIsLoading(true)
-    
-    // Save selected plan to session storage as well
-    sessionStorage.setItem('selectedPlan', planId)
-    
-    // Redirect to signup with plan parameter
-    setTimeout(() => {
-      router.push(`/auth/signup?plan=${planId}`)
-    }, 300)
+  const handleUpgrade = (planId: string) => {
+    if (planId === 'trial') {
+      router.push('/subscription')
+      return
+    }
+    router.push(`/subscription/payment-upload?plan=${planId}`)
+  }
+
+  const getAnnualPrice = (monthlyPrice: number) => {
+    return Math.round(monthlyPrice * 12 * 0.9) // 10% discount for annual
+  }
+
+  const getDisplayPrice = (plan: Plan) => {
+    if (plan.price === 0) return 'Free'
+    if (billingCycle === 'yearly') {
+      const annualPrice = getAnnualPrice(plan.price)
+      return `₹${annualPrice.toLocaleString()}/year`
+    }
+    return `₹${plan.price.toLocaleString()}/${plan.period}`
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Saanify</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-slate-600">Already have an account?</span>
-              <Link href="/login">
-                <Button variant="outline" size="sm" className="border-blue-200 hover:border-blue-300 hover:bg-blue-50">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
+      <div className="text-center space-y-4">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">Choose Your Perfect Plan</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Select the plan that best fits your society management needs
+          </p>
+        </div>
+
+        {/* Current Subscription Alert */}
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 max-w-2xl mx-auto">
+          <div className="flex items-center justify-center gap-2 text-orange-800">
+            <Shield className="h-5 w-5" />
+            <span className="font-medium">Current Subscription: Trial expired</span>
           </div>
         </div>
       </div>
 
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <Badge className="mb-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
-            <Star className="w-4 h-4 mr-1" />
-            Flexible Pricing Plans
-          </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-            Choose Your
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Perfect Plan</span>
-          </h1>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Start with a free trial or select a plan that fits your society's needs. 
-            No hidden fees, cancel anytime. 14-day money-back guarantee.
-          </p>
-        </div>
+      {/* Billing Cycle Toggle */}
+      <div className="flex justify-center">
+        <Tabs value={billingCycle} onValueChange={(value) => setBillingCycle(value as 'monthly' | 'yearly')}>
+          <TabsList>
+            <TabsTrigger value="monthly">Monthly Billing</TabsTrigger>
+            <TabsTrigger value="yearly">
+              Yearly Billing 
+              <Badge variant="secondary" className="ml-2">Save 10%</Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto mb-20">
-          {plans.map((plan) => {
-            const Icon = plan.icon
-            return (
-              <div key={plan.id} className="relative group">
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center space-x-1">
-                      <Star className="w-4 h-4" />
-                      <span>{plan.badge}</span>
-                    </div>
+      {/* Plans Grid */}
+      <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
+        {plans.map((plan) => (
+          <Card 
+            key={plan.id} 
+            className={`relative transition-all duration-200 hover:shadow-lg ${
+              selectedPlan === plan.id ? 'ring-2 ring-primary shadow-lg' : ''
+            } ${plan.popular ? 'border-primary' : ''}`}
+          >
+            {plan.badge && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <Badge variant="default" className="bg-primary text-primary-foreground">
+                  {plan.badge}
+                </Badge>
+              </div>
+            )}
+
+            <CardHeader className="text-center pb-4">
+              <div className="flex justify-center mb-2">
+                {plan.icon}
+              </div>
+              <CardTitle className="text-xl">{plan.name}</CardTitle>
+              <CardDescription>{plan.description}</CardDescription>
+              <div className="pt-4">
+                <div className="text-3xl font-bold">
+                  {getDisplayPrice(plan)}
+                </div>
+                {plan.price > 0 && billingCycle === 'yearly' && (
+                  <div className="text-sm text-muted-foreground">
+                    Save ₹{(plan.price * 12 * 0.1).toLocaleString()} per year
                   </div>
                 )}
-                
-                <Card 
-                  className={`relative h-full transition-all duration-500 hover:shadow-2xl cursor-pointer border-2 ${
-                    selectedPlan === plan.id 
-                      ? 'ring-4 ring-blue-500/20 border-blue-500 shadow-2xl scale-105' 
-                      : plan.popular 
-                        ? 'border-blue-200 hover:border-blue-400' 
-                        : 'border-slate-200 hover:border-slate-300'
-                  } bg-white`}
-                  onClick={() => handlePlanSelect(plan.id)}
-                >
-                  {/* Gradient Border Effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${plan.gradient} opacity-0 group-hover:opacity-5 rounded-lg transition-opacity duration-300`}></div>
-                  
-                  <CardHeader className="text-center pb-6 relative">
-                    {/* Icon */}
-                    <div className={`mx-auto mb-6 h-16 w-16 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="h-8 w-8 text-white" />
-                    </div>
-                    
-                    {/* Plan Name */}
-                    <CardTitle className="text-2xl font-bold text-slate-900 mb-2">
-                      {plan.name}
-                    </CardTitle>
-                    
-                    {/* Price */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline justify-center space-x-1">
-                        <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                        {plan.price !== 'Free' && (
-                          <span className="text-slate-500 text-lg">/{plan.duration}</span>
-                        )}
-                      </div>
-                      {plan.price === 'Free' && (
-                        <div className="text-sm text-slate-500 font-medium">{plan.duration}</div>
-                      )}
-                    </div>
-                    
-                    {/* Description */}
-                    <CardDescription className="text-slate-600 text-sm mt-3 leading-relaxed">
-                      {plan.description}
-                    </CardDescription>
-                  </CardHeader>
+              </div>
+            </CardHeader>
 
-                  <CardContent className="space-y-4 pb-6">
-                    {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-start space-x-3 group/item">
-                        <div className={`h-5 w-5 rounded-full bg-gradient-to-br ${plan.gradient} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                        <span className="text-sm text-slate-700 leading-relaxed">{feature}</span>
-                      </div>
-                    ))}
-                  </CardContent>
+            <CardContent className="space-y-6">
+              {/* Features List */}
+              <div className="space-y-3">
+                {plan.features.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
 
-                  <CardFooter className="pt-2">
-                    <Button 
-                      className={`w-full py-3 text-base font-semibold transition-all duration-300 ${
-                        selectedPlan === plan.id 
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg' 
-                          : plan.popular
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl'
-                            : 'bg-slate-900 hover:bg-slate-800 text-white hover:shadow-lg'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleContinue(plan.id)
-                      }}
-                      disabled={isLoading}
-                    >
-                      {isLoading && selectedPlan === plan.id ? (
-                        <span className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Processing...
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          {plan.cta}
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </span>
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
+              {/* Plan Limits */}
+              <div className="border-t pt-4">
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <div className="flex justify-between">
+                    <span>Users:</span>
+                    <span className="font-medium">
+                      {plan.limits.users === -1 ? 'Unlimited' : plan.limits.users}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Storage:</span>
+                    <span className="font-medium">{plan.limits.storage}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Societies:</span>
+                    <span className="font-medium">
+                      {plan.limits.societies === -1 ? 'Unlimited' : plan.limits.societies}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )
-          })}
-        </div>
 
-        {/* Trust Badges */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Why Choose Saanify?</h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Trusted by societies across India for reliable management solutions
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-            <div className="text-center group">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">1000+</div>
-              <div className="text-sm text-slate-600">Happy Users</div>
-            </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">Secure</div>
-              <div className="text-sm text-slate-600">Payment</div>
-            </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Headphones className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">24/7</div>
-              <div className="text-sm text-slate-600">Support</div>
-            </div>
-            <div className="text-center group">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-8 w-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">15+</div>
-              <div className="text-sm text-slate-600">Days Free Trial</div>
-            </div>
-          </div>
-        </div>
+              {/* Action Button */}
+              <Button 
+                className={`w-full ${
+                  plan.popular 
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                    : ''
+                }`}
+                variant={plan.popular ? 'default' : 'outline'}
+                onClick={() => handleUpgrade(plan.id)}
+              >
+                {plan.id === 'trial' ? 'Current Plan' : 'Select Plan'}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* FAQ Section */}
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <Badge className="mb-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
-              Have Questions?
-            </Badge>
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Everything you need to know about our pricing and plans
-            </p>
+      {/* Plan Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan Overview</CardTitle>
+          <CardDescription>Detailed comparison of all available plans</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-4">Features</th>
+                  <th className="text-center p-4">Trial</th>
+                  <th className="text-center p-4">Basic</th>
+                  <th className="text-center p-4">Pro</th>
+                  <th className="text-center p-4">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Price</td>
+                  <td className="text-center p-4">Free</td>
+                  <td className="text-center p-4">₹4,000/month</td>
+                  <td className="text-center p-4">₹7,000/month</td>
+                  <td className="text-center p-4">₹10,000/month</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Duration</td>
+                  <td className="text-center p-4">15 days</td>
+                  <td className="text-center p-4">Monthly</td>
+                  <td className="text-center p-4">Monthly</td>
+                  <td className="text-center p-4">Monthly</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Users</td>
+                  <td className="text-center p-4">3</td>
+                  <td className="text-center p-4">10</td>
+                  <td className="text-center p-4">25</td>
+                  <td className="text-center p-4">Unlimited</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Societies</td>
+                  <td className="text-center p-4">1</td>
+                  <td className="text-center p-4">3</td>
+                  <td className="text-center p-4">10</td>
+                  <td className="text-center p-4">Unlimited</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Storage</td>
+                  <td className="text-center p-4">1 GB</td>
+                  <td className="text-center p-4">5 GB</td>
+                  <td className="text-center p-4">20 GB</td>
+                  <td className="text-center p-4">100 GB</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Basic Features</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Advanced Analytics</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">Real-time Collaboration</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-4 font-medium">API Access</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="p-4 font-medium">Priority Support</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4">-</td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center p-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Can I change plans later?
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-600 leading-relaxed">
-                  Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
-                    <Star className="h-5 w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
-                    What happens after trial?
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-600 leading-relaxed">
-                  After 15 days, you'll need to choose a paid plan to continue using our service.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Do you offer refunds?
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-600 leading-relaxed">
-                  We offer a 7-day money-back guarantee for all paid plans. No questions asked.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="group hover:shadow-lg transition-all duration-300 border-slate-200 hover:border-blue-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
-                  <CardTitle className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Is my data secure?
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-600 leading-relaxed">
-                  Yes! We use industry-standard encryption and security measures to protect your data.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Contact Support */}
-          <div className="text-center mt-12 p-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100">
-            <Headphones className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Still have questions?</h3>
-            <p className="text-slate-600 mb-6">Our support team is here to help you 24/7</p>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg">
-              Contact Support
-            </Button>
-          </div>
+        </CardContent>
+      </Card>
+
+      {/* Support Section */}
+      <div className="text-center space-y-4 bg-muted/50 rounded-lg p-8">
+        <h3 className="text-2xl font-semibold">Need Help Choosing?</h3>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Our team is here to help you select the perfect plan for your society management needs. 
+          Contact us for a personalized consultation.
+        </p>
+        <div className="flex gap-4 justify-center">
+          <Button variant="outline" onClick={() => router.push('/support')}>
+            Contact Support
+          </Button>
+          <Button onClick={() => router.push('/demo')}>
+            Schedule Demo
+          </Button>
         </div>
       </div>
     </div>

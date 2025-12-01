@@ -483,7 +483,7 @@ export default function CloudDashboard({ onStatsUpdate }: CloudDashboardProps) {
     fetchAutomationTasks()
   }, [])
 
-  // Auto-refresh based on active tab
+  // Auto-refresh based on active tab - prevent infinite re-renders
   useEffect(() => {
     const interval = setInterval(() => {
       if (activeTab === 'overview') fetchCloudStatus()
@@ -495,7 +495,7 @@ export default function CloudDashboard({ onStatsUpdate }: CloudDashboardProps) {
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(interval)
-  }, [activeTab, logFilter, storageFilter, functionFilter, logPage, logSearch, selectedDate])
+  }, [activeTab]) // Remove function dependencies to prevent infinite re-renders
 
   // Toggle secret visibility
   const toggleSecretVisibility = (secretId: string) => {

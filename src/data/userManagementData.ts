@@ -9,7 +9,7 @@ export interface User {
   firstName: string
   lastName: string
   phone: string
-  role: 'super_admin' | 'admin' | 'treasurer' | 'client'
+  role: 'superAdmin' | 'admin' | 'treasurer' | 'client'
   permissions: Permission[]
   status: 'active' | 'inactive' | 'suspended'
   profile: {
@@ -91,58 +91,58 @@ export interface AuditLog {
 // System permissions
 export const systemPermissions: Permission[] = [
   // Member Management
-  { id: 'member_create', name: 'Create Member', description: 'Add new members', module: 'members', action: 'create', scope: 'all' },
-  { id: 'member_read', name: 'View Members', description: 'View member information', module: 'members', action: 'read', scope: 'all' },
-  { id: 'member_update', name: 'Update Member', description: 'Edit member information', module: 'members', action: 'update', scope: 'all' },
-  { id: 'member_delete', name: 'Delete Member', description: 'Remove members', module: 'members', action: 'delete', scope: 'all' },
+  { id: 'memberCreate', name: 'Create Member', description: 'Add new members', module: 'members', action: 'create', scope: 'all' },
+  { id: 'memberRead', name: 'View Members', description: 'View member information', module: 'members', action: 'read', scope: 'all' },
+  { id: 'memberUpdate', name: 'Update Member', description: 'Edit member information', module: 'members', action: 'update', scope: 'all' },
+  { id: 'memberDelete', name: 'Delete Member', description: 'Remove members', module: 'members', action: 'delete', scope: 'all' },
   
   // Loan Management
-  { id: 'loan_create', name: 'Create Loan', description: 'Add new loans', module: 'loans', action: 'create', scope: 'all' },
-  { id: 'loan_read', name: 'View Loans', description: 'View loan information', module: 'loans', action: 'read', scope: 'all' },
-  { id: 'loan_update', name: 'Update Loan', description: 'Edit loan information', module: 'loans', action: 'update', scope: 'all' },
-  { id: 'loan_delete', name: 'Delete Loan', description: 'Remove loans', module: 'loans', action: 'delete', scope: 'all' },
-  { id: 'loan_approve', name: 'Approve Loan', description: 'Approve loan applications', module: 'loans', action: 'approve', scope: 'all' },
+  { id: 'loanCreate', name: 'Create Loan', description: 'Add new loans', module: 'loans', action: 'create', scope: 'all' },
+  { id: 'loanRead', name: 'View Loans', description: 'View loan information', module: 'loans', action: 'read', scope: 'all' },
+  { id: 'loanUpdate', name: 'Update Loan', description: 'Edit loan information', module: 'loans', action: 'update', scope: 'all' },
+  { id: 'loanDelete', name: 'Delete Loan', description: 'Remove loans', module: 'loans', action: 'delete', scope: 'all' },
+  { id: 'loanApprove', name: 'Approve Loan', description: 'Approve loan applications', module: 'loans', action: 'approve', scope: 'all' },
   
   // Passbook Management
-  { id: 'passbook_create', name: 'Create Entry', description: 'Add passbook entries', module: 'passbook', action: 'create', scope: 'all' },
-  { id: 'passbook_read', name: 'View Passbook', description: 'View passbook entries', module: 'passbook', action: 'read', scope: 'all' },
-  { id: 'passbook_update', name: 'Update Entry', description: 'Edit passbook entries', module: 'passbook', action: 'update', scope: 'all' },
-  { id: 'passbook_delete', name: 'Delete Entry', description: 'Remove passbook entries', module: 'passbook', action: 'delete', scope: 'all' },
+  { id: 'passbookCreate', name: 'Create Entry', description: 'Add passbook entries', module: 'passbook', action: 'create', scope: 'all' },
+  { id: 'passbookRead', name: 'View Passbook', description: 'View passbook entries', module: 'passbook', action: 'read', scope: 'all' },
+  { id: 'passbookUpdate', name: 'Update Entry', description: 'Edit passbook entries', module: 'passbook', action: 'update', scope: 'all' },
+  { id: 'passbookDelete', name: 'Delete Entry', description: 'Remove passbook entries', module: 'passbook', action: 'delete', scope: 'all' },
   
   // Expense Management
-  { id: 'expense_create', name: 'Create Expense', description: 'Add new expenses', module: 'expenses', action: 'create', scope: 'all' },
-  { id: 'expense_read', name: 'View Expenses', description: 'View expense information', module: 'expenses', action: 'read', scope: 'all' },
-  { id: 'expense_update', name: 'Update Expense', description: 'Edit expense information', module: 'expenses', action: 'update', scope: 'all' },
-  { id: 'expense_delete', name: 'Delete Expense', description: 'Remove expenses', module: 'expenses', action: 'delete', scope: 'all' },
-  { id: 'expense_approve', name: 'Approve Expense', description: 'Approve expense claims', module: 'expenses', action: 'approve', scope: 'all' },
+  { id: 'expenseCreate', name: 'Create Expense', description: 'Add new expenses', module: 'expenses', action: 'create', scope: 'all' },
+  { id: 'expenseRead', name: 'View Expenses', description: 'View expense information', module: 'expenses', action: 'read', scope: 'all' },
+  { id: 'expenseUpdate', name: 'Update Expense', description: 'Edit expense information', module: 'expenses', action: 'update', scope: 'all' },
+  { id: 'expenseDelete', name: 'Delete Expense', description: 'Remove expenses', module: 'expenses', action: 'delete', scope: 'all' },
+  { id: 'expenseApprove', name: 'Approve Expense', description: 'Approve expense claims', module: 'expenses', action: 'approve', scope: 'all' },
   
   // Reports
-  { id: 'reports_view', name: 'View Reports', description: 'Access reports and analytics', module: 'reports', action: 'read', scope: 'all' },
-  { id: 'reports_export', name: 'Export Reports', description: 'Export reports data', module: 'reports', action: 'create', scope: 'all' },
+  { id: 'reportsView', name: 'View Reports', description: 'Access reports and analytics', module: 'reports', action: 'read', scope: 'all' },
+  { id: 'reportsExport', name: 'Export Reports', description: 'Export reports data', module: 'reports', action: 'create', scope: 'all' },
   
   // Admin Fund
-  { id: 'admin_fund_create', name: 'Manage Admin Fund', description: 'Add admin fund transactions', module: 'admin_fund', action: 'create', scope: 'all' },
-  { id: 'admin_fund_read', name: 'View Admin Fund', description: 'View admin fund information', module: 'admin_fund', action: 'read', scope: 'all' },
+  { id: 'adminFund_create', name: 'Manage Admin Fund', description: 'Add admin fund transactions', module: 'adminFund', action: 'create', scope: 'all' },
+  { id: 'adminFund_read', name: 'View Admin Fund', description: 'View admin fund information', module: 'adminFund', action: 'read', scope: 'all' },
   
   // User Management
-  { id: 'user_create', name: 'Create User', description: 'Add new users', module: 'users', action: 'create', scope: 'all' },
-  { id: 'user_read', name: 'View Users', description: 'View user information', module: 'users', action: 'read', scope: 'all' },
-  { id: 'user_update', name: 'Update User', description: 'Edit user information', module: 'users', action: 'update', scope: 'all' },
-  { id: 'user_delete', name: 'Delete User', description: 'Remove users', module: 'users', action: 'delete', scope: 'all' },
-  { id: 'user_manage_permissions', name: 'Manage Permissions', description: 'Assign user permissions', module: 'users', action: 'update', scope: 'all' },
+  { id: 'userCreate', name: 'Create User', description: 'Add new users', module: 'users', action: 'create', scope: 'all' },
+  { id: 'userRead', name: 'View Users', description: 'View user information', module: 'users', action: 'read', scope: 'all' },
+  { id: 'userUpdate', name: 'Update User', description: 'Edit user information', module: 'users', action: 'update', scope: 'all' },
+  { id: 'userDelete', name: 'Delete User', description: 'Remove users', module: 'users', action: 'delete', scope: 'all' },
+  { id: 'userManage_permissions', name: 'Manage Permissions', description: 'Assign user permissions', module: 'users', action: 'update', scope: 'all' },
   
   // System Settings
-  { id: 'settings_view', name: 'View Settings', description: 'Access system settings', module: 'settings', action: 'read', scope: 'all' },
-  { id: 'settings_update', name: 'Update Settings', description: 'Modify system settings', module: 'settings', action: 'update', scope: 'all' },
+  { id: 'settingsView', name: 'View Settings', description: 'Access system settings', module: 'settings', action: 'read', scope: 'all' },
+  { id: 'settingsUpdate', name: 'Update Settings', description: 'Modify system settings', module: 'settings', action: 'update', scope: 'all' },
   
   // Audit Logs
-  { id: 'audit_view', name: 'View Audit Logs', description: 'Access audit logs', module: 'audit', action: 'read', scope: 'all' }
+  { id: 'auditView', name: 'View Audit Logs', description: 'Access audit logs', module: 'audit', action: 'read', scope: 'all' }
 ]
 
 // System roles
 export const systemRoles: Role[] = [
   {
-    id: 'super_admin',
+    id: 'superAdmin',
     name: 'Super Admin',
     description: 'Full system access with all permissions',
     permissions: systemPermissions.map(p => p.id),
@@ -154,12 +154,12 @@ export const systemRoles: Role[] = [
     name: 'Administrator',
     description: 'Administrative access to most features',
     permissions: [
-      'member_create', 'member_read', 'member_update',
-      'loan_create', 'loan_read', 'loan_update', 'loan_approve',
-      'passbook_create', 'passbook_read', 'passbook_update',
-      'expense_create', 'expense_read', 'expense_update', 'expense_approve',
-      'reports_view', 'reports_export',
-      'admin_fund_create', 'admin_fund_read'
+      'memberCreate', 'memberRead', 'memberUpdate',
+      'loanCreate', 'loanRead', 'loanUpdate', 'loanApprove',
+      'passbookCreate', 'passbookRead', 'passbookUpdate',
+      'expenseCreate', 'expenseRead', 'expenseUpdate', 'expenseApprove',
+      'reportsView', 'reportsExport',
+      'adminFund_create', 'adminFund_read'
     ],
     isSystem: true,
     createdAt: '2024-01-01T00:00:00Z'
@@ -169,12 +169,12 @@ export const systemRoles: Role[] = [
     name: 'Treasurer',
     description: 'Financial management access',
     permissions: [
-      'member_read',
-      'loan_read', 'loan_approve',
-      'passbook_create', 'passbook_read',
-      'expense_read', 'expense_approve',
-      'reports_view',
-      'admin_fund_read'
+      'memberRead',
+      'loanRead', 'loanApprove',
+      'passbookCreate', 'passbookRead',
+      'expenseRead', 'expenseApprove',
+      'reportsView',
+      'adminFund_read'
     ],
     isSystem: true,
     createdAt: '2024-01-01T00:00:00Z'
@@ -184,11 +184,11 @@ export const systemRoles: Role[] = [
     name: 'Client',
     description: 'Member access to own information',
     permissions: [
-      'member_read',
-      'loan_read',
-      'passbook_read',
-      'expense_read',
-      'reports_view'
+      'memberRead',
+      'loanRead',
+      'passbookRead',
+      'expenseRead',
+      'reportsView'
     ],
     isSystem: true,
     createdAt: '2024-01-01T00:00:00Z'
@@ -205,7 +205,7 @@ export const usersData: User[] = [
     firstName: 'Super',
     lastName: 'Admin',
     phone: '+91 98765 43210',
-    role: 'super_admin',
+    role: 'superAdmin',
     permissions: systemPermissions,
     status: 'active',
     profile: {
@@ -447,7 +447,7 @@ export const auditLogsData: AuditLog[] = [
   {
     id: 'audit-uuid-002',
     userId: 'user-uuid-003',
-    action: 'LOAN_APPROVE',
+    action: 'LOANAPPROVE',
     resource: 'loan',
     resourceId: 'loan-uuid-001',
     details: { loanAmount: 50000, memberName: 'Rajesh Kumar' },
@@ -459,7 +459,7 @@ export const auditLogsData: AuditLog[] = [
   {
     id: 'audit-uuid-003',
     userId: 'user-uuid-002',
-    action: 'EXPENSE_CREATE',
+    action: 'EXPENSECREATE',
     resource: 'expense',
     resourceId: 'exp-uuid-001',
     details: { amount: 5000, category: 'maintenance' },
@@ -483,7 +483,7 @@ export const hasModuleAccess = (user: User, module: string, action: string): boo
 
 export const canAccessResource = (user: User, resource: string, resourceId?: string): boolean => {
   // Super admin can access everything
-  if (user.role === 'super_admin') return true
+  if (user.role === 'superAdmin') return true
   
   // Check specific permissions
   const relevantPermissions = user.permissions.filter(p => 
@@ -631,7 +631,7 @@ export const getStatusColor = (status: string) => {
 // Role color mapping
 export const getRoleColor = (role: string) => {
   switch (role) {
-    case 'super_admin':
+    case 'superAdmin':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
     case 'admin':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'

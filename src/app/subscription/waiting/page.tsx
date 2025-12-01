@@ -1,443 +1,273 @@
-'use client'
+"use client"
 
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Mail, Phone, FileText } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Clock, CheckCircle, Mail, Phone, MessageCircle, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 
-interface PaymentStatus {
-  id: string
-  status: 'pending' | 'approved' | 'rejected'
-  plan: string
-  amount: number
-  transactionId: string
-  submittedAt: string
-  reviewedAt?: string
-  adminNotes?: string
-  rejectionReason?: string
-}
-
-export default function WaitingPage() {
+export default function SubscriptionWaiting() {
   const router = useRouter()
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [timeElapsed, setTimeElapsed] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [status, setStatus] = useState<'pending' | 'processing' | 'completed'>('pending')
 
-  // Simulate time elapsed
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeElapsed(prev => prev + 1)
-      setProgress(prev => {
-        const newProgress = prev + (100 / (24 * 60)) // 24 hours in minutes
-        return newProgress >= 100 ? 100 : newProgress
-      })
-    }, 60000) // Update every minute
+      setElapsedTime(prev => prev + 1)
+    }, 1000)
 
-    return () => clearInterval(timer)
+    // Simulate status changes
+    const statusTimer1 = setTimeout(() => {
+      setStatus('processing')
+    }, 5000)
+
+    const statusTimer2 = setTimeout(() => {
+      setStatus('completed')
+    }, 10000)
+
+    return () => {
+      clearInterval(timer)
+      clearTimeout(statusTimer1)
+      clearTimeout(statusTimer2)
+    }
   }, [])
 
-  // Check payment status
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        // Get auth token from cookies
-        const getCookie = (name: string) => {
-          const value = `; ${document.cookie}`
-          const parts = value.split(`; ${name}=`)
-          if (parts.length === 2) return parts.pop()?.split(';').shift()
-          return null
-        }
-        
-        const authToken = getCookie('auth-token')
-        
-        if (!authToken) {
-          console.log('No auth token found, redirecting to login')
-          router.push('/login')
-          return
-        }
-
-        const response = await fetch('/api/subscription/payment-status', {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        })
-        
-        const data = await response.json()
-
-        if (response.ok && data.authenticated && data.paymentStatus !== 'not-paid') {
-          // Create payment status object from API response
-          const paymentData = data.paymentDetails?.pendingPayment || data.paymentDetails?.paymentProof
-          
-          if (paymentData) {
-            const paymentStatusObj = {
-              id: paymentData.id,
-              status: data.paymentStatus === 'completed' ? 'approved' : 
-                     data.paymentStatus === 'pending' ? 'pending' : 'rejected',
-              plan: paymentData.plan,
-              amount: paymentData.amount,
-              transactionId: paymentData.transactionId,
-              submittedAt: paymentData.createdAt,
-              adminNotes: data.debug?.paymentProofFound ? 'Payment under review' : undefined
-            }
-            
-            setPaymentStatus(paymentStatusObj)
-          } else {
-            setPaymentStatus({
-              id: 'unknown',
-              status: 'pending',
-              plan: 'Unknown',
-              amount: 0,
-              transactionId: 'Unknown',
-              submittedAt: new Date().toISOString(),
-              adminNotes: 'Payment processing...'
-            })
-          }
-          
-          // If payment is approved, redirect to dashboard
-          if (data.paymentStatus === 'completed') {
-            toast.success('🎉 Payment Approved!', {
-              description: 'Your payment has been approved. Redirecting to dashboard...',
-              duration: 3000,
-            })
-            setTimeout(() => {
-              router.push('/client/dashboard')
-            }, 2000)
-          }
-        } else {
-          // No payment found or not authenticated, redirect to subscription
-          console.log('No payment found or not authenticated')
-          if (!data.authenticated) {
-            router.push('/login')
-          } else {
-            router.push('/subscription')
-          }
-        }
-      } catch (error) {
-        console.error('Failed to check payment status:', error)
-        setIsLoading(false)
-      }
-    }
-
-    checkStatus()
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
     
-    // Check status every 30 seconds
-    const interval = setInterval(checkStatus, 30000)
-    return () => clearInterval(interval)
-  }, [router])
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
     if (hours > 0) {
-      return `${hours}h ${mins}m`
+      return `${hours}h ${minutes}m ${secs}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    } else {
+      return `${secs}s`
     }
-    return `${mins}m`
   }
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = () => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending Review</Badge>
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>
+        return 'bg-orange-100 text-orange-800'
+      case 'processing':
+        return 'bg-blue-100 text-blue-800'
+      case 'completed':
+        return 'bg-green-100 text-green-800'
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
-  const handleContactSupport = () => {
-    toast.info('📞 Contact Support', {
-      description: 'Our support team will contact you within 24 hours.',
-      duration: 3000,
-    })
-  }
-
-  const handleViewDetails = () => {
-    if (paymentStatus) {
-      toast.info('📄 Payment Details', {
-        description: `Transaction ID: ${paymentStatus.transactionId}`,
-        duration: 5000,
-      })
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-5 w-5" />
+      case 'processing':
+        return <Mail className="h-5 w-5" />
+      case 'completed':
+        return <CheckCircle className="h-5 w-5" />
+      default:
+        return <Clock className="h-5 w-5" />
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking payment status...</p>
-        </div>
-      </div>
-    )
+  const getStatusText = () => {
+    switch (status) {
+      case 'pending':
+        return 'Payment Verification Pending'
+      case 'processing':
+        return 'Processing Your Subscription'
+      case 'completed':
+        return 'Subscription Activated!'
+      default:
+        return 'Payment Verification Pending'
+    }
   }
 
-  if (!paymentStatus) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <CardTitle>No Payment Found</CardTitle>
-            <CardDescription>
-              No pending payment found. Please complete your payment first.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button onClick={() => router.push('/subscription')}>
-              Complete Payment
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const getStatusDescription = () => {
+    switch (status) {
+      case 'pending':
+        return 'We have received your payment proof and are verifying it. This usually takes 24-48 hours.'
+      case 'processing':
+        return 'Your payment has been verified and we are activating your subscription.'
+      case 'completed':
+        return 'Your subscription has been successfully activated! You can now access all features.'
+      default:
+        return 'We have received your payment proof and are verifying it. This usually takes 24-48 hours.'
+    }
+  }
+
+  const getProgressValue = () => {
+    switch (status) {
+      case 'pending':
+        return 30
+      case 'processing':
+        return 70
+      case 'completed':
+        return 100
+      default:
+        return 30
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Payment Verification in Progress
-          </h1>
-          <p className="text-gray-600">
-            Your payment is being reviewed by our team
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Status Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-2"
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push('/subscription')}
+            className="p-2"
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {paymentStatus.status === 'pending' && (
-                    <>
-                      <Clock className="w-5 h-5 text-yellow-500" />
-                      Payment Under Review
-                    </>
-                  )}
-                  {paymentStatus.status === 'approved' && (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      Payment Approved
-                    </>
-                  )}
-                  {paymentStatus.status === 'rejected' && (
-                    <>
-                      <XCircle className="w-5 h-5 text-red-500" />
-                      Payment Rejected
-                    </>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {paymentStatus.status === 'pending' && 
-                    'Your payment proof is being reviewed. This usually takes 24 hours.'
-                  }
-                  {paymentStatus.status === 'approved' && 
-                    'Your payment has been approved! You can now proceed with signup.'
-                  }
-                  {paymentStatus.status === 'rejected' && 
-                    'Your payment was rejected. Please check the reason below.'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Status Badge */}
-                <div className="flex items-center justify-center">
-                  {getStatusBadge(paymentStatus.status)}
-                </div>
-
-                {/* Progress Bar for Pending */}
-                {paymentStatus.status === 'pending' && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Review Progress</span>
-                      <span>{formatTime(timeElapsed)} elapsed</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                    <p className="text-xs text-gray-500 text-center">
-                      Estimated review time: 24 hours
-                    </p>
-                  </div>
-                )}
-
-                {/* Payment Details */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium text-gray-900">Payment Details</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Plan:</span>
-                      <p className="font-medium">{paymentStatus.plan.toUpperCase()}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Amount:</span>
-                      <p className="font-medium">₹{paymentStatus.amount.toLocaleString('en-IN')}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Transaction ID:</span>
-                      <p className="font-medium">{paymentStatus.transactionId}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Submitted:</span>
-                      <p className="font-medium">{formatDateTime(paymentStatus.submittedAt)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Admin Notes */}
-                {(paymentStatus.adminNotes || paymentStatus.rejectionReason) && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">
-                      {paymentStatus.status === 'rejected' ? 'Rejection Reason' : 'Admin Notes'}
-                    </h4>
-                    <p className="text-blue-800 text-sm">
-                      {paymentStatus.rejectionReason || paymentStatus.adminNotes}
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  {paymentStatus.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={handleViewDetails}
-                        className="flex items-center gap-2"
-                      >
-                        <FileText className="w-4 h-4" />
-                        View Details
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleContactSupport}
-                        className="flex items-center gap-2"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Contact Support
-                      </Button>
-                    </>
-                  )}
-                  {paymentStatus.status === 'approved' && (
-                    <Button
-                      onClick={() => router.push('/signup')}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Proceed to Signup
-                    </Button>
-                  )}
-                  {paymentStatus.status === 'rejected' && (
-                    <Button
-                      onClick={() => router.push('/subscription')}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Try Again
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Info Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-blue-500" />
-                  What Happens Next?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
-                      1
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Review Process</h4>
-                      <p className="text-sm text-gray-600">
-                        Our team reviews your payment proof for authenticity and correctness.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
-                      2
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Verification</h4>
-                      <p className="text-sm text-gray-600">
-                        We verify the transaction details and match with our records.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
-                      3
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Approval</h4>
-                      <p className="text-sm text-gray-600">
-                        Once approved, you'll receive an email and can proceed with signup.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">Need Help?</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <p>📧 support@saanify.com</p>
-                    <p>📞 +91-XXXXXXXXXX</p>
-                    <p>💬 Live chat available</p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Auto-refreshes every 30 seconds</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Subscription Activation</h1>
+            <p className="text-muted-foreground">Track your subscription activation progress</p>
+          </div>
         </div>
+
+        {/* Status Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                {getStatusIcon()}
+                {getStatusText()}
+              </CardTitle>
+              <Badge className={getStatusColor()}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Badge>
+            </div>
+            <CardDescription>{getStatusDescription()}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Activation Progress</span>
+                  <span>{getProgressValue()}%</span>
+                </div>
+                <Progress value={getProgressValue()} className="h-3" />
+              </div>
+
+              {/* Time Elapsed */}
+              <div className="text-center text-sm text-muted-foreground">
+                Time elapsed: {formatTime(elapsedTime)}
+              </div>
+
+              {/* Status Steps */}
+              <div className="space-y-3 pt-4">
+                <div className={`flex items-center gap-3 ${status !== 'pending' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  <div className={`h-4 w-4 rounded-full border-2 ${status !== 'pending' ? 'bg-green-600 border-green-600' : 'border-muted-foreground'}`}></div>
+                  <span className="text-sm">Payment proof submitted</span>
+                </div>
+                <div className={`flex items-center gap-3 ${status === 'processing' || status === 'completed' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  <div className={`h-4 w-4 rounded-full border-2 ${status === 'processing' || status === 'completed' ? 'bg-green-600 border-green-600' : 'border-muted-foreground'}`}></div>
+                  <span className="text-sm">Payment verification</span>
+                </div>
+                <div className={`flex items-center gap-3 ${status === 'completed' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  <div className={`h-4 w-4 rounded-full border-2 ${status === 'completed' ? 'bg-green-600 border-green-600' : 'border-muted-foreground'}`}></div>
+                  <span className="text-sm">Subscription activated</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* What's Next */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>What's Next?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium">Email Notification</p>
+                  <p className="text-sm text-muted-foreground">
+                    You'll receive an email at your registered address once verification is complete.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium">Immediate Access</p>
+                  <p className="text-sm text-muted-foreground">
+                    Once approved, you'll have immediate access to all features of your selected plan.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium">Verification Timeline</p>
+                  <p className="text-sm text-muted-foreground">
+                    Standard verification takes 24-48 hours during business days.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Support */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Need Assistance?</CardTitle>
+            <CardDescription>
+              If you have any questions or need urgent assistance, reach out to our support team.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Button variant="outline" className="justify-start">
+                <Mail className="h-4 w-4 mr-2" />
+                Email Support
+              </Button>
+              
+              <Button variant="outline" className="justify-start">
+                <Phone className="h-4 w-4 mr-2" />
+                Call Us
+              </Button>
+              
+              <Button variant="outline" className="justify-start">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Live Chat
+              </Button>
+            </div>
+            
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Support Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM IST
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Expected Response Time:</strong> Within 2-4 hours
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        {status === 'completed' && (
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => router.push('/subscription')}>
+              View Subscription
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

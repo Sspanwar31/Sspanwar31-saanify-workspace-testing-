@@ -3,20 +3,20 @@
 
 export interface AdminFundTransaction {
   id: string // UUID for future DB integration
-  type: 'personal_in' | 'personal_out' | 'society_loan_in' | 'society_loan_out' | 'society_fund_in' | 'society_fund_out'
+  type: 'personalIn' | 'personalOut' | 'societyLoan_in' | 'societyLoan_out' | 'societyFund_in' | 'societyFund_out'
   amount: number
   date: string // yyyy-mm-dd format
   description: string
   reference?: string // Reference to member, loan, etc.
-  mode: 'cash' | 'online' | 'cheque' | 'bank_transfer'
+  mode: 'cash' | 'online' | 'cheque' | 'bankTransfer'
   category: string // For better categorization
   tags: string[]
-  receipt_url?: string
-  approved_by?: string
+  receiptUrl?: string
+  approvedBy?: string
   status: 'pending' | 'approved' | 'rejected'
-  added_by: string // User ID who added this transaction
-  created_at: string
-  updated_at: string
+  addedBy: string // User ID who added this transaction
+  createdAt: string
+  updatedAt: string
 }
 
 export interface AdminFundSummary {
@@ -79,159 +79,159 @@ export const adminFundData: AdminFundTransaction[] = [
   // Personal fund transactions
   {
     id: 'af-uuid-001',
-    type: 'personal_in',
+    type: 'personalIn',
     amount: 50000,
     date: '2024-01-01',
     description: 'Initial personal fund contribution',
-    mode: 'bank_transfer',
-    category: 'initial_contribution',
+    mode: 'bankTransfer',
+    category: 'initialContribution',
     tags: ['personal', 'initial'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-01-01T10:00:00Z',
-    updated_at: '2024-01-01T10:30:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-01-01T10:00:00Z',
+    updatedAt: '2024-01-01T10:30:00Z'
   },
   {
     id: 'af-uuid-002',
-    type: 'personal_out',
+    type: 'personalOut',
     amount: 15000,
     date: '2024-02-15',
     description: 'Personal expense - office equipment',
     mode: 'online',
-    category: 'office_expense',
+    category: 'officeExpense',
     tags: ['personal', 'equipment'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-02-15T14:20:00Z',
-    updated_at: '2024-02-15T14:45:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-02-15T14:20:00Z',
+    updatedAt: '2024-02-15T14:45:00Z'
   },
   {
     id: 'af-uuid-003',
-    type: 'personal_in',
+    type: 'personalIn',
     amount: 25000,
     date: '2024-03-10',
     description: 'Additional personal fund contribution',
     mode: 'cash',
-    category: 'additional_contribution',
+    category: 'additionalContribution',
     tags: ['personal', 'additional'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-03-10T11:30:00Z',
-    updated_at: '2024-03-10T12:00:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-03-10T11:30:00Z',
+    updatedAt: '2024-03-10T12:00:00Z'
   },
   
   // Society loan transactions
   {
     id: 'af-uuid-004',
-    type: 'society_loan_in',
+    type: 'societyLoan_in',
     amount: 100000,
     date: '2024-01-15',
     description: 'Loan given to society for emergency fund',
     reference: 'society-emergency-001',
-    mode: 'bank_transfer',
-    category: 'emergency_loan',
+    mode: 'bankTransfer',
+    category: 'emergencyLoan',
     tags: ['society', 'loan', 'emergency'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-01-15T09:00:00Z',
-    updated_at: '2024-01-15T09:30:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-01-15T09:30:00Z'
   },
   {
     id: 'af-uuid-005',
-    type: 'society_loan_out',
+    type: 'societyLoan_out',
     amount: 25000,
     date: '2024-04-01',
     description: 'Partial repayment of society loan',
     reference: 'society-emergency-001',
     mode: 'online',
-    category: 'loan_repayment',
+    category: 'loanRepayment',
     tags: ['society', 'repayment'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-04-01T16:45:00Z',
-    updated_at: '2024-04-01T17:15:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-04-01T16:45:00Z',
+    updatedAt: '2024-04-01T17:15:00Z'
   },
   {
     id: 'af-uuid-006',
-    type: 'society_loan_out',
+    type: 'societyLoan_out',
     amount: 25000,
     date: '2024-05-01',
     description: 'Second installment of society loan repayment',
     reference: 'society-emergency-001',
-    mode: 'bank_transfer',
-    category: 'loan_repayment',
+    mode: 'bankTransfer',
+    category: 'loanRepayment',
     tags: ['society', 'repayment'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-05-01T10:15:00Z',
-    updated_at: '2024-05-01T10:45:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-05-01T10:15:00Z',
+    updatedAt: '2024-05-01T10:45:00Z'
   },
   
   // Society fund transactions
   {
     id: 'af-uuid-007',
-    type: 'society_fund_in',
+    type: 'societyFund_in',
     amount: 75000,
     date: '2024-02-01',
     description: 'Contribution to society development fund',
     mode: 'online',
-    category: 'development_fund',
+    category: 'developmentFund',
     tags: ['society', 'development'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-02-01T13:20:00Z',
-    updated_at: '2024-02-01T13:50:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-02-01T13:20:00Z',
+    updatedAt: '2024-02-01T13:50:00Z'
   },
   {
     id: 'af-uuid-008',
-    type: 'society_fund_out',
+    type: 'societyFund_out',
     amount: 20000,
     date: '2024-03-15',
     description: 'Society fund used for community event',
     mode: 'cash',
-    category: 'community_event',
+    category: 'communityEvent',
     tags: ['society', 'event'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-03-15T15:30:00Z',
-    updated_at: '2024-03-15T16:00:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-03-15T15:30:00Z',
+    updatedAt: '2024-03-15T16:00:00Z'
   },
   {
     id: 'af-uuid-009',
-    type: 'society_fund_in',
+    type: 'societyFund_in',
     amount: 30000,
     date: '2024-06-01',
     description: 'Additional contribution to society welfare fund',
-    mode: 'bank_transfer',
-    category: 'welfare_fund',
+    mode: 'bankTransfer',
+    category: 'welfareFund',
     tags: ['society', 'welfare'],
     status: 'approved',
-    approved_by: 'admin-001',
-    added_by: 'admin-001',
-    created_at: '2024-06-01T11:45:00Z',
-    updated_at: '2024-06-01T12:15:00Z'
+    approvedBy: 'admin-001',
+    addedBy: 'admin-001',
+    createdAt: '2024-06-01T11:45:00Z',
+    updatedAt: '2024-06-01T12:15:00Z'
   },
   {
     id: 'af-uuid-010',
-    type: 'personal_out',
+    type: 'personalOut',
     amount: 8000,
     date: '2024-07-10',
     description: 'Personal travel expense for society work',
     mode: 'online',
-    category: 'travel_expense',
-    tags: ['personal', 'travel', 'society_work'],
+    category: 'travelExpense',
+    tags: ['personal', 'travel', 'societyWork'],
     status: 'pending',
-    added_by: 'admin-001',
-    created_at: '2024-07-10T14:20:00Z',
-    updated_at: '2024-07-10T14:20:00Z'
+    addedBy: 'admin-001',
+    createdAt: '2024-07-10T14:20:00Z',
+    updatedAt: '2024-07-10T14:20:00Z'
   }
 ]
 
@@ -239,33 +239,33 @@ export const adminFundData: AdminFundTransaction[] = [
 export const getAdminFundSummary = (transactions: AdminFundTransaction[]): AdminFundSummary => {
   // Personal funds calculations
   const personalIn = transactions
-    .filter(t => t.type === 'personal_in' && t.status === 'approved')
+    .filter(t => t.type === 'personalIn' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const personalOut = transactions
-    .filter(t => t.type === 'personal_out' && t.status === 'approved')
+    .filter(t => t.type === 'personalOut' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const personalBalance = personalIn - personalOut
 
   // Society loans calculations
   const societyLoanIn = transactions
-    .filter(t => t.type === 'society_loan_in' && t.status === 'approved')
+    .filter(t => t.type === 'societyLoan_in' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyLoanOut = transactions
-    .filter(t => t.type === 'society_loan_out' && t.status === 'approved')
+    .filter(t => t.type === 'societyLoan_out' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyLoanBalance = societyLoanIn - societyLoanOut
 
   // Society funds calculations
   const societyFundIn = transactions
-    .filter(t => t.type === 'society_fund_in' && t.status === 'approved')
+    .filter(t => t.type === 'societyFund_in' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyFundOut = transactions
-    .filter(t => t.type === 'society_fund_out' && t.status === 'approved')
+    .filter(t => t.type === 'societyFund_out' && t.status === 'approved')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyFundBalance = societyFundIn - societyFundOut
@@ -290,27 +290,27 @@ export const getAdminFundSummary = (transactions: AdminFundTransaction[]): Admin
   })
 
   const thisMonthPersonalIn = thisMonthTransactions
-    .filter(t => t.type === 'personal_in')
+    .filter(t => t.type === 'personalIn')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const thisMonthPersonalOut = thisMonthTransactions
-    .filter(t => t.type === 'personal_out')
+    .filter(t => t.type === 'personalOut')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const thisMonthSocietyLoanIn = thisMonthTransactions
-    .filter(t => t.type === 'society_loan_in')
+    .filter(t => t.type === 'societyLoan_in')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const thisMonthSocietyLoanOut = thisMonthTransactions
-    .filter(t => t.type === 'society_loan_out')
+    .filter(t => t.type === 'societyLoan_out')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const thisMonthSocietyFundIn = thisMonthTransactions
-    .filter(t => t.type === 'society_fund_in')
+    .filter(t => t.type === 'societyFund_in')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const thisMonthSocietyFundOut = thisMonthTransactions
-    .filter(t => t.type === 'society_fund_out')
+    .filter(t => t.type === 'societyFund_out')
     .reduce((sum, t) => sum + t.amount, 0)
 
   return {
@@ -359,27 +359,27 @@ export const getFundFlowReport = (
   })
 
   const personalIn = periodTransactions
-    .filter(t => t.type === 'personal_in')
+    .filter(t => t.type === 'personalIn')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const personalOut = periodTransactions
-    .filter(t => t.type === 'personal_out')
+    .filter(t => t.type === 'personalOut')
     .reduce((sum, t) => sum + t.amount, 0)
 
   const societyLoanIn = periodTransactions
-    .filter(t => t.type === 'society_loan_in')
+    .filter(t => t.type === 'societyLoan_in')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyLoanOut = periodTransactions
-    .filter(t => t.type === 'society_loan_out')
+    .filter(t => t.type === 'societyLoan_out')
     .reduce((sum, t) => sum + t.amount, 0)
 
   const societyFundIn = periodTransactions
-    .filter(t => t.type === 'society_fund_in')
+    .filter(t => t.type === 'societyFund_in')
     .reduce((sum, t) => sum + t.amount, 0)
   
   const societyFundOut = periodTransactions
-    .filter(t => t.type === 'society_fund_out')
+    .filter(t => t.type === 'societyFund_out')
     .reduce((sum, t) => sum + t.amount, 0)
 
   const totalIn = personalIn + societyLoanIn + societyFundIn
@@ -493,13 +493,13 @@ export const validateAdminFundForm = (transaction: Partial<AdminFundTransaction>
 // Transaction type color mapping
 export const getTransactionTypeColor = (type: string) => {
   switch (type) {
-    case 'personal_in':
-    case 'society_loan_in':
-    case 'society_fund_in':
+    case 'personalIn':
+    case 'societyLoan_in':
+    case 'societyFund_in':
       return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'personal_out':
-    case 'society_loan_out':
-    case 'society_fund_out':
+    case 'personalOut':
+    case 'societyLoan_out':
+    case 'societyFund_out':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
@@ -529,7 +529,7 @@ export const getPaymentModeColor = (mode: string) => {
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
     case 'cheque':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-    case 'bank_transfer':
+    case 'bankTransfer':
       return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
@@ -570,12 +570,12 @@ export const adminFundAPI = {
     return Promise.resolve(getFundFlowReport(adminFundData, startDate, endDate))
   },
   
-  create: async (transaction: Omit<AdminFundTransaction, 'id' | 'created_at' | 'updated_at'>): Promise<AdminFundTransaction> => {
+  create: async (transaction: Omit<AdminFundTransaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<AdminFundTransaction> => {
     const newTransaction: AdminFundTransaction = {
       ...transaction,
       id: generateAdminFundId(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
     return Promise.resolve(newTransaction)
   }

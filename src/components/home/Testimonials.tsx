@@ -7,6 +7,33 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
+const testimonials = [
+  {
+    name: "Rajesh Kumar",
+    role: "Society Secretary",
+    society: "Green Valley Gardens",
+    content: "Saanify has transformed how we manage our society. The automated features have saved us countless hours, and members love the transparency.",
+    rating: 5,
+    delay: 0.1
+  },
+  {
+    name: "Priya Sharma",
+    role: "Treasurer",
+    society: "Sunset Apartments",
+    content: "The financial tracking and reporting features are exceptional. We've improved our collection rate by 40% since implementing Saanify.",
+    rating: 5,
+    delay: 0.2
+  },
+  {
+    name: "Amit Patel",
+    role: "Managing Committee",
+    society: "Ocean View Residency",
+    content: "Best decision we made for our society management. The support team is amazing, and platform keeps getting better with new features.",
+    rating: 5,
+    delay: 0.3
+  }
+]
+
 interface TestimonialProps {
   name: string
   role: string
@@ -101,33 +128,6 @@ export default function Testimonials() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
 
-  const testimonials = [
-    {
-      name: "Rajesh Kumar",
-      role: "Society Secretary",
-      society: "Green Valley Gardens",
-      content: "Saanify has transformed how we manage our society. The automated features have saved us countless hours, and members love the transparency.",
-      rating: 5,
-      delay: 0.1
-    },
-    {
-      name: "Priya Sharma",
-      role: "Treasurer",
-      society: "Sunset Apartments",
-      content: "The financial tracking and reporting features are exceptional. We've improved our collection rate by 40% since implementing Saanify.",
-      rating: 5,
-      delay: 0.2
-    },
-    {
-      name: "Amit Patel",
-      role: "Managing Committee",
-      society: "Ocean View Residency",
-      content: "Best decision we made for our society management. The support team is amazing, and the platform keeps getting better with new features.",
-      rating: 5,
-      delay: 0.3
-    }
-  ]
-
   // Auto-rotate testimonials
   useEffect(() => {
     if (!isAutoPlaying) return
@@ -137,7 +137,7 @@ export default function Testimonials() {
     }, 5000) // Change every 5 seconds
 
     return () => clearInterval(interval)
-  }, [isAutoPlaying, testimonials.length])
+  }, [isAutoPlaying])
 
   const handlePrevTestimonial = () => {
     setIsAutoPlaying(false)

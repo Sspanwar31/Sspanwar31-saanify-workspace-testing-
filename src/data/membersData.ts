@@ -6,7 +6,7 @@ export interface Member {
   name: string
   phone: string // unique phone number
   aadhar: string // unique aadhar number
-  join_date: string // yyyy-mm-dd format
+  joinDate: string // yyyy-mm-dd format
   address: string
   nominee: {
     name: string
@@ -35,7 +35,7 @@ export const membersData: Member[] = [
     name: 'Rajesh Kumar',
     phone: '+91 98765 43210',
     aadhar: '1234-5678-9012',
-    join_date: '2024-01-15',
+    joinDate: '2024-01-15',
     address: '123 Main Street, Mumbai, Maharashtra 400001',
     nominee: {
       name: 'Sunita Kumar',
@@ -52,7 +52,7 @@ export const membersData: Member[] = [
     name: 'Priya Sharma',
     phone: '+91 98765 43211',
     aadhar: '2345-6789-0123',
-    join_date: '2024-02-01',
+    joinDate: '2024-02-01',
     address: '456 Oak Avenue, Delhi, Delhi 110001',
     nominee: {
       name: 'Amit Sharma',
@@ -69,7 +69,7 @@ export const membersData: Member[] = [
     name: 'Amit Patel',
     phone: '+91 98765 43212',
     aadhar: '3456-7890-1234',
-    join_date: '2024-01-20',
+    joinDate: '2024-01-20',
     address: '789 Pine Road, Ahmedabad, Gujarat 380001',
     nominee: {
       name: 'Rekha Patel',
@@ -86,7 +86,7 @@ export const membersData: Member[] = [
     name: 'Sunita Reddy',
     phone: '+91 98765 43213',
     aadhar: '4567-8901-2345',
-    join_date: '2024-03-10',
+    joinDate: '2024-03-10',
     address: '321 Elm Street, Bangalore, Karnataka 560001',
     nominee: {
       name: 'Vikram Reddy',
@@ -103,7 +103,7 @@ export const membersData: Member[] = [
     name: 'Vikram Singh',
     phone: '+91 98765 43214',
     aadhar: '5678-9012-3456',
-    join_date: '2024-02-15',
+    joinDate: '2024-02-15',
     address: '567 Maple Lane, Jaipur, Rajasthan 302001',
     nominee: {
       name: 'Anjali Singh',
@@ -120,7 +120,7 @@ export const membersData: Member[] = [
     name: 'Anjali Gupta',
     phone: '+91 98765 43215',
     aadhar: '6789-0123-4567',
-    join_date: '2024-04-05',
+    joinDate: '2024-04-05',
     address: '890 Cedar Court, Kolkata, West Bengal 700001',
     nominee: {
       name: 'Rahul Gupta',
@@ -137,7 +137,7 @@ export const membersData: Member[] = [
     name: 'Mahesh Kumar',
     phone: '+91 98765 43216',
     aadhar: '7890-1234-5678',
-    join_date: '2024-03-25',
+    joinDate: '2024-03-25',
     address: '234 Birch Road, Chennai, Tamil Nadu 600001',
     nominee: {
       name: 'Lakshmi Kumar',
@@ -154,7 +154,7 @@ export const membersData: Member[] = [
     name: 'Kavita Devi',
     phone: '+91 98765 43217',
     aadhar: '8901-2345-6789',
-    join_date: '2024-05-12',
+    joinDate: '2024-05-12',
     address: '678 Spruce Avenue, Hyderabad, Telangana 500001',
     nominee: {
       name: 'Ramesh Devi',
@@ -178,7 +178,7 @@ export const getMemberStats = (members: Member[]): MemberStats => {
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
   const newMembersThisMonth = members.filter(member => {
-    const joinDate = new Date(member.join_date)
+    const joinDate = new Date(member.joinDate)
     return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear
   }).length
   
@@ -241,7 +241,7 @@ export const validateMemberForm = (member: Partial<Member>, isEdit: boolean = fa
     errors.push('Valid Aadhar number is required')
   }
 
-  if (!member.join_date) {
+  if (!member.joinDate) {
     errors.push('Join date is required')
   }
 

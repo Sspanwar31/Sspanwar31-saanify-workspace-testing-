@@ -1,341 +1,409 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, CreditCard, Users, Calendar, TrendingUp, Search } from 'lucide-react'
+import { Plus, CreditCard, Users, Calendar, TrendingUp, RefreshCw, Download, Edit, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-
-interface Loan {
-  id: number
-  memberName: string
-  amount: number
-  type: 'PERSONAL' | 'HOME'
-  status: 'ACTIVE' | 'PENDING' | 'COMPLETED'
-  date: string
-  interestRate: number
-}
-
-interface Stats {
-  totalLoans: number
-  activeLoans: number
-  pendingLoans: number
-  completedLoans: number
-}
-
-// Initial mock data ko component se bahar rakhein ya seedhe useState mein daalein
-const initialLoans: Loan[] = [
-    { id: 1, memberName: 'John Doe', amount: 50000, type: 'PERSONAL', status: 'ACTIVE', date: '2024-01-15', interestRate: 12 },
-    { id: 2, memberName: 'Jane Smith', amount: 75000, type: 'HOME', status: 'ACTIVE', date: '2024-01-14', interestRate: 10 },
-    { id: 3, memberName: 'Bob Johnson', amount: 25000, type: 'PERSONAL', status: 'PENDING', date: '2024-01-13', interestRate: 14 },
-    { id: 4, memberName: 'Alice Brown', amount: 100000, type: 'HOME', status: 'COMPLETED', date: '2024-01-12', interestRate: 11 },
-    { id: 5, memberName: 'Charlie Wilson', amount: 30000, type: 'PERSONAL', status: 'ACTIVE', date: '2024-01-11', interestRate: 13 }
-]
-
-const initialNewLoanState = {
-    memberName: '',
-    amount: '',
-    type: 'PERSONAL' as 'PERSONAL' | 'HOME',
-};
+import AutoTable from '@/components/ui/auto-table'
+import AutoForm from '@/components/ui/auto-form'
+import { loansData, Loan } from '@/data/loansData'
+import { membersData, getActiveMembers } from '@/data/membersData'
+import { toast } from 'sonner'
 
 export default function LoansPage() {
-  const [searchTerm, setSearchTerm] = useState<string>('')
-  const [selectedStatus, setSelectedStatus] = useState<string>('all')
-  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false)
+  const [loans, setLoans] = useState(loansData)
+  const [loading, setLoading] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
+  const [activeMembers, setActiveMembers] = useState(membersData.filter(m => m.status === 'active'))
+  const [currentEMI, setCurrentEMI] = useState<number>(0)
 
-  // --- SOLUTION 1: 'loans' ko state mein daalein taaki hum ise update kar sakein ---
-  const [loans, setLoans] = useState<Loan[]>(initialLoans);
-  
-  // --- SOLUTION 2: Naye loan ke form data ke liye state banayein ---
-  const [newLoanData, setNewLoanData] = useState(initialNewLoanState);
-
-  const stats: Stats = useMemo(() => ({
+  // Calculate statistics based on enhanced loan data
+  const stats = useMemo(() => ({
     totalLoans: loans.reduce((sum, loan) => sum + loan.amount, 0),
-    activeLoans: loans.filter(loan => loan.status === 'ACTIVE').length,
-    pendingLoans: loans.filter(loan => loan.status === 'PENDING').length,
-    completedLoans: loans.filter(loan => loan.status === 'COMPLETED').length
+    activeLoans: loans.filter(loan => loan.status === 'active').length,
+    pendingLoans: loans.filter(loan => loan.status === 'pending').length,
+    completedLoans: loans.filter(loan => loan.status === 'completed').length
   }), [loans])
 
-  const filteredLoans: Loan[] = useMemo(() => {
-    return loans.filter(loan => {
-      const matchesSearch = loan.memberName.toLowerCase().includes(searchTerm.toLowerCase())
-      // --- CHHOTA SUDHAR: Case-insensitive banane ke liye ---
-      const matchesStatus = selectedStatus === 'all' || loan.status.toLowerCase() === selectedStatus.toLowerCase()
-      return matchesSearch && matchesStatus
-    })
-  }, [loans, searchTerm, selectedStatus])
-  
-  // --- SOLUTION 3: Naye loan ko add karne ke liye function banayein ---
-  const handleAddLoan = () => {
-    if (!newLoanData.memberName || !newLoanData.amount) {
-        alert("Please fill all the fields.");
-        return;
+  const handleAddLoan = (newLoan: any) => {
+    const calculatedEMI = calculateEMI(
+      parseInt(newLoan.amount),
+      parseFloat(newLoan.interest),
+      parseInt(newLoan.duration)
+    )
+    
+    const loanWithId = {
+      ...newLoan,
+      id: `loan-uuid-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`,
+      status: 'pending',
+      remainingBalance: newLoan.amount,
+      emi: calculatedEMI,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + parseInt(newLoan.duration || 12))).toISOString().split('T')[0],
+      nextEmiDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
-
-    const newLoan: Loan = {
-        id: loans.length + 1, // Simple ID generation
-        memberName: newLoanData.memberName,
-        amount: Number(newLoanData.amount),
-        type: newLoanData.type,
-        status: 'PENDING', // Naya loan default mein PENDING hoga
-        date: new Date().toISOString().split('T')[0], // Aaj ki date
-        interestRate: 12, // Default interest rate
-    };
-
-    setLoans([...loans, newLoan]); // Purane loans ke saath naya loan add karein
-    setIsAddModalOpen(false); // Modal band karein
-    setNewLoanData(initialNewLoanState); // Form ko reset karein
-  }
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      setNewLoanData(prev => ({...prev, [name]: value}));
+    setLoans([...loans, loanWithId])
+    setCurrentEMI(0) // Reset EMI after adding
+    toast.success('✅ Loan Added', {
+      description: `Loan for ${newLoan.memberId} has been added successfully with EMI: ₹${calculatedEMI.toLocaleString('en-IN')}`,
+      duration: 3000
+    })
   }
 
-  const handleSelectChange = (value: 'PERSONAL' | 'HOME') => {
-      setNewLoanData(prev => ({...prev, type: value}));
+  const handleEditLoan = (loan: Loan) => {
+    setEditingLoan(loan)
   }
 
+  const handleUpdateLoan = (updatedLoan: any) => {
+    const calculatedEMI = calculateEMI(
+      parseInt(updatedLoan.amount),
+      parseFloat(updatedLoan.interest),
+      parseInt(updatedLoan.duration)
+    )
+    
+    setLoans(loans.map(loan => 
+      loan.id === editingLoan?.id 
+        ? { 
+            ...loan, 
+            ...updatedLoan, 
+            emi: calculatedEMI,
+            updated_at: new Date().toISOString() 
+          }
+        : loan
+    ))
+    setEditingLoan(null)
+    setCurrentEMI(0) // Reset EMI after updating
+    toast.success('✅ Loan Updated', {
+      description: `Loan has been updated successfully with new EMI: ₹${calculatedEMI.toLocaleString('en-IN')}`,
+      duration: 3000
+    })
+  }
+
+  const handleDeleteLoan = (loanId: string) => {
+    if (confirm('Are you sure you want to delete this loan?')) {
+      setLoans(loans.filter(loan => loan.id !== loanId))
+      toast.success('🗑️ Loan Deleted', {
+        description: 'Loan has been deleted successfully',
+        duration: 3000
+      })
+    }
+  }
+
+  // EMI Calculation Function
+  const calculateEMI = (principal: number, annualRate: number, tenureMonths: number): number => {
+    if (!principal || !annualRate || !tenureMonths) return 0
+    
+    const monthlyRate = annualRate / 12 / 100
+    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths)) / 
+                (Math.pow(1 + monthlyRate, tenureMonths) - 1)
+    return Math.round(emi * 100) / 100 // Round to 2 decimal places
+  }
+
+  // Handle form data change for EMI calculation
+  const handleFormDataChange = (formData: Record<string, any>) => {
+    const amount = parseInt(formData.amount) || 0
+    const interest = parseFloat(formData.interest) || 0
+    const duration = parseInt(formData.duration) || 0
+    
+    if (amount > 0 && interest > 0 && duration > 0) {
+      const emi = calculateEMI(amount, interest, duration)
+      setCurrentEMI(emi)
+    } else {
+      setCurrentEMI(0)
+    }
+  }
+
+  const handleRefresh = () => {
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      toast.success('🔄 Data Refreshed', {
+        description: 'Loan data has been refreshed',
+        duration: 2000
+      })
+    }, 1000)
+  }
+
+  const handleExport = () => {
+    toast.info('📊 Export Started', {
+      description: 'Loan data is being exported to CSV',
+      duration: 3000
+    })
+  }
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
+      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300',
+      completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+      rejected: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+    }
+    return (
+      <Badge className={variants[status as keyof typeof variants] || variants.pending}>
+        {status}
+      </Badge>
+    )
+  }
+
+  // AutoForm Configuration for Loans
+  const loanFormFields = {
+    memberId: {
+      type: 'select' as const,
+      label: 'Select Member',
+      placeholder: 'Choose a member',
+      required: true,
+      options: activeMembers.map(member => `${member.name} (${member.id})`)
+    },
+    amount: {
+      type: 'text' as const,
+      label: 'Loan Amount (₹)',
+      placeholder: 'Enter loan amount',
+      required: true,
+      validation: {
+        min: 1000,
+        max: 10000000,
+        pattern: /^\d+$/,
+        custom: (value: string) => {
+          const amount = parseInt(value)
+          if (amount < 1000) return 'Minimum loan amount is ₹1,000'
+          if (amount > 10000000) return 'Maximum loan amount is ₹1,00,00,000'
+          return null
+        }
+      }
+    },
+    interest: {
+      type: 'text' as const,
+      label: 'Interest Rate (%)',
+      placeholder: 'Annual interest rate',
+      required: true,
+      validation: {
+        min: 1,
+        max: 36,
+        pattern: /^\d+(\.\d{1,2})?$/,
+        custom: (value: string) => {
+          const rate = parseFloat(value)
+          if (rate < 1) return 'Minimum interest rate is 1%'
+          if (rate > 36) return 'Maximum interest rate is 36%'
+          return null
+        }
+      }
+    },
+    duration: {
+      type: 'select' as const,
+      label: 'Loan Duration',
+      placeholder: 'Select duration',
+      required: true,
+      options: ['3', '6', '12', '18', '24', '36', '48', '60']
+    },
+    description: {
+      type: 'textarea' as const,
+      label: 'Loan Description',
+      placeholder: 'Purpose of the loan',
+      required: false
+    },
+    depositReference: {
+      type: 'text' as const,
+      label: 'Deposit Reference',
+      placeholder: 'Reference to passbook deposit',
+      required: false
+    },
+    memberDepositAmount: {
+      type: 'text' as const,
+      label: 'Member Deposit Amount (₹)',
+      placeholder: 'Total deposit amount for 80% calculation',
+      required: false,
+      validation: {
+        pattern: /^\d+$/,
+        custom: (value: string) => {
+          if (value && parseInt(value) < 1000) return 'Minimum deposit amount is ₹1,000'
+          return null
+        }
+      }
+    }
+  }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        className="mb-8"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Loans Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Manage and track all member loans
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+              <CreditCard className="h-8 w-8 text-blue-600" />
+              Loans Management
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">
+              Manage and track all member loans with EMI calculations
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Loan
+            </Button>
+          </div>
         </div>
-        
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Loan
-        </Button>
       </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Loans</CardTitle>
-              <CreditCard className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{stats.totalLoans.toLocaleString()}</div>
-              <p className="text-xs text-blue-100">All active loans</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active</CardTitle>
-              <Users className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeLoans}</div>
-              <p className="text-xs text-green-100">Currently active</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Calendar className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingLoans}</div>
-              <p className="text-xs text-yellow-100">Awaiting approval</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <TrendingUp className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedLoans}</div>
-              <p className="text-xs text-purple-100">Fully paid</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Loans</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search loans..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
-                />
-              </div>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Member</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Amount</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Interest</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLoans.map((loan) => (
-                  <tr key={loan.id} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{loan.memberName}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">₹{loan.amount.toLocaleString()}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={
-                        loan.type === 'PERSONAL' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
-                      }>
-                        {loan.type}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{loan.interestRate}%</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{loan.date}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={
-                        loan.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                        loan.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }>
-                        {loan.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">View</Button>
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* --- SOLUTION 4: Modal ke inputs ko state se connect karein --- */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
-          >
-            <h2 className="text-xl font-bold mb-4">Add New Loan</h2>
-            <div className="space-y-4">
+      {/* Statistics Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+      >
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium mb-1">Member Name</label>
-                <Input 
-                  name="memberName"
-                  placeholder="Enter member name"
-                  value={newLoanData.memberName}
-                  onChange={handleInputChange}
-                />
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Loans</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  ₹{stats.totalLoans.toLocaleString('en-IN')}
+                </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
-                <Input 
-                  name="amount"
-                  type="number" 
-                  placeholder="Enter amount"
-                  value={newLoanData.amount}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
-                <Select value={newLoanData.type} onValueChange={handleSelectChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select loan type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PERSONAL">Personal</SelectItem>
-                    <SelectItem value="HOME">Home</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => setIsAddModalOpen(false)} variant="outline" className="flex-1">
-                  Cancel
-                </Button>
-                {/* Submit button ab handleAddLoan function ko call karega */}
-                <Button onClick={handleAddLoan} className="flex-1">
-                  Add Loan
-                </Button>
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <CreditCard className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-          </motion.div>
-        </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active</p>
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.activeLoans}</p>
+              </div>
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
+                <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pending</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pendingLoans}</p>
+              </div>
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                <Calendar className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Completed</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.completedLoans}</p>
+              </div>
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Loans Table - Using AutoTable with Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <AutoTable 
+          data={loans} 
+          title="Loans"
+          actions={(loan: Loan) => (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEditLoan(loan)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteLoan(loan.id)}
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:border-red-300"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        />
+      </motion.div>
+
+      {/* AutoForm for Add/Edit Loan */}
+      <AutoForm
+        isOpen={isAddModalOpen || !!editingLoan}
+        onClose={() => {
+          setIsAddModalOpen(false)
+          setEditingLoan(null)
+          setCurrentEMI(0) // Reset EMI when closing
+        }}
+        onSubmit={editingLoan ? handleUpdateLoan : handleAddLoan}
+        editingData={editingLoan}
+        title={editingLoan ? 'Edit Loan' : 'Add New Loan'}
+        description={editingLoan 
+          ? 'Update loan information below'
+          : 'Fill in details to add a new loan'
+        }
+        fields={loanFormFields}
+        excludeFields={['id', 'status', 'remainingBalance', 'startDate', 'endDate', 'nextEmiDate', 'approvedBy', 'approvedDate', 'createdAt', 'updatedAt', 'emi']}
+        onFormDataChange={handleFormDataChange}
+      />
+
+      {/* EMI Display */}
+      {currentEMI > 0 && (isAddModalOpen || editingLoan) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50"
+        >
+          <div className="text-sm font-medium">Calculated EMI</div>
+          <div className="text-2xl font-bold">₹{currentEMI.toLocaleString('en-IN')}</div>
+          <div className="text-xs opacity-90">per month</div>
+        </motion.div>
       )}
     </div>
   )

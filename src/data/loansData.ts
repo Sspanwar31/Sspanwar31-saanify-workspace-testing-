@@ -10,17 +10,17 @@ export interface Loan {
   duration: number // Duration in months
   emi: number // Calculated EMI amount
   status: 'pending' | 'approved' | 'active' | 'completed' | 'rejected'
-  remaining_balance: number
-  start_date: string // yyyy-mm-dd format
-  end_date: string // yyyy-mm-dd format
-  next_emi_date: string // yyyy-mm-dd format
+  remainingBalance: number
+  startDate: string // yyyy-mm-dd format
+  endDate: string // yyyy-mm-dd format
+  nextEmiDate: string // yyyy-mm-dd format
   description?: string
-  approved_by?: string
-  approved_date?: string
-  created_at: string
-  updated_at: string
-  deposit_reference?: string // Reference to passbook deposit entry
-  member_deposit_amount: number // Total deposit amount for 80% calculation
+  approvedBy?: string
+  approvedDate?: string
+  createdAt: string
+  updatedAt: string
+  depositReference?: string // Reference to passbook deposit entry
+  memberDepositAmount: number // Total deposit amount for 80% calculation
 }
 
 // Enhanced loans data with deposit references and validation
@@ -33,17 +33,17 @@ export const loansData: Loan[] = [
     duration: 12,
     emi: 3553.95,
     status: 'active',
-    remaining_balance: 35540,
-    start_date: '2024-01-15',
-    end_date: '2025-01-15',
-    next_emi_date: '2024-12-15',
+    remainingBalance: 35540,
+    startDate: '2024-01-15',
+    endDate: '2025-01-15',
+    nextEmiDate: '2024-12-15',
     description: 'Personal loan for home renovation',
-    approved_by: 'admin-001',
-    approved_date: '2024-01-14',
-    created_at: '2024-01-10T10:00:00Z',
-    updated_at: '2024-11-15T14:30:00Z',
-    deposit_reference: 'pb-uuid-001',
-    member_deposit_amount: 50000
+    approvedBy: 'admin-001',
+    approvedDate: '2024-01-14',
+    createdAt: '2024-01-10T10:00:00Z',
+    updatedAt: '2024-11-15T14:30:00Z',
+    depositReference: 'pb-uuid-001',
+    memberDepositAmount: 50000
   },
   {
     id: 'loan-uuid-002',
@@ -53,17 +53,17 @@ export const loansData: Loan[] = [
     duration: 18,
     emi: 3603.42,
     status: 'active',
-    remaining_balance: 47255,
-    start_date: '2024-03-01',
-    end_date: '2025-08-01',
-    next_emi_date: '2024-12-01',
+    remainingBalance: 47255,
+    startDate: '2024-03-01',
+    endDate: '2025-08-01',
+    nextEmiDate: '2024-12-01',
     description: 'Business expansion loan',
-    approved_by: 'admin-001',
-    approved_date: '2024-02-28',
-    created_at: '2024-02-20T09:30:00Z',
-    updated_at: '2024-11-01T16:45:00Z',
-    deposit_reference: 'pb-uuid-004',
-    member_deposit_amount: 75000
+    approvedBy: 'admin-001',
+    approvedDate: '2024-02-28',
+    createdAt: '2024-02-20T09:30:00Z',
+    updatedAt: '2024-11-01T16:45:00Z',
+    depositReference: 'pb-uuid-004',
+    memberDepositAmount: 75000
   },
   {
     id: 'loan-uuid-003',
@@ -73,17 +73,17 @@ export const loansData: Loan[] = [
     duration: 6,
     emi: 4350.85,
     status: 'completed',
-    remaining_balance: 0,
-    start_date: '2024-01-15',
-    end_date: '2024-07-15',
-    next_emi_date: '',
+    remainingBalance: 0,
+    startDate: '2024-01-15',
+    endDate: '2024-07-15',
+    nextEmiDate: '',
     description: 'Emergency medical loan',
-    approved_by: 'admin-001',
-    approved_date: '2024-01-14',
-    created_at: '2024-01-10T16:45:00Z',
-    updated_at: '2024-07-15T10:20:00Z',
-    deposit_reference: 'pb-uuid-006',
-    member_deposit_amount: 30000
+    approvedBy: 'admin-001',
+    approvedDate: '2024-01-14',
+    createdAt: '2024-01-10T16:45:00Z',
+    updatedAt: '2024-07-15T10:20:00Z',
+    depositReference: 'pb-uuid-006',
+    memberDepositAmount: 30000
   },
   {
     id: 'loan-uuid-004',
@@ -93,17 +93,17 @@ export const loansData: Loan[] = [
     duration: 24,
     emi: 3618.18,
     status: 'pending',
-    remaining_balance: 86880,
-    start_date: '2025-11-30',
-    end_date: '2027-11-30',
-    next_emi_date: '2025-12-30',
+    remainingBalance: 86880,
+    startDate: '2025-11-30',
+    endDate: '2027-11-30',
+    nextEmiDate: '2025-12-30',
     description: 'Education loan for higher studies',
-    approved_by: '',
-    approved_date: '',
-    created_at: '2024-11-20T13:15:00Z',
-    updated_at: '2024-11-20T13:15:00Z',
-    deposit_reference: 'pb-deposit-uuid-005',
-    member_deposit_amount: 100000
+    approvedBy: '',
+    approvedDate: '',
+    createdAt: '2024-11-20T13:15:00Z',
+    updatedAt: '2024-11-20T13:15:00Z',
+    depositReference: 'pb-deposit-uuid-005',
+    memberDepositAmount: 100000
   },
   {
     id: 'loan-uuid-005',
@@ -113,17 +113,17 @@ export const loansData: Loan[] = [
     duration: 12,
     emi: 3093.36,
     status: 'active',
-    remaining_balance: 18500,
-    start_date: '2024-06-01',
-    end_date: '2025-06-01',
-    next_emi_date: '2024-12-01',
+    remainingBalance: 18500,
+    startDate: '2024-06-01',
+    endDate: '2025-06-01',
+    nextEmiDate: '2024-12-01',
     description: 'Home appliance loan',
-    approved_by: 'admin-001',
-    approved_date: '2024-05-30',
-    created_at: '2024-05-25T15:30:00Z',
-    updated_at: '2024-11-01T09:15:00Z',
-    deposit_reference: 'pb-deposit-uuid-006',
-    member_deposit_amount: 43750
+    approvedBy: 'admin-001',
+    approvedDate: '2024-05-30',
+    createdAt: '2024-05-25T15:30:00Z',
+    updatedAt: '2024-11-01T09:15:00Z',
+    depositReference: 'pb-deposit-uuid-006',
+    memberDepositAmount: 43750
   },
   {
     id: 'loan-uuid-006',
@@ -133,17 +133,17 @@ export const loansData: Loan[] = [
     duration: 15,
     emi: 3536.82,
     status: 'active',
-    remaining_balance: 28437,
-    start_date: '2024-04-10',
-    end_date: '2025-07-10',
-    next_emi_date: '2024-12-10',
+    remainingBalance: 28437,
+    startDate: '2024-04-10',
+    endDate: '2025-07-10',
+    nextEmiDate: '2024-12-10',
     description: 'Agricultural loan',
-    approved_by: 'admin-001',
-    approved_date: '2024-04-08',
-    created_at: '2024-04-05T11:20:00Z',
-    updated_at: '2024-11-10T14:00:00Z',
-    deposit_reference: 'pb-deposit-uuid-007',
-    member_deposit_amount: 62500
+    approvedBy: 'admin-001',
+    approvedDate: '2024-04-08',
+    createdAt: '2024-04-05T11:20:00Z',
+    updatedAt: '2024-11-10T14:00:00Z',
+    depositReference: 'pb-deposit-uuid-007',
+    memberDepositAmount: 62500
   }
 ]
 

@@ -95,12 +95,12 @@ export function useDataCache<T>(
     }
   }, [fetcher, getCachedData, setCachedData, onSuccess, onError])
 
-  // Initial fetch
+  // Initial fetch - prevent infinite re-renders
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+  }, []) // Remove fetchData dependency to prevent infinite re-renders
 
-  // Set up auto refetch
+  // Set up auto refetch - prevent infinite re-renders
   useEffect(() => {
     if (refetchInterval) {
       intervalRef.current = setInterval(() => {
@@ -113,7 +113,7 @@ export function useDataCache<T>(
         }
       }
     }
-  }, [fetchData, refetchInterval])
+  }, [refetchInterval]) // Remove fetchData dependency to prevent infinite re-renders
 
   // Manual refresh
   const refresh = useCallback(() => {

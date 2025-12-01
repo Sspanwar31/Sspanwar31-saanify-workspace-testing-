@@ -144,28 +144,28 @@ export const constants = {
   
   // Role constants
   ROLES: {
-    SUPER_ADMIN: 'super_admin',
+    SUPERADMIN: 'superAdmin',
     ADMIN: 'admin',
     TREASURER: 'treasurer',
     CLIENT: 'client'
   },
   
   // Transaction types
-  TRANSACTION_TYPES: {
+  TRANSACTIONTYPES: {
     CREDIT: 'credit',
     DEBIT: 'debit'
   },
   
   // Payment modes
-  PAYMENT_MODES: {
+  PAYMENTMODES: {
     CASH: 'cash',
     ONLINE: 'online',
     CHEQUE: 'cheque',
-    BANK_TRANSFER: 'bank_transfer'
+    BANKTRANSFER: 'bankTransfer'
   },
   
   // Categories
-  EXPENSE_CATEGORIES: {
+  EXPENSECATEGORIES: {
     MAINTENANCE: 'maintenance',
     REPAIR: 'repair',
     EVENT: 'event',
@@ -176,29 +176,29 @@ export const constants = {
     OTHER: 'other'
   },
   
-  INCOME_CATEGORIES: {
+  INCOMECATEGORIES: {
     INTEREST: 'interest',
     FINE: 'fine',
     DONATION: 'donation',
-    OTHER_INCOME: 'other_income'
+    OTHERINCOME: 'otherIncome'
   },
   
   // Pagination defaults
   PAGINATION: {
-    DEFAULT_PAGE: 1,
-    DEFAULT_LIMIT: 20,
-    MAX_LIMIT: 100
+    DEFAULTPAGE: 1,
+    DEFAULTLIMIT: 20,
+    MAXLIMIT: 100
   },
   
   // Validation rules
   VALIDATION: {
-    MIN_PASSWORD_LENGTH: 8,
-    MAX_PHONE_LENGTH: 15,
-    MIN_AGE: 18,
-    MAX_LOAN_AMOUNT: 1000000,
-    MIN_LOAN_AMOUNT: 1000,
-    MAX_INTEREST_RATE: 50,
-    MIN_INTEREST_RATE: 0
+    MINPASSWORD_LENGTH: 8,
+    MAXPHONE_LENGTH: 15,
+    MINAGE: 18,
+    MAXLOAN_AMOUNT: 1000000,
+    MINLOAN_AMOUNT: 1000,
+    MAXINTEREST_RATE: 50,
+    MININTEREST_RATE: 0
   }
 }
 

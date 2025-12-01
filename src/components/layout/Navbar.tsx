@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, LogIn, User, Github, BarChart3, Shield, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import GitHubIntegration from '@/components/github/GitHubIntegration'
 
 export default function Navbar() {
   const router = useRouter()
@@ -15,6 +17,7 @@ export default function Navbar() {
   const [activeSection, setActiveSection] = useState('')
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showGitHubDialog, setShowGitHubDialog] = useState(false)
 
   // Check authentication and role on mount
   useEffect(() => {
@@ -114,11 +117,8 @@ export default function Navbar() {
     
     switch (action) {
       case 'github':
-        // Open GitHub integration
-        const githubButton = document.querySelector('[data-github-toggle]') as HTMLButtonElement
-        if (githubButton) {
-          githubButton.click()
-        }
+        // Open GitHub integration dialog
+        setShowGitHubDialog(true)
         break
       case 'analytics':
         handleNavClick('/analytics', 'Analytics')
@@ -451,6 +451,19 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* GitHub Integration Dialog */}
+      <Dialog open={showGitHubDialog} onOpenChange={setShowGitHubDialog}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl font-bold">
+              <Github className="h-6 w-6" />
+              GitHub Integration
+            </DialogTitle>
+          </DialogHeader>
+          <GitHubIntegration />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

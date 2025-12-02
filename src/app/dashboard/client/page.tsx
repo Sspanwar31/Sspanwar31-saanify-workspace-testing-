@@ -23,7 +23,7 @@ interface UserData {
   id: string;
   name: string;
   email: string;
-  subscriptionStatus: string;
+  subscriptionStatus: string | null;
   plan: string | null;
   trialEndsAt: string | null;
   expiryDate: string | null;
@@ -92,7 +92,10 @@ export default function ClientDashboard() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) {
+      return 'bg-gray-100 text-gray-800';
+    }
     switch (status.toLowerCase()) {
       case 'active':
         return 'bg-green-100 text-green-800';
@@ -107,7 +110,10 @@ export default function ClientDashboard() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | null | undefined) => {
+    if (!status) {
+      return <AlertCircle className="h-4 w-4" />;
+    }
     switch (status.toLowerCase()) {
       case 'active':
         return <CheckCircle className="h-4 w-4" />;
@@ -272,7 +278,7 @@ export default function ClientDashboard() {
                   <Badge className={getStatusColor(userData.subscriptionStatus)}>
                     <div className="flex items-center space-x-1">
                       {getStatusIcon(userData.subscriptionStatus)}
-                      <span>{userData.subscriptionStatus.toUpperCase()}</span>
+                      <span>{userData.subscriptionStatus ? userData.subscriptionStatus.toUpperCase() : 'UNKNOWN'}</span>
                     </div>
                   </Badge>
                 </div>
@@ -327,7 +333,7 @@ export default function ClientDashboard() {
                   </Alert>
                 )}
                 
-                {userData.subscriptionStatus === 'EXPIRED' && (
+                  {userData.subscriptionStatus === 'EXPIRED' && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

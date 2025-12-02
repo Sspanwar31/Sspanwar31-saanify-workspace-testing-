@@ -154,7 +154,7 @@ model PaymentProof {
   userId        String
   amount        Float
   plan          String
-  transactionId String   @unique // Fixed field name for consistency
+  transactionId String   @unique
   screenshotUrl String?
   status        String   @default("pending")
   createdAt     DateTime @default(now())
@@ -169,18 +169,18 @@ model PaymentProof {
 /// /////////////////////////////////////////////////
 /// /////////////////////////////////////////////////
 model PendingPayment {
-  id             String   @id @default(cuid())
-  userId         String
-  plan           String
-  transactionId  String   @unique // Fixed field name for consistency
-  amount         Float
-  status         String   @default("pending")
-  screenshotUrl  String?
-  adminNotes     String?
+  id              String   @id @default(cuid())
+  userId          String
+  plan            String
+  transactionId   String   @unique
+  amount          Float
+  status          String   @default("pending")
+  screenshotUrl   String?
+  adminNotes      String?
   rejectionReason String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -214,22 +214,16 @@ model AutomationLog {
   @@map("automation_logs")
 }
 
-/// /////////////////////////////////////////////////
-/// SOCIETY MANAGEMENT SYSTEM
-/// /////////////////////////////////////////////////
-
 /// 1. Members (Root Table)
 model Member {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   name        String
   phone       String?
   address     String?
-  joiningDate DateTime @default(now())
-  status      String   @default("active") // active/inactive
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  joiningDate DateTime        @default(now())
+  status      String          @default("active")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   loans       Loan[]
   passbook    PassbookEntry[]
 
@@ -240,21 +234,19 @@ model Member {
 
 /// 2. Loans
 model Loan {
-  id                String   @id @default(uuid())
-  memberId          String
-  loanAmount        Float
-  interestRate      Float    @default(1.0) // 1% auto
-  loanDate          DateTime @default(now())
-  nextDueDate       DateTime // loan_date → next month auto
-  status            String   @default("active") // Active/Closed
-  remainingBalance  Float
-  overrideEnabled   Boolean  @default(false) // override enable for >80% rule
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relations
-  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  passbookEntries   PassbookEntry[]
+  id               String          @id @default(uuid())
+  memberId         String
+  loanAmount       Float
+  interestRate     Float           @default(1.0)
+  loanDate         DateTime        @default(now())
+  nextDueDate      DateTime
+  status           String          @default("active")
+  remainingBalance Float
+  overrideEnabled  Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  passbookEntries  PassbookEntry[]
 
   @@index([memberId])
   @@index([status])
@@ -264,22 +256,20 @@ model Loan {
 
 /// 3. Passbook
 model PassbookEntry {
-  id                String   @id @default(uuid())
-  memberId          String
-  depositAmount     Float?   // manual
-  loanInstallment   Float?   // manual input
-  interestAuto      Float?   // show only if loan active
-  fineAuto          Float?   // if date >15 → Rs.10/day
-  mode              String   // cash / online
-  loanRequestId     String?  // toggle
-  transactionDate   DateTime @default(now())
-  description       String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relations
-  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  loan              Loan?    @relation(fields: [loanRequestId], references: [id])
+  id              String   @id @default(uuid())
+  memberId        String
+  depositAmount   Float?
+  loanInstallment Float?
+  interestAuto    Float?
+  fineAuto        Float?
+  mode            String
+  loanRequestId   String?
+  transactionDate DateTime @default(now())
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  loan            Loan?    @relation(fields: [loanRequestId], references: [id])
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
   @@index([transactionDate])
@@ -292,9 +282,9 @@ model Expense {
   id          String   @id @default(uuid())
   title       String
   amount      Float
-  mode        String   // cash/online/bank
+  mode        String
   date        DateTime @default(now())
-  type        String   // expense/income
+  type        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -306,15 +296,15 @@ model Expense {
 
 /// 5. Admin Fund (Personal balance ledger)
 model AdminFund {
-  id                  String   @id @default(uuid())
-  fundIn              Float?   // increase society backup
-  fundOut             Float?   // admin withdraw
-  description         String?
-  transactionDate     DateTime @default(now())
-  remainingBalance    Float    // track remaining
-  mustClearWithin3Yr  Boolean  @default(true) // track 3 year rule
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  fundIn             Float?
+  fundOut            Float?
+  description        String?
+  transactionDate    DateTime @default(now())
+  remainingBalance   Float
+  mustClearWithin3Yr Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([transactionDate])
   @@map("admin_funds")

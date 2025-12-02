@@ -247,6 +247,9 @@ export default function PassbookAddEntryForm({
         if (memberData.activeLoan) {
           const interest = Math.round((memberData.activeLoan.outstandingBalance * 0.01) * 100) / 100;
           form.setValue('interest', interest);
+        } else {
+          // Reset interest to 0 if member has no active loan
+          form.setValue('interest', 0);
         }
 
         const depositDate = form.getValues('depositDate');
@@ -296,12 +299,12 @@ export default function PassbookAddEntryForm({
 
   // Auto-calculate fine when date changes
   useEffect(() => {
-    if (watchedValues.depositDate && selectedMember?.activeLoan) {
+    if (watchedValues.depositDate) {
       const daysLate = Math.max(0, watchedValues.depositDate.getDate() - 15);
       const fine = daysLate * 10;
       form.setValue('fine', fine);
     }
-  }, [watchedValues.depositDate, form, selectedMember]);
+  }, [watchedValues.depositDate, form]);
 
   // Initial data fetch and form setup for editing
   useEffect(() => {

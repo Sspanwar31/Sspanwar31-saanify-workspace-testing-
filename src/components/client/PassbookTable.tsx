@@ -66,7 +66,12 @@ export default function PassbookTable({ transactions }: PassbookTableProps) {
                   <TableHead>Category</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">
+                    <div className="flex flex-col items-end">
+                      <span>Total Amount</span>
+                      <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
+                    </div>
+                  </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Reference</TableHead>
                 </TableRow>

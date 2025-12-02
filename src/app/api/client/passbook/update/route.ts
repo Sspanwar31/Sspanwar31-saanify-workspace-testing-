@@ -45,17 +45,45 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Get active loan for auto-calculation
+    const activeLoan = await db.loan.findFirst({
+      where: {
+        memberId: memberId,
+        status: 'active'
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Auto-calculate interest and fine if not provided or zero
+    let calculatedInterest = interest || 0;
+    let calculatedFine = fine || 0;
+    
+    if (activeLoan && (interest === 0 || fine === 0)) {
+      // Calculate interest: 1% of outstanding loan
+      if (interest === 0) {
+        calculatedInterest = Math.round((activeLoan.remainingBalance * 0.01) * 100) / 100;
+      }
+      
+      // Calculate fine: ₹10 per day after 15th of month
+      if (fine === 0) {
+        const depositDateObj = new Date(date);
+        const dayOfMonth = depositDateObj.getDate();
+        const daysLate = Math.max(0, dayOfMonth - 15);
+        calculatedFine = daysLate * 10;
+      }
+    }
+
     const originalInstallment = originalEntry.loanInstallment || 0;
     const installmentDifference = (installment || 0) - originalInstallment;
 
-    // Update the passbook entry
+    // Update passbook entry
     const updatedEntry = await db.passbookEntry.update({
       where: { id: entryId },
       data: {
         depositAmount: deposit || 0,
         loanInstallment: installment || 0,
-        interestAuto: interest || 0,
-        fineAuto: fine || 0,
+        interestAuto: calculatedInterest,
+        fineAuto: calculatedFine,
         mode: mode,
         description: note || '',
         transactionDate: new Date(date),

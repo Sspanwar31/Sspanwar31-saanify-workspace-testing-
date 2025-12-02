@@ -57,27 +57,20 @@ export async function GET(request: NextRequest) {
       take: pageSize
     });
 
-    // Calculate running balance for each entry
-    const allEntries = await db.passbookEntry.findMany({
-      where: whereClause,
-      orderBy: { transactionDate: 'asc' }
-    });
-
-    const balanceMap = new Map();
-    let runningBalance = 0;
-
-    allEntries.forEach(entry => {
+    // Calculate balance for each entry individually
+    // Balance = Deposit + Installment + Interest + Fine (never negative)
+    const entriesWithBalance = await Promise.all(entries.map(async (entry) => {
       const deposit = entry.depositAmount || 0;
       const installment = entry.loanInstallment || 0;
       const interest = entry.interestAuto || 0;
       const fine = entry.fineAuto || 0;
       
-      runningBalance = runningBalance + deposit - installment + interest + fine;
-      balanceMap.set(entry.id, runningBalance);
-    });
+      // Calculate balance for this specific entry: Deposit + Installment + Interest + Fine
+      let balance = deposit + installment + interest + fine;
+      
+      // Ensure balance is never negative
+      balance = Math.max(0, balance);
 
-    // Get loan information for each entry
-    const entriesWithBalance = await Promise.all(entries.map(async (entry) => {
       let loanBalance = 0;
       let remainingLoan = 0;
 
@@ -109,13 +102,13 @@ export async function GET(request: NextRequest) {
         memberId: entry.memberId,
         memberName: entry.member.name,
         date: entry.transactionDate.toISOString().split('T')[0],
-        deposit: entry.depositAmount || 0,
-        installment: entry.loanInstallment || 0,
-        interest: entry.interestAuto || 0,
-        fine: entry.fineAuto || 0,
+        deposit: deposit,
+        installment: installment,
+        interest: interest,
+        fine: fine,
         mode: entry.mode,
         description: entry.description || '',
-        balance: balanceMap.get(entry.id) || 0,
+        balance: balance,
         loanBalance: loanBalance,
         remainingLoan: remainingLoan,
         loanId: entry.loanRequestId,

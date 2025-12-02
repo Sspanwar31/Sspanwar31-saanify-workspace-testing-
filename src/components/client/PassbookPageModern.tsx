@@ -426,7 +426,12 @@ export default function PassbookPageModern() {
                       <th className="text-right p-4 font-medium">Deposit</th>
                       <th className="text-right p-4 font-medium">Installment</th>
                       <th className="text-right p-4 font-medium">Interest</th>
-                      <th className="text-right p-4 font-medium">Balance</th>
+                      <th className="text-right p-4 font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        Total Amount
+                        <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
+                      </div>
+                    </th>
                       <th className="text-center p-4 font-medium">Actions</th>
                     </tr>
                   </thead>

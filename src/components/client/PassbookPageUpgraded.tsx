@@ -291,25 +291,32 @@ export default function PassbookPageUpgraded() {
 
       if (response.ok) {
         toast({
-          title: 'Success',
-          description: 'Loan Request Sent',
+          title: "Success",
+          description: "Loan request submitted successfully!",
         });
         setLoanRequestEnabled(false);
         form.setValue('loanRequestAmount', 0);
+        
+        // Clear form completely
+        form.reset();
+        setSelectedMember(null);
+        
+        // Redirect to loan requests tab
+        window.location.href = '/client/loans?tab=requests';
       } else {
         const error = await response.json();
         toast({
-          title: 'Error',
+          title: "Error",
           description: error.error || 'Failed to send loan request',
-          variant: 'destructive',
+          variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error sending loan request:', error);
       toast({
-        title: 'Error',
+        title: "Error",
         description: 'Failed to send loan request',
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };

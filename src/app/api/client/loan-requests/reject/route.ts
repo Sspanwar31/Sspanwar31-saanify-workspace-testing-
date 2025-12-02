@@ -42,18 +42,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Create notification for member
-    await db.passbookEntry.create({
+    // Create proper notification for member
+    await db.notification.create({
       data: {
         memberId: loan.memberId,
-        loanRequestId: loanId,
-        depositAmount: 0,
-        loanInstallment: 0,
-        interestAuto: 0,
-        fineAuto: 0,
-        mode: 'Notification',
-        description: 'Your loan request has been rejected.',
-        transactionDate: new Date()
+        title: "Loan Update",
+        message: "Your loan request has been rejected.",
+        type: "loan",
+        read: false,
       }
     });
 

@@ -35,7 +35,6 @@ import {
 
 // Import form component
 import PassbookAddEntryForm from './PassbookAddEntryForm';
-import MemberLoanStatus from './MemberLoanStatus';
 
 // Types
 interface Member {
@@ -288,15 +287,7 @@ export default function PassbookPageModern() {
         </div>
       </motion.div>
 
-      {/* Member Loan Status Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.05 }}
-        className="mb-8"
-      >
-        <MemberLoanStatus memberId={members.length > 0 ? members[0].id : ''} />
-      </motion.div>
+      {/* Loan Status Removed as requested */}
 
       {/* Statistics Cards */}
       <motion.div

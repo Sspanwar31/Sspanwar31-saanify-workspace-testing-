@@ -70,7 +70,7 @@ export default function EnhancedLoanApproval() {
   const [approvalDetails, setApprovalDetails] = useState<ApprovalDetails>({
     finalLoanAmount: 0,
     interestRate: 12,
-    installmentsCount: 12,
+    installmentsCount: 12, // Fixed: Default to 12 months (hidden from UI)
     installmentAmount: 0,
     totalPayable: 0,
     totalInterest: 0,
@@ -106,8 +106,11 @@ export default function EnhancedLoanApproval() {
       const response = await fetch(`/api/client/passbook?memberId=${memberId}`)
       if (response.ok) {
         const data = await response.json()
+        // Fixed: Calculate Total Deposit = SUM(passbook.deposit) only
+        // Exclude installments, interest, fine, notifications - only include actual deposits
         const depositEntries = data.entries?.filter((entry: any) => 
-          entry.mode === 'Deposit' && entry.depositAmount > 0
+          (entry.mode === 'Deposit' || entry.mode === 'Cash Deposit' || entry.mode === 'Bank Deposit') && 
+          entry.depositAmount > 0
         ) || []
         
         const totalDeposits = depositEntries.reduce((sum: number, entry: any) => 
@@ -155,12 +158,12 @@ export default function EnhancedLoanApproval() {
   const updateApprovalDetails = (field: keyof ApprovalDetails, value: number | string) => {
     const updated = { ...approvalDetails, [field]: value }
     
-    // Auto-calculate when principal, rate, or tenure changes
-    if (field === 'finalLoanAmount' || field === 'interestRate' || field === 'installmentsCount') {
+    // Fixed: Auto-calculate when principal or rate changes only (installmentsCount is now hidden)
+    if (field === 'finalLoanAmount' || field === 'interestRate') {
       const calculated = calculateLoanDetails(
         updated.finalLoanAmount,
         updated.interestRate,
-        updated.installmentsCount
+        updated.installmentsCount // Still use fixed 12 months for calculation
       )
       
       updated.installmentAmount = calculated.installmentAmount
@@ -672,28 +675,6 @@ export default function EnhancedLoanApproval() {
                     onChange={(e) => updateApprovalDetails('interestRate', parseFloat(e.target.value) || 0)}
                     className="mt-1"
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="installmentsCount">Number of Installments</Label>
-                  <Select 
-                    value={approvalDetails.installmentsCount.toString()} 
-                    onValueChange={(value) => updateApprovalDetails('installmentsCount', parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 Months</SelectItem>
-                      <SelectItem value="6">6 Months</SelectItem>
-                      <SelectItem value="12">12 Months</SelectItem>
-                      <SelectItem value="18">18 Months</SelectItem>
-                      <SelectItem value="24">24 Months</SelectItem>
-                      <SelectItem value="36">36 Months</SelectItem>
-                      <SelectItem value="48">48 Months</SelectItem>
-                      <SelectItem value="60">60 Months</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

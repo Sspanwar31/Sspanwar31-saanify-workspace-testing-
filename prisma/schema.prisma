@@ -226,6 +226,7 @@ model Member {
   updatedAt   DateTime        @updatedAt
   loans       Loan[]
   passbook    PassbookEntry[]
+  notifications Notification[]
 
   @@index([status])
   @@index([joiningDate])
@@ -309,4 +310,22 @@ model AdminFund {
 
   @@index([transactionDate])
   @@map("admin_funds")
+}
+
+/// 6. Notifications
+model Notification {
+  id          String   @id @default(uuid())
+  memberId    String
+  title       String
+  message     String
+  type        String   @default("general")
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([read])
+  @@index([type])
+  @@map("notifications")
 }

@@ -64,7 +64,8 @@ export default function SimplifiedAllLoans() {
           totalInterestEarned: calculateTotalInterest(loan),
           status: loan.remainingBalance > 0 ? 'active' : 'closed',
           startDate: loan.startDate,
-          endDate: loan.endDate || calculateEndDate(loan.startDate, 12),
+          // Fixed: End Date behavior - blank for active, actual date for closed
+          endDate: loan.remainingBalance > 0 ? '' : (loan.endDate || calculateEndDate(loan.startDate, 12)),
           description: loan.description || 'No description provided',
           emi: loan.emi
         }))
@@ -330,7 +331,10 @@ export default function SimplifiedAllLoans() {
                       </td>
                       <td className="p-4">{getStatusBadge(loan.status)}</td>
                       <td className="p-4">{formatDate(loan.startDate)}</td>
-                      <td className="p-4">{formatDate(loan.endDate)}</td>
+                      <td className="p-4">
+                        {/* Fixed: Show End Date only for closed loans, blank for active */}
+                        {loan.endDate ? formatDate(loan.endDate) : '-'}
+                      </td>
                       <td className="p-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
                         {loan.description || 'No description provided'}
                       </td>

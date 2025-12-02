@@ -12,6 +12,9 @@ interface PassbookTableProps {
 }
 
 export default function PassbookTable({ transactions }: PassbookTableProps) {
+  // Filter out notification entries
+  const filteredTransactions = transactions.filter(transaction => transaction.mode !== "Notification");
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -77,7 +80,7 @@ export default function PassbookTable({ transactions }: PassbookTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction, index) => (
+                {filteredTransactions.map((transaction, index) => (
                   <motion.tr
                     key={transaction.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -120,7 +123,7 @@ export default function PassbookTable({ transactions }: PassbookTableProps) {
             </Table>
           </div>
           
-          {transactions.length === 0 && (
+          {filteredTransactions.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400">
                 No transactions found matching your criteria.

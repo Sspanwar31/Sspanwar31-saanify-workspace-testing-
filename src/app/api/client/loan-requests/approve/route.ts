@@ -66,19 +66,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Create notification for member (you can implement a separate notification system)
-    // For now, we'll create a passbook entry as notification
-    await db.passbookEntry.create({
+    // Create proper notification for member
+    await db.notification.create({
       data: {
         memberId: loan.memberId,
-        loanRequestId: loanId,
-        depositAmount: 0,
-        loanInstallment: 0,
-        interestAuto: 0,
-        fineAuto: 0,
-        mode: 'Notification',
-        description: `Your loan has been approved. Loan Amount: ₹${finalLoanAmount.toFixed(2)}.`,
-        transactionDate: new Date()
+        title: "Loan Update",
+        message: "Your loan has been approved successfully.",
+        type: "loan",
+        read: false,
       }
     });
 

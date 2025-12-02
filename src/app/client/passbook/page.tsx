@@ -1,5 +1,5 @@
-import PassbookPageUpgraded from "@/components/client/PassbookPageUpgraded";
+import PassbookPageModern from "@/components/client/PassbookPageModern";
 
 export default function Page() {
-  return <PassbookPageUpgraded />;
+  return <PassbookPageModern />;
 }

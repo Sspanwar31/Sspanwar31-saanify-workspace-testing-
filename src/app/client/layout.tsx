@@ -74,7 +74,28 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-teal-950/20">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Passbook-style Background Pattern */}
+      <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-yellow-950/20">
+        {/* Traditional passbook pattern overlay */}
+        <div className="absolute inset-0 opacity-5 dark:opacity-10">
+          <div className="h-full w-full" style={{
+            backgroundImage: `
+              repeating-linear-gradient(0deg, #d97706 0px, transparent 1px, transparent 40px, #d97706 41px),
+              repeating-linear-gradient(90deg, #d97706 0px, transparent 1px, transparent 40px, #d97706 41px)
+            `,
+            backgroundSize: '41px 41px'
+          }} />
+        </div>
+        {/* Ledger-style vertical lines */}
+        <div className="absolute inset-0 opacity-3 dark:opacity-5">
+          <div className="h-full w-full" style={{
+            backgroundImage: 'repeating-linear-gradient(90deg, #92400e 0px, transparent 2px, transparent 200px, #92400e 202px)',
+            backgroundSize: '202px 100%'
+          }} />
+        </div>
+      </div>
+
       {/* Loading Overlay */}
       <AnimatePresence>
         {isLoading && (
@@ -82,14 +103,17 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+            className="fixed inset-0 bg-amber-50/90 dark:bg-amber-950/90 backdrop-blur-sm z-50 flex items-center justify-center"
           >
-            <LoadingSpinner />
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-amber-800 dark:text-amber-200 font-medium">Loading Passbook...</p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex">
+      <div className="relative z-10 flex">
         {/* Sidebar */}
         <Sidebar 
           onClose={() => setSidebarOpen(false)} 
@@ -106,8 +130,16 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           />
 
           {/* Page Content */}
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 overflow-auto">
+            <div className="max-w-7xl mx-auto p-6">
+              {/* Passbook-style page header decoration */}
+              <div className="mb-6 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full border border-amber-200 dark:border-amber-800">
+                  <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Digital Passbook System</span>
+                  <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
+                </div>
+              </div>
               {children}
             </div>
           </main>

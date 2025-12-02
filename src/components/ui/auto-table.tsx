@@ -32,6 +32,7 @@ interface AutoTableProps {
   onEdit?: (item: any) => void
   onDelete?: (item: any) => void
   onView?: (item: any) => void
+  customActions?: (item: any) => React.ReactNode
 }
 
 export default function AutoTable({
@@ -45,6 +46,7 @@ export default function AutoTable({
   onEdit,
   onDelete,
   onView,
+  customActions,
 }: AutoTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortColumn, setSortColumn] = useState<string | null>(null)
@@ -278,6 +280,7 @@ export default function AutoTable({
                               Edit
                             </DropdownMenuItem>
                           )}
+                          {customActions && customActions(row)}
                           {onDelete && (
                             <DropdownMenuItem 
                               onClick={() => onDelete(row)}

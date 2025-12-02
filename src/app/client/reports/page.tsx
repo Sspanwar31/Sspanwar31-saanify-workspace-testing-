@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import AutoTable from '@/components/ui/auto-table'
 import { reportsData } from '@/data/reportsData'
 import { toast } from 'sonner'
@@ -70,7 +71,7 @@ export default function ReportsPage() {
     }, 2000)
   }
 
-  const handleDownloadReport = (reportId: number, format: 'pdf' | 'csv') => {
+  const handleDownloadReport = (reportId: string, format: 'pdf' | 'csv') => {
     // In a real application, this would trigger file download
     setReports(reports.map(report => 
       report.id === reportId 
@@ -300,7 +301,40 @@ export default function ReportsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
       >
-        <AutoTable data={filteredReports} title="Reports" />
+        <AutoTable 
+          data={filteredReports} 
+          title="Reports" 
+          onView={(report) => {
+            toast.info('📄 Report Details', {
+              description: `Viewing ${report.title}`,
+              duration: 2000
+            })
+          }}
+          onEdit={(report) => {
+            toast.info('✏️ Edit Report', {
+              description: `Editing ${report.title}`,
+              duration: 2000
+            })
+          }}
+          onDelete={(report) => {
+            toast.info('🗑️ Delete Report', {
+              description: `Deleting ${report.title}`,
+              duration: 2000
+            })
+          }}
+          customActions={(report) => (
+            <>
+              <DropdownMenuItem onClick={() => handleDownloadReport(report.id, 'pdf')}>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport(report.id, 'csv')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Download CSV
+              </DropdownMenuItem>
+            </>
+          )}
+        />
       </motion.div>
     </div>
   )

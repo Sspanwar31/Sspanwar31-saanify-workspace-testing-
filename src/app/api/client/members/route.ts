@@ -21,9 +21,19 @@ export async function GET(request: NextRequest) {
         orderBy: { transactionDate: 'asc' }
       });
 
-      const currentBalance = memberPassbook.length > 0 
-        ? memberPassbook[memberPassbook.length - 1]?.depositAmount || 0
-        : 0;
+      // Calculate total deposits (sum of all deposits only)
+      const totalDeposits = memberPassbook.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
+      
+      // Calculate current balance (deposits - installments + interest + fines)
+      let currentBalance = 0;
+      memberPassbook.forEach(entry => {
+        const depositAmt = entry.depositAmount || 0;
+        const installmentAmt = entry.loanInstallment || 0;
+        const interestAmt = entry.interestAuto || 0;
+        const fineAmt = entry.fineAuto || 0;
+        
+        currentBalance = currentBalance + depositAmt - installmentAmt + interestAmt + fineAmt;
+      });
 
       // Get active loan for the member
       const activeLoan = await db.loan.findFirst({
@@ -37,6 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         member,
         currentBalance,
+        totalDeposits,
         activeLoan: activeLoan ? {
           loanId: activeLoan.id,
           outstandingBalance: activeLoan.remainingBalance,

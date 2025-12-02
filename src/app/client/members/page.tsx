@@ -16,7 +16,10 @@ import {
   Shield,
   UserCheck,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  BookOpen,
+  User,
+  Calendar
 } from 'lucide-react'
 import AutoTable from '@/components/ui/auto-table'
 import AutoForm from '@/components/ui/auto-form'
@@ -187,129 +190,178 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
+    <div className="space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="text-center"
       >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-              <Users className="h-8 w-8 text-blue-600" />
-              Members Management
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
-              Manage society members, roles, and permissions
-            </p>
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Users className="w-7 h-7 text-white" />
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-            <Button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add Member
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-800 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
+              Members Ledger
+            </h1>
+            <p className="text-amber-700 dark:text-amber-300 font-medium">
+              Manage society members and their records
+            </p>
           </div>
         </div>
       </motion.div>
 
-      {/* Statistics Cards */}
+      {/* Passbook-style Statistics Cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
+        <div className="relative overflow-hidden rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 shadow-lg">
+          {/* Passbook-style decorative pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="h-full w-full" style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, #d97706 0px, transparent 1px, transparent 10px, #d97706 11px)',
+              backgroundSize: '11px 11px'
+            }} />
+          </div>
+          
+          <div className="relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Members</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Total Members</p>
+                <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">{stats.total}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-amber-500 rounded-lg shadow-md">
+                <Users className="h-6 w-6 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
+        <div className="relative overflow-hidden rounded-xl border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 shadow-lg">
+          <div className="absolute inset-0 opacity-5">
+            <div className="h-full w-full" style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, #059669 0px, transparent 1px, transparent 10px, #059669 11px)',
+              backgroundSize: '11px 11px'
+            }} />
+          </div>
+          
+          <div className="relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active</p>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.active}</p>
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">Active</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.active}</p>
               </div>
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
-                <UserCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-3 bg-green-500 rounded-lg shadow-md">
+                <UserCheck className="h-6 w-6 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
+        <div className="relative overflow-hidden rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/20 shadow-lg">
+          <div className="absolute inset-0 opacity-5">
+            <div className="h-full w-full" style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, #64748b 0px, transparent 1px, transparent 10px, #64748b 11px)',
+              backgroundSize: '11px 11px'
+            }} />
+          </div>
+          
+          <div className="relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Inactive</p>
-                <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">{stats.inactive}</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Inactive</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.inactive}</p>
               </div>
-              <div className="p-3 bg-slate-100 dark:bg-slate-900/20 rounded-lg">
-                <AlertCircle className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+              <div className="p-3 bg-slate-500 rounded-lg shadow-md">
+                <AlertCircle className="h-6 w-6 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
+        <div className="relative overflow-hidden rounded-xl border-2 border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 shadow-lg">
+          <div className="absolute inset-0 opacity-5">
+            <div className="h-full w-full" style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, #ea580c 0px, transparent 1px, transparent 10px, #ea580c 11px)',
+              backgroundSize: '11px 11px'
+            }} />
+          </div>
+          
+          <div className="relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pending</p>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
+                <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Pending</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.pending}</p>
               </div>
-              <div className="p-3 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
-                <Shield className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              <div className="p-3 bg-orange-500 rounded-lg shadow-md">
+                <Shield className="h-6 w-6 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </motion.div>
 
-      {/* Members Table - Using AutoTable */}
+      {/* Action Buttons */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="flex flex-col md:flex-row gap-4 justify-center"
+      >
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          disabled={loading}
+          className="flex items-center gap-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh Ledger
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          className="flex items-center gap-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+        >
+          <Download className="h-4 w-4" />
+          Export Members
+        </Button>
+        <Button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
+        >
+          <UserPlus className="h-4 w-4" />
+          Add New Member
+        </Button>
+      </motion.div>
+
+      {/* Members Table - Passbook Style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
+        className="rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-lg overflow-hidden"
       >
-        <AutoTable 
-          data={members} 
-          title="Members"
-          onEdit={handleEditMember}
-          onDelete={handleDeleteMember}
-        />
+        {/* Passbook header */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BookOpen className="w-5 h-5" />
+            Members Register
+          </h2>
+        </div>
+        
+        <div className="p-6">
+          <AutoTable 
+            data={members} 
+            title=""
+            onEdit={handleEditMember}
+            onDelete={handleDeleteMember}
+          />
+        </div>
       </motion.div>
 
       {/* Add/Edit Member Modal */}
@@ -321,10 +373,10 @@ export default function MembersPage() {
         }}
         onSubmit={editingMember ? handleUpdateMember : handleAddMember}
         editingData={editingMember}
-        title={editingMember ? 'Edit Member' : 'Add New Member'}
+        title={editingMember ? 'Edit Member Entry' : 'Add New Member Entry'}
         description={editingMember 
-          ? 'Update member information below' 
-          : 'Fill in details to add a new member to the society'
+          ? 'Update member information in the ledger' 
+          : 'Fill in details to add a new member to the society register'
         }
         fields={memberFields}
       />

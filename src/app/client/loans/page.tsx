@@ -2,23 +2,26 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, CreditCard, Users, Calendar, TrendingUp, RefreshCw, Download, Edit, Trash2, BookOpen, Calculator, IndianRupee } from 'lucide-react'
+import { Plus, CreditCard, Users, Calendar, TrendingUp, RefreshCw, Download, Edit, Trash2, BookOpen, Calculator, IndianRupee, Clock, AlertTriangle, Percent } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AutoTable from '@/components/ui/auto-table'
 import AutoForm from '@/components/ui/auto-form'
 import { loansData, Loan } from '@/data/loansData'
 import { membersData, getActiveMembers } from '@/data/membersData'
 import { toast } from 'sonner'
+import EnhancedLoanManagement from '@/components/client/EnhancedLoanManagement'
 
-export default function LoansPage() {
+export default function IntegratedLoansPage() {
   const [loans, setLoans] = useState(loansData)
   const [loading, setLoading] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
   const [activeMembers, setActiveMembers] = useState(membersData.filter(m => m.status === 'active'))
   const [currentEMI, setCurrentEMI] = useState<number>(0)
+  const [activeTab, setActiveTab] = useState('existing-loans')
 
   // Calculate statistics based on enhanced loan data
   const stats = useMemo(() => ({
@@ -203,7 +206,7 @@ export default function LoansPage() {
     description: {
       type: 'textarea' as const,
       label: 'Loan Description',
-      placeholder: 'Purpose of the loan',
+      placeholder: 'Purpose of loan',
       required: false
     },
     depositReference: {
@@ -242,10 +245,10 @@ export default function LoansPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-800 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
-              Loans Ledger
+              Complete Loan Management
             </h1>
             <p className="text-amber-700 dark:text-amber-300 font-medium">
-              Manage member loans with EMI calculations
+              Manage loan requests and existing loans with passbook integration
             </p>
           </div>
         </div>
@@ -318,7 +321,7 @@ export default function LoansPage() {
                 <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.pendingLoans}</p>
               </div>
               <div className="p-3 bg-orange-500 rounded-lg shadow-md">
-                <Calendar className="h-6 w-6 text-white" />
+                <Clock className="h-6 w-6 text-white" />
               </div>
             </div>
           </div>
@@ -360,7 +363,7 @@ export default function LoansPage() {
           className="flex items-center gap-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh Ledger
+          Refresh Data
         </Button>
         <Button
           variant="outline"
@@ -379,85 +382,136 @@ export default function LoansPage() {
         </Button>
       </motion.div>
 
-      {/* Loans Table - Passbook Style */}
+      {/* Main Content Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
-        className="rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-lg overflow-hidden"
       >
-        {/* Passbook header */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Loans Register
-          </h2>
-        </div>
-        
-        <div className="p-6">
-          <AutoTable 
-            data={loans} 
-            title=""
-            actions={(loan: Loan) => (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditLoan(loan)}
-                  className="h-8 w-8 p-0 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-                >
-                  <Edit className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDeleteLoan(loan.id)}
-                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:border-red-300 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="loan-requests" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Loan Requests
+            </TabsTrigger>
+            <TabsTrigger value="existing-loans" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Existing Loans
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="loan-requests" className="mt-6">
+            <EnhancedLoanManagement />
+          </TabsContent>
+
+          <TabsContent value="existing-loans" className="mt-6">
+            {/* Existing Loans Table - Passbook Style */}
+            <div className="rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-lg overflow-hidden">
+              {/* Passbook header */}
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="w-5 h-5" />
+                  Existing Loans Register
+                </h2>
               </div>
-            )}
-          />
-        </div>
+              
+              <div className="p-6">
+                <AutoTable 
+                  data={loans} 
+                  title=""
+                  actions={(loan: Loan) => (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditLoan(loan)}
+                        className="h-8 w-8 p-0 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteLoan(loan.id)}
+                        className="h-8 w-8 p-0 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  columns={[
+                    { key: 'id', label: 'Loan ID', render: (loan: Loan) => (
+                      <span className="font-mono text-xs bg-amber-100 dark:bg-amber-900/20 px-2 py-1 rounded">
+                        {loan.id}
+                      </span>
+                    )},
+                    { key: 'memberId', label: 'Member', render: (loan: Loan) => (
+                      <div>
+                        <div className="font-medium">{loan.memberId}</div>
+                        {loan.description && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{loan.description}</div>
+                        )}
+                      </div>
+                    )},
+                    { key: 'amount', label: 'Amount', render: (loan: Loan) => (
+                      <div className="font-semibold text-amber-600 dark:text-amber-400">
+                        ₹{loan.amount.toLocaleString('en-IN')}
+                      </div>
+                    )},
+                    { key: 'interest', label: 'Interest', render: (loan: Loan) => (
+                      <div className="flex items-center gap-1">
+                        <Percent className="h-4 w-4 text-muted-foreground" />
+                        <span>{loan.interest}%</span>
+                      </div>
+                    )},
+                    { key: 'duration', label: 'Duration', render: (loan: Loan) => (
+                      <span>{loan.duration} months</span>
+                    )},
+                    { key: 'emi', label: 'EMI', render: (loan: Loan) => (
+                      <div className="font-semibold text-blue-600 dark:text-blue-400">
+                        ₹{loan.emi?.toLocaleString('en-IN') || 'N/A'}
+                      </div>
+                    )},
+                    { key: 'status', label: 'Status', render: (loan: Loan) => (
+                      getStatusBadge(loan.status)
+                    )},
+                    { key: 'startDate', label: 'Start Date', render: (loan: Loan) => (
+                      <span className="text-sm">{loan.startDate || 'N/A'}</span>
+                    )},
+                  ]}
+                />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
-      {/* AutoForm for Add/Edit Loan */}
+      {/* Add Loan Modal */}
       <AutoForm
-        isOpen={isAddModalOpen || !!editingLoan}
-        onClose={() => {
-          setIsAddModalOpen(false)
-          setEditingLoan(null)
-          setCurrentEMI(0) // Reset EMI when closing
-        }}
-        onSubmit={editingLoan ? handleUpdateLoan : handleAddLoan}
-        editingData={editingLoan}
-        title={editingLoan ? 'Edit Loan Entry' : 'Add New Loan Entry'}
-        description={editingLoan 
-          ? 'Update loan information in the ledger' 
-          : 'Fill in details to add a new loan to the register'
-        }
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title={editingLoan ? 'Edit Loan' : 'Add New Loan'}
         fields={loanFormFields}
-        excludeFields={['id', 'status', 'remainingBalance', 'startDate', 'endDate', 'nextEmiDate', 'approvedBy', 'approvedDate', 'createdAt', 'updatedAt', 'emi']}
+        initialData={editingLoan || undefined}
+        onSubmit={editingLoan ? handleUpdateLoan : handleAddLoan}
         onFormDataChange={handleFormDataChange}
+        submitButtonText={editingLoan ? 'Update Loan' : 'Add Loan'}
       />
 
-      {/* EMI Display - Passbook Style */}
-      {currentEMI > 0 && (isAddModalOpen || editingLoan) && (
+      {/* EMI Display */}
+      {currentEMI > 0 && isAddModalOpen && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-4 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-xl shadow-2xl z-50 border-2 border-amber-200 dark:border-amber-800"
+          className="fixed bottom-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg shadow-lg max-w-sm"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <Calculator className="w-5 h-5" />
-            <div className="text-sm font-medium">Calculated EMI</div>
+          <div className="flex items-center gap-3">
+            <Calculator className="h-6 w-6" />
+            <div>
+              <p className="text-sm opacity-90">Calculated EMI</p>
+              <p className="text-xl font-bold">₹{currentEMI.toLocaleString('en-IN')}</p>
+            </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <IndianRupee className="w-4 h-4" />
-            <div className="text-2xl font-bold">{currentEMI.toLocaleString('en-IN')}</div>
-          </div>
-          <div className="text-xs opacity-90 mt-1">per month</div>
         </motion.div>
       )}
     </div>

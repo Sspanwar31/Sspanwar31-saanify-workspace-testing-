@@ -250,7 +250,7 @@ export const devHelpers = {
 }
 
 // Default export with all services
-const dataExport = {
+export default {
   // Data modules
   members: membersData,
   loans: loansData,
@@ -270,5 +270,3 @@ const dataExport = {
   constants,
   devHelpers
 }
-
-export default dataExport

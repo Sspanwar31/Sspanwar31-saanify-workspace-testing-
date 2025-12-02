@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,67 +37,51 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchUserData = async () => {
-      try {
-        console.log('🔍 Client Dashboard: Fetching user data...')
-        
-        // First verify client access
-        const verifyResponse = await fetch('/api/client/verify');
-        
-        console.log('🔍 Client Dashboard: Verify response status:', verifyResponse.status)
-        
-        if (!verifyResponse.ok) {
-          if (verifyResponse.status === 401) {
-            const errorData = await verifyResponse.json();
-            console.log('❌ Client Dashboard: Access denied:', errorData.error)
-            if (isMounted) {
-              setError(errorData.error || 'Access denied. Please login as a legitimate client.');
-              setTimeout(() => {
-                console.log('🔄 Client Dashboard: Redirecting to login...')
-                router.push('/login');
-              }, 3000);
-            }
-            return;
-          }
-          throw new Error('Failed to verify client access');
-        }
-
-        const verifyData = await verifyResponse.json();
-        console.log('✅ Client Dashboard: Verification successful:', verifyData.currentUser?.email)
-        
-        if (!verifyData.success) {
-          if (isMounted) {
-            setError(verifyData.error || 'Client verification failed');
-          }
+  const fetchUserData = useCallback(async () => {
+    try {
+      console.log('🔍 Client Dashboard: Fetching user data...')
+      
+      // First verify client access
+      const verifyResponse = await fetch('/api/client/verify');
+      
+      console.log('🔍 Client Dashboard: Verify response status:', verifyResponse.status)
+      
+      if (!verifyResponse.ok) {
+        if (verifyResponse.status === 401) {
+          const errorData = await verifyResponse.json();
+          console.log('❌ Client Dashboard: Access denied:', errorData.error)
+          setError(errorData.error || 'Access denied. Please login as a legitimate client.');
+          setTimeout(() => {
+            console.log('🔄 Client Dashboard: Redirecting to login...')
+            router.push('/login');
+          }, 3000);
           return;
         }
-
-        // Set user data from verification response
-        if (isMounted) {
-          setUserData(verifyData.currentUser);
-        }
-        
-      } catch (err: any) {
-        console.error('❌ Client Dashboard: Error:', err.message)
-        if (isMounted) {
-          setError(err.message || 'Failed to load client dashboard');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        throw new Error('Failed to verify client access');
       }
-    };
 
+      const verifyData = await verifyResponse.json();
+      console.log('✅ Client Dashboard: Verification successful:', verifyData.currentUser?.email)
+      
+      if (!verifyData.success) {
+        setError(verifyData.error || 'Client verification failed');
+        return;
+      }
+
+      // Set user data from verification response
+      setUserData(verifyData.currentUser);
+        
+    } catch (err: any) {
+      console.error('❌ Client Dashboard: Error:', err.message)
+      setError(err.message || 'Failed to load client dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
     fetchUserData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once
+  }, [fetchUserData]);
 
   const handleLogout = async () => {
     try {
@@ -371,7 +355,6 @@ export default function ClientDashboard() {
                 </div>
               </CardContent>
             </Card>
-
           </div>
 
           {/* Additional Information */}

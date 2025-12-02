@@ -28,12 +28,11 @@ interface AnimatedCounterProps {
 
 function AnimatedCounter({ value, duration = 2, prefix = '', suffix = '' }: AnimatedCounterProps) {
   const [count, setCount] = useState(0)
-  const [hasAnimated, setHasAnimated] = useState(false)
   const ref = useRef(null)
   const isInView = useInView(ref)
 
   useEffect(() => {
-    if (!isInView || hasAnimated) return
+    if (!isInView) return
     
     let startTime: number
     let animationFrame: number
@@ -46,8 +45,6 @@ function AnimatedCounter({ value, duration = 2, prefix = '', suffix = '' }: Anim
       
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate)
-      } else {
-        setHasAnimated(true) // Mark as completed to prevent re-animation
       }
     }
 
@@ -58,16 +55,7 @@ function AnimatedCounter({ value, duration = 2, prefix = '', suffix = '' }: Anim
         cancelAnimationFrame(animationFrame)
       }
     }
-  }, [value, duration, isInView, hasAnimated])
-
-  // Reset animation when value changes significantly
-  useEffect(() => {
-    const currentValue = count
-    if (Math.abs(currentValue - value) > value * 0.1) { // 10% threshold
-      setHasAnimated(false)
-      setCount(0)
-    }
-  }, [value, count])
+  }, [value, duration, isInView])
 
   return (
     <span ref={ref}>

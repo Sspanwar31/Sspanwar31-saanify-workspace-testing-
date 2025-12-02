@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/providers/auth-provider'
 import { Loader2, ShieldX, AlertTriangle } from 'lucide-react'
@@ -20,8 +20,8 @@ export default function AuthGuard({ children, requiredRole = 'ADMIN', fallback }
   const pathname = usePathname()
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  useEffect(() => {
-    console.log('🔐 AuthGuard: useEffect triggered', { isLoading, user, requiredRole, pathname })
+  const checkAuthAndRedirect = useCallback(() => {
+    console.log('🔐 AuthGuard: checkAuthAndRedirect triggered', { isLoading, user, requiredRole, pathname })
     
     // If still loading, don't do anything
     if (isLoading) {
@@ -62,7 +62,11 @@ export default function AuthGuard({ children, requiredRole = 'ADMIN', fallback }
     // User is authenticated and has correct role
     console.log('✅ AuthGuard: User authenticated and authorized')
     setIsRedirecting(false)
-  }, [user, isLoading, requiredRole]) // Remove router and pathname from dependencies
+  }, [user, isLoading, requiredRole, router])
+
+  useEffect(() => {
+    checkAuthAndRedirect()
+  }, [checkAuthAndRedirect])
 
   // Show loading state
   if (isLoading || isRedirecting) {

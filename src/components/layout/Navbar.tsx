@@ -1,23 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, LogIn, User, Github, BarChart3, Shield, Rocket } from 'lucide-react'
+import { Menu, X, ArrowRight, LogIn, User, Grid3x3, Shield, BarChart3, ChevronDown, Github } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { toast } from 'sonner'
+import { Card, CardContent } from '@/components/ui/card'
 import GitHubIntegration from '@/components/github/GitHubIntegration'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { toast } from 'sonner'
 
 export default function Navbar() {
-  const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isGitHubOpen, setIsGitHubOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('')
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [showGitHubDialog, setShowGitHubDialog] = useState(false)
 
   // Check authentication and role on mount
   useEffect(() => {
@@ -27,6 +26,7 @@ export default function Navbar() {
           .split('; ')
           .find(row => row.startsWith('auth-token='))
           ?.split('=')[1]
+
         if (token) {
           const response = await fetch('/api/auth/check-session', {
             headers: {
@@ -38,10 +38,14 @@ export default function Navbar() {
             const data = await response.json()
             setIsAuthenticated(true)
             setUserRole(data.user.role)
+          } else {
+            // Handle non-2xx responses gracefully
+            console.warn('Auth check failed with status:', response.status)
           }
         }
       } catch (error) {
         console.error('Auth check failed:', error)
+        // Don't throw the error, just log it to prevent breaking the UI
       }
     }
 
@@ -74,8 +78,8 @@ export default function Navbar() {
 
   const handleNavClick = (href: string, label: string) => {
     if (href.startsWith('/')) {
-      // It's a page navigation - use Next.js router
-      router.push(href)
+      // It's a page navigation
+      window.location.href = href
       setIsMobileMenuOpen(false)
       setIsDropdownOpen(false)
       toast.success(`📍 ${label}`, {
@@ -98,7 +102,7 @@ export default function Navbar() {
   }
 
   const handleSignIn = () => {
-    router.push('/login')
+    window.location.href = '/login'
   }
 
   const handleGetStarted = () => {
@@ -107,7 +111,7 @@ export default function Navbar() {
       duration: 3000,
     })
     setTimeout(() => {
-      router.push('/subscription')
+      window.location.href = '/subscription'
     }, 1000)
   }
 
@@ -117,8 +121,10 @@ export default function Navbar() {
     
     switch (action) {
       case 'github':
-        // Open GitHub integration dialog
-        setShowGitHubDialog(true)
+        setIsGitHubOpen(true)
+        break
+      case 'ADMIN':
+        handleNavClick('/ADMIN', 'ADMIN Panel')
         break
       case 'analytics':
         handleNavClick('/analytics', 'Analytics')
@@ -142,6 +148,13 @@ export default function Navbar() {
       action: 'github',
       gradient: 'from-gray-600 to-gray-800'
     },
+    ...(isAuthenticated && userRole === 'ADMIN' ? [{
+      icon: <Shield className="h-4 w-4" />,
+      label: 'ADMIN Panel',
+      description: 'Access admin controls',
+      action: 'ADMIN',
+      gradient: 'from-red-600 to-pink-700'
+    }] : []),
     {
       icon: <BarChart3 className="h-4 w-4" />,
       label: 'Analytics',
@@ -164,7 +177,7 @@ export default function Navbar() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <motion.div 
               className="flex items-center cursor-pointer"
@@ -177,7 +190,7 @@ export default function Navbar() {
               <div className="flex items-center space-x-2">
                 <motion.div 
                   className="w-8 h-8 bg-gradient-to-br from-sky-500 to-teal-600 rounded-lg flex items-center justify-center"
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.6 }}
                 >
                   <span className="text-white font-bold text-sm">S</span>
@@ -196,7 +209,7 @@ export default function Navbar() {
                 </motion.span>
               </div>
             </motion.div>
-            
+
             {/* Desktop Navigation */}
             <motion.div 
               className="hidden lg:flex items-center space-x-6"
@@ -210,11 +223,11 @@ export default function Navbar() {
                   onClick={() => handleNavClick(item.href, item.label)}
                   className={`text-sm font-medium transition-all duration-300 hover:text-primary relative ${
                     isScrolled ? 'text-foreground' : 'text-foreground'
-                    } ${
+                  } ${
                     activeSection === item.href.replace('#', '') 
                       ? 'text-primary' 
                       : ''
-                    }`}
+                  }`}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -233,237 +246,274 @@ export default function Navbar() {
 
             {/* Right Side Actions */}
             <motion.div 
-              className="flex items-center space-x-3"
+              className="hidden lg:flex items-center space-x-3"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {/* Get Started Button - Only show when not authenticated */}
-              {!isAuthenticated && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.25 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    onClick={handleGetStarted}
-                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold px-6 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-primary/20"
-                    size="sm"
-                  >
-                    <Rocket className="h-4 w-4 mr-2" />
-                    Get Started
-                  </Button>
-                </motion.div>
-              )}
-
+              <ThemeToggle />
+              
               {/* Sign In Button */}
-              {!isAuthenticated && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <Button
-                    onClick={handleSignIn}
-                    variant="outline"
-                    className="border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/10 text-primary font-medium px-5 py-2 rounded-full transition-all duration-300"
-                    size="sm"
-                  >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Sign In
-                  </Button>
-                </motion.div>
-              )}
-
-              {/* User Menu - Only show when authenticated */}
-              {isAuthenticated && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="flex items-center space-x-3"
-                >
-                  <div className="text-right hidden sm:block">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {userRole}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Active
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Dropdown Menu - Always at the end */}
-              <div className="relative">
-                <motion.button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className={`p-2 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                    isDropdownOpen ? 'bg-gray-100 dark:bg-gray-800' : ''
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleSignIn}
+                  className={`font-medium ${
+                    isScrolled ? 'text-foreground hover:text-foreground' : 'text-foreground hover:text-foreground'
                   }`}
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+              </motion.div>
+
+              {/* Get Started Button */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  onClick={handleGetStarted}
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </motion.div>
+
+              {/* Modern Grid3x3 Dropdown */}
+              <div className="relative">
+                <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Menu className="h-5 w-5" />
-                </motion.button>
-                
-                <AnimatePresence>
-                  {isDropdownOpen && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className={`font-medium relative overflow-hidden ${
+                      isScrolled ? 'text-foreground hover:text-foreground' : 'text-foreground hover:text-foreground'
+                    } ${isDropdownOpen ? 'bg-accent/50' : ''}`}
+                  >
+                    <motion.div
+                      className="flex items-center space-x-1"
+                      animate={{ rotate: isDropdownOpen ? 45 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Grid3x3 className="h-4 w-4" />
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/40"
+                        animate={{ opacity: isDropdownOpen ? 1 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    </motion.div>
+                  </Button>
+                </motion.div>
+
+                {/* Enhanced Dropdown Menu */}
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 bg-black/20 z-[55]" 
+                      onClick={() => setIsDropdownOpen(false)} 
+                    />
+                      
+                    {/* Dropdown Content */}
                     <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-72 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50"
+                      transition={{ duration: 0.3 }}
+                      className="absolute top-full right-0 mt-2 w-72 z-[140]"
                     >
-                      <div className="p-3">
-                        {dropdownItems.map((item, index) => (
-                          <motion.button
-                            key={item.label}
-                            onClick={() => handleDropdownAction(item.action)}
-                            className={`w-full text-left p-3 rounded-lg transition-all duration-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center space-x-3 ${
-                              index > 0 ? 'mt-2' : ''
-                            }`}
-                            whileHover={{ x: 4 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <div className={`p-2 rounded-lg bg-gradient-to-r ${item.gradient} text-white shadow-md`}>
-                              {item.icon}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {item.label}
+                      <Card className="bg-background/95 backdrop-blur-md border-2 shadow-2xl overflow-hidden">
+                        <CardContent className="p-1">
+                          {dropdownItems.map((item, index) => (
+                            <motion.button
+                              key={item.action}
+                              onClick={() => handleDropdownAction(item.action)}
+                              className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-accent transition-all duration-300 text-left group relative overflow-hidden"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3, delay: index * 0.08 }}
+                              whileHover={{ x: 5, scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              {/* Background gradient effect */}
+                              <motion.div
+                                className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                                initial={{ x: -100 }}
+                                animate={{ x: isDropdownOpen ? 0 : -100 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                              />
+                              
+                              <div className="relative z-10 flex items-center space-x-3">
+                                <motion.div
+                                  className={`p-2 rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-lg`}
+                                  whileHover={{ scale: 1.1, rotate: 5 }}
+                                  transition={{ duration: 0.3 }}
+                                >
+                                  {item.icon}
+                                </motion.div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-semibold text-foreground">
+                                    {item.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.description}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {item.description}
-                              </div>
-                            </div>
-                          </motion.button>
-                        ))}
-                      </div>
+                            </motion.button>
+                          ))}
+                        </CardContent>
+                      </Card>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  </>
+                )}
+              </AnimatePresence>
               </div>
-
-              {/* Mobile Menu Button */}
-              <motion.button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </motion.button>
             </motion.div>
+
+        {/* Mobile Menu Button */}
+            <motion.button
+              className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors z-[120]"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6 text-foreground" />
+              ) : (
+                <Menu className="h-6 w-6 text-foreground" />
+              )}
+            </motion.button>
           </div>
         </div>
-      </motion.nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-0 z-40 lg:hidden"
-          >
-            <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
             <motion.div
-              initial={{ x: 300 }}
-              animate={{ x: 0 }}
-              exit={{ x: 300 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="lg:hidden bg-background border-t border-border z-[130] fixed top-16 left-0 right-0"
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Menu</h2>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              <div className="px-4 py-6 space-y-4">
+                {navItems.map((item) => (
+                  <motion.button
+                    key={item.label}
+                    onClick={() => handleNavClick(item.href, item.label)}
+                    className={`block w-full text-left text-base font-medium transition-colors py-2 ${
+                      activeSection === item.href.replace('#', '')
+                        ? 'text-primary'
+                        : 'text-foreground hover:text-primary'
+                    }`}
+                    whileHover={{ x: 10 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {navItems.map((item, index) => (
-                    <motion.button
-                      key={item.label}
-                      onClick={() => handleNavClick(item.href, item.label)}
-                      className={`w-full text-left p-4 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                        activeSection === item.href.replace('#', '') 
-                          ? 'bg-primary text-white' 
-                          : 'text-gray-900 dark:text-white'
-                      }`}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
+                    {item.label}
+                  </motion.button>
+                ))}
+
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
+
+                  {/* Mobile Dropdown Options */}
+                  <div className="space-y-2">
+                    {dropdownItems.map((item, index) => (
+                      <motion.button
+                        key={item.action}
+                        onClick={() => handleDropdownAction(item.action)}
+                        className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-accent transition-colors text-left group relative overflow-hidden"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        whileHover={{ x: 5 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {/* Background gradient effect */}
+                        <motion.div
+                          className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                          initial={{ x: -100 }}
+                          animate={{ x: 0 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        
+                        <div className="relative z-10 flex items-center space-x-3">
+                          <motion.div
+                            className={`p-2 rounded-lg bg-gradient-to-br ${item.gradient} text-white shadow-lg`}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            {item.icon}
+                          </motion.div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-foreground">
+                              {item.label}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.description}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start font-medium text-foreground hover:text-foreground"
+                      onClick={() => {
+                        handleSignIn()
+                        setIsMobileMenuOpen(false)
+                      }}
                     >
-                      {item.label}
-                    </motion.button>
-                  ))}
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign In
+                    </Button>
+                  </motion.div>
                   
-                  {!isAuthenticated && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                      >
-                        <Button
-                          onClick={handleGetStarted}
-                          className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-primary/20"
-                          size="lg"
-                        >
-                          <Rocket className="h-4 w-4 mr-2" />
-                          Get Started
-                        </Button>
-                      </motion.div>
-                      
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                      >
-                        <Button
-                          onClick={handleSignIn}
-                          variant="outline"
-                          className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/10 text-primary font-medium py-3 rounded-full transition-all duration-300"
-                          size="lg"
-                        >
-                          <LogIn className="h-4 w-4 mr-2" />
-                          Sign In
-                        </Button>
-                      </motion.div>
-                    </>
-                  )}
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button 
+                      onClick={() => {
+                        handleGetStarted()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                    >
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* GitHub Integration Dialog */}
-      <Dialog open={showGitHubDialog} onOpenChange={setShowGitHubDialog}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl font-bold">
-              <Github className="h-6 w-6" />
-              GitHub Integration
-            </DialogTitle>
-          </DialogHeader>
-          <GitHubIntegration />
-        </DialogContent>
-      </Dialog>
+          )}
+        </AnimatePresence>
+      </motion.nav>
+      
+      {/* GitHub Integration Modal */}
+      <GitHubIntegration isOpen={isGitHubOpen} onOpenChange={setIsGitHubOpen} />
     </>
   )
 }

@@ -147,9 +147,15 @@ export function useCachedAsync<T>(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const cacheRef = useRef<Map<string, { data: T; timestamp: number }>>(new Map())
+  const depsRef = useRef(deps)
+
+  // Update deps ref when deps change
+  useEffect(() => {
+    depsRef.current = deps
+  }, [deps])
 
   const execute = useCallback(async () => {
-    const cacheKey = JSON.stringify(deps)
+    const cacheKey = JSON.stringify(depsRef.current)
     const cached = cacheRef.current.get(cacheKey)
     
     if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
@@ -172,11 +178,11 @@ export function useCachedAsync<T>(
     } finally {
       setLoading(false)
     }
-  }, deps)
+  }, [asyncFn])
 
   useEffect(() => {
     execute()
-  }, [execute])
+  }, [execute, ...deps])
 
   return { data, loading, error, refetch: execute }
 }

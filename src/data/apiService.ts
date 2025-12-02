@@ -517,7 +517,7 @@ export const developmentHelper = {
   }
 }
 
-const apiServiceExport = {
+export default {
   apiClient,
   saanifyAPI,
   apiMigrationHelper,
@@ -525,5 +525,3 @@ const apiServiceExport = {
   APIClient,
   SaanifyAPIService
 }
-
-export default apiServiceExport

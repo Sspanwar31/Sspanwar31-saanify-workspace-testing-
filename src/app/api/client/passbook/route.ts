@@ -76,21 +76,52 @@ export async function GET(request: NextRequest) {
       balanceMap.set(entry.id, runningBalance);
     });
 
-    const entriesWithBalance = entries.map(entry => ({
-      id: entry.id,
-      memberId: entry.memberId,
-      memberName: entry.member.name,
-      date: entry.transactionDate.toISOString().split('T')[0],
-      deposit: entry.depositAmount || 0,
-      installment: entry.loanInstallment || 0,
-      interest: entry.interestAuto || 0,
-      fine: entry.fineAuto || 0,
-      mode: entry.mode,
-      description: entry.description || '',
-      balance: balanceMap.get(entry.id) || 0,
-      loanId: entry.loanRequestId,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt
+    // Get loan information for each entry
+    const entriesWithBalance = await Promise.all(entries.map(async (entry) => {
+      let loanBalance = 0;
+      let remainingLoan = 0;
+
+      if (entry.loanRequestId) {
+        const loan = await db.loan.findUnique({
+          where: { id: entry.loanRequestId }
+        });
+
+        if (loan) {
+          loanBalance = loan.loanAmount;
+          
+          // Calculate total installments for this loan
+          const totalInstallments = await db.passbookEntry.aggregate({
+            where: {
+              memberId: entry.memberId,
+              loanRequestId: loan.id,
+              loanInstallment: { gt: 0 }
+            },
+            _sum: { loanInstallment: true }
+          });
+          
+          const totalPaid = totalInstallments._sum.loanInstallment || 0;
+          remainingLoan = Math.max(0, loan.remainingBalance - totalPaid);
+        }
+      }
+
+      return {
+        id: entry.id,
+        memberId: entry.memberId,
+        memberName: entry.member.name,
+        date: entry.transactionDate.toISOString().split('T')[0],
+        deposit: entry.depositAmount || 0,
+        installment: entry.loanInstallment || 0,
+        interest: entry.interestAuto || 0,
+        fine: entry.fineAuto || 0,
+        mode: entry.mode,
+        description: entry.description || '',
+        balance: balanceMap.get(entry.id) || 0,
+        loanBalance: loanBalance,
+        remainingLoan: remainingLoan,
+        loanId: entry.loanRequestId,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt
+      };
     }));
 
     return NextResponse.json({

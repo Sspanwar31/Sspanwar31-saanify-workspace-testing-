@@ -4,9 +4,9 @@ import { db } from '@/lib/db';
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
+    const entryId = searchParams.get('id');
+    
+    if (!entryId) {
       return NextResponse.json(
         { error: 'Entry ID is required' },
         { status: 400 }
@@ -14,116 +14,135 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      deposit,
-      installment,
-      interest,
-      fine,
-      date,
-      note,
-      mode
+    const { 
+      memberId, 
+      date, 
+      deposit, 
+      installment, 
+      interest, 
+      fine, 
+      mode, 
+      note 
     } = body;
 
-    // Validation
-    if ((deposit || 0) < 0 || (installment || 0) < 0) {
+    if (!memberId || !date || !mode) {
       return NextResponse.json(
-        { error: 'Deposit and installment amounts must be non-negative' },
+        { error: 'Missing required fields: memberId, date, mode' },
         { status: 400 }
       );
     }
 
-    if ((!deposit || deposit === 0) && (!installment || installment === 0)) {
-      return NextResponse.json(
-        { error: 'Either deposit or installment amount must be greater than 0' },
-        { status: 400 }
-      );
-    }
-
-    // Check if entry exists
-    const existingEntry = await db.passbookEntry.findUnique({
-      where: { id },
-      include: {
-        member: {
-          select: {
-            id: true,
-            name: true,
-            phone: true
-          }
-        }
-      }
+    // Get the original entry to see what changed
+    const originalEntry = await db.passbookEntry.findUnique({
+      where: { id: entryId },
+      include: { loan: true }
     });
 
-    if (!existingEntry) {
+    if (!originalEntry) {
       return NextResponse.json(
-        { error: 'Passbook entry not found' },
+        { error: 'Entry not found' },
         { status: 404 }
       );
     }
 
-    // Update the entry
+    const originalInstallment = originalEntry.loanInstallment || 0;
+    const installmentDifference = (installment || 0) - originalInstallment;
+
+    // Update the passbook entry
     const updatedEntry = await db.passbookEntry.update({
-      where: { id },
+      where: { id: entryId },
       data: {
-        depositAmount: deposit !== undefined ? deposit : existingEntry.depositAmount,
-        loanInstallment: installment !== undefined ? installment : existingEntry.loanInstallment,
-        interestAuto: interest !== undefined ? interest : existingEntry.interestAuto,
-        fineAuto: fine !== undefined ? fine : existingEntry.fineAuto,
-        transactionDate: date ? new Date(date) : existingEntry.transactionDate,
-        description: note !== undefined ? note : existingEntry.description,
-        mode: mode || existingEntry.mode
-      },
-      include: {
-        member: {
-          select: {
-            id: true,
-            name: true,
-            phone: true
-          }
-        }
+        depositAmount: deposit || 0,
+        loanInstallment: installment || 0,
+        interestAuto: interest || 0,
+        fineAuto: fine || 0,
+        mode: mode,
+        description: note || '',
+        transactionDate: new Date(date),
       }
     });
 
-    // Recalculate running balance for this member's entries
-    const allMemberEntries = await db.passbookEntry.findMany({
-      where: { memberId: existingEntry.memberId },
+    // If installment amount changed and there's an associated loan, update loan balance
+    if (installmentDifference !== 0 && originalEntry.loanRequestId) {
+      const activeLoan = await db.loan.findUnique({
+        where: { id: originalEntry.loanRequestId }
+      });
+
+      if (activeLoan) {
+        // Calculate new remaining balance
+        // Since we're updating an installment, we need to adjust the remaining balance
+        const newRemainingBalance = Math.max(0, activeLoan.remainingBalance - installmentDifference);
+        
+        await db.loan.update({
+          where: { id: activeLoan.id },
+          data: { 
+            remainingBalance: newRemainingBalance,
+            // If loan is fully paid, update status
+            ...(newRemainingBalance === 0 && { status: 'completed' })
+          }
+        });
+      }
+    }
+
+    // Recalculate all balances for this member
+    const allEntries = await db.passbookEntry.findMany({
+      where: { memberId: memberId },
       orderBy: { transactionDate: 'asc' }
     });
 
     let runningBalance = 0;
-    const balanceMap = new Map();
-
-    allMemberEntries.forEach(entry => {
-      const depositAmount = entry.depositAmount || 0;
-      const installmentAmount = entry.loanInstallment || 0;
-      const interestAmount = entry.interestAuto || 0;
-      const fineAmount = entry.fineAuto || 0;
+    allEntries.forEach(entry => {
+      const depositAmt = entry.depositAmount || 0;
+      const installmentAmt = entry.loanInstallment || 0;
+      const interestAmt = entry.interestAuto || 0;
+      const fineAmt = entry.fineAuto || 0;
       
-      runningBalance = runningBalance + depositAmount - installmentAmount + interestAmount + fineAmount;
-      balanceMap.set(entry.id, runningBalance);
+      runningBalance = runningBalance + depositAmt - installmentAmt + interestAmt + fineAmt;
     });
 
-    // Return response with calculated balance
-    const responseEntry = {
-      id: updatedEntry.id,
-      memberId: updatedEntry.memberId,
-      memberName: updatedEntry.member.name,
-      date: updatedEntry.transactionDate.toISOString().split('T')[0],
-      deposit: updatedEntry.depositAmount || 0,
-      installment: updatedEntry.loanInstallment || 0,
-      interest: updatedEntry.interestAuto || 0,
-      fine: updatedEntry.fineAuto || 0,
-      mode: updatedEntry.mode,
-      description: updatedEntry.description || '',
-      balance: balanceMap.get(id) || 0,
-      createdAt: updatedEntry.createdAt,
-      updatedAt: updatedEntry.updatedAt
-    };
+    // Get updated loan status
+    let loanBalance = 0;
+    let remainingLoan = 0;
+    
+    if (originalEntry.loanRequestId) {
+      const loan = await db.loan.findUnique({
+        where: { id: originalEntry.loanRequestId }
+      });
+      
+      if (loan) {
+        const totalInstallments = await db.passbookEntry.aggregate({
+          where: {
+            memberId: memberId,
+            loanRequestId: loan.id,
+            loanInstallment: { gt: 0 }
+          },
+          _sum: { loanInstallment: true }
+        });
+        
+        const totalPaid = totalInstallments._sum.loanInstallment || 0;
+        loanBalance = loan.loanAmount;
+        remainingLoan = Math.max(0, loan.remainingBalance - totalPaid);
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      entry: responseEntry,
-      affectedEntries: allMemberEntries.length,
-      message: 'Passbook entry updated successfully'
+      entry: {
+        id: updatedEntry.id,
+        memberId: updatedEntry.memberId,
+        date: updatedEntry.transactionDate.toISOString().split('T')[0],
+        deposit: updatedEntry.depositAmount || 0,
+        installment: updatedEntry.loanInstallment || 0,
+        interest: updatedEntry.interestAuto || 0,
+        fine: updatedEntry.fineAuto || 0,
+        mode: updatedEntry.mode,
+        description: updatedEntry.description || '',
+        balance: runningBalance,
+        loanBalance: loanBalance,
+        remainingLoan: remainingLoan,
+        createdAt: updatedEntry.createdAt,
+        updatedAt: updatedEntry.updatedAt
+      }
     });
 
   } catch (error) {

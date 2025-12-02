@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,18 +58,30 @@ export default function AutoForm({
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Refs to track previous values (minimal)
+  const prevEditingDataRef = useRef<any>(null)
+  
+  // Memoize fields to prevent unnecessary re-renders
+  const memoizedFields = useMemo(() => fields, [fields])
+  const memoizedExcludeFields = useMemo(() => excludeFields, [excludeFields])
 
-  // Initialize form data
+  // Initialize form data - simplified to prevent infinite loops
   useEffect(() => {
+    // Only run when modal opens or editingData changes
+    if (!isOpen) return
+    
+    // Simple initialization without complex checks
     if (editingData) {
       const filteredData = { ...editingData }
-      excludeFields.forEach(field => delete filteredData[field])
+      memoizedExcludeFields.forEach(field => delete filteredData[field])
       setFormData(filteredData)
+      prevEditingDataRef.current = editingData
     } else {
       const initialData: Record<string, any> = {}
-      Object.keys(fields).forEach(key => {
-        if (!excludeFields.includes(key)) {
-          const field = fields[key]
+      Object.keys(memoizedFields).forEach(key => {
+        if (!memoizedExcludeFields.includes(key)) {
+          const field = memoizedFields[key]
           if (field.type === 'select') {
             initialData[key] = field.options?.[0] || ''
           } else if (field.type === 'date') {
@@ -80,12 +92,13 @@ export default function AutoForm({
         }
       })
       setFormData(initialData)
+      prevEditingDataRef.current = null
     }
     setErrors({})
-  }, [editingData, isOpen, fields, excludeFields])
+  }, [isOpen, editingData]) // Simplified dependencies
 
   const validateField = (key: string, value: string): string | null => {
-    const field = fields[key]
+    const field = memoizedFields[key]
     if (!field) return null
 
     // Required validation
@@ -168,19 +181,27 @@ export default function AutoForm({
     }
   }
 
-  const handleInputChange = (key: string, value: string) => {
+  const handleInputChange = useCallback((key: string, value: string) => {
+    // Simple change handler with minimal checks
+    if (formData[key] === value) return // No change needed
+    
     const newFormData = { ...formData, [key]: value }
     setFormData(newFormData)
     
-    // Call parent callback for form data changes (for EMI calculation)
+    // Call parent callback if provided
     if (onFormDataChange) {
-      onFormDataChange(newFormData)
+      try {
+        onFormDataChange(newFormData)
+      } catch (error) {
+        console.error('Error in onFormDataChange callback:', error)
+      }
     }
     
+    // Clear error for this field if it exists
     if (errors[key]) {
       setErrors(prev => ({ ...prev, [key]: '' }))
     }
-  }
+  }, [formData, errors, onFormDataChange])
 
   const renderField = (key: string, field: FieldConfig) => {
     const value = formData[key] || ''
@@ -288,7 +309,7 @@ export default function AutoForm({
   }
 
   // Filter out excluded fields
-  const visibleFields = Object.keys(fields).filter(key => !excludeFields.includes(key))
+  const visibleFields = Object.keys(memoizedFields).filter(key => !memoizedExcludeFields.includes(key))
 
   return (
     <AnimatePresence>
@@ -312,7 +333,7 @@ export default function AutoForm({
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {visibleFields.map(key => renderField(key, fields[key]))}
+                {visibleFields.map(key => renderField(key, memoizedFields[key]))}
               </div>
 
               {/* Form Data Preview */}
@@ -323,11 +344,11 @@ export default function AutoForm({
                   </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     {Object.entries(formData).map(([key, value]) => {
-                      if (fields[key]?.type === 'hidden') return null
+                      if (memoizedFields[key]?.type === 'hidden') return null
                       return (
                         <div key={key}>
                           <span className="text-slate-500 dark:text-slate-400">
-                            {fields[key]?.label || key}:
+                            {memoizedFields[key]?.label || key}:
                           </span>
                           <p className="font-medium text-slate-900 dark:text-white truncate">
                             {value || 'Not provided'}

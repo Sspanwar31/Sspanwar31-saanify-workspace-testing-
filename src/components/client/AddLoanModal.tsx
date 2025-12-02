@@ -10,20 +10,22 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { 
-  Loan, 
-  Member, 
-  membersData, 
-  validateLoanForm, 
-  generateLoanId,
-  formatCurrency 
-} from '@/data/loansData'
+
+interface Member {
+  id: string
+  name: string
+  phone: string
+  joinDate: string
+  address: string
+  createdAt: string
+  updatedAt: string
+}
 
 interface AddLoanModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (loan: Loan) => void
-  editingLoan?: Loan | null
+  onSave: (loan: any) => void
+  editingLoan?: any | null
 }
 
 interface LoanFormData {
@@ -56,8 +58,29 @@ export default function AddLoanModal({
     description: ''
   })
   
+  const [members, setMembers] = useState<Member[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Fetch members from API
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('/api/client/members')
+        const data = await response.json()
+        
+        if (response.ok) {
+          setMembers(data.members || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error)
+      }
+    }
+
+    if (isOpen) {
+      fetchMembers()
+    }
+  }, [isOpen])
 
   // Reset form when modal opens/closes or editing loan changes
   useEffect(() => {
@@ -100,27 +123,41 @@ export default function AddLoanModal({
   }
 
   const validateForm = (): boolean => {
-    const loanData = {
-      ...formData,
-      loanAmount: parseFloat(formData.loanAmount) || 0,
-      interestRate: parseFloat(formData.interestRate) || 0,
-      totalInstallments: parseInt(formData.totalInstallments) || 0,
-      paidInstallments: parseInt(formData.paidInstallments) || 0
-    }
-
-    const validationErrors = validateLoanForm(loanData)
-    
-    if (validationErrors.length > 0) {
-      setErrors(validationErrors)
-      validationErrors.forEach(error => {
-        toast.error('❌ Validation Error', {
-          description: error,
-          duration: 3000,
-        })
+    if (!formData.memberId) {
+      toast.error('❌ Validation Error', {
+        description: 'Please select a member',
+        duration: 3000,
       })
       return false
     }
-
+    if (!formData.loanAmount || parseFloat(formData.loanAmount) <= 0) {
+      toast.error('❌ Validation Error', {
+        description: 'Please enter a valid loan amount',
+        duration: 3000,
+      })
+      return false
+    }
+    if (!formData.interestRate || parseFloat(formData.interestRate) < 0) {
+      toast.error('❌ Validation Error', {
+        description: 'Please enter a valid interest rate',
+        duration: 3000,
+      })
+      return false
+    }
+    if (!formData.totalInstallments || parseInt(formData.totalInstallments) <= 0) {
+      toast.error('❌ Validation Error', {
+        description: 'Please enter valid total installments',
+        duration: 3000,
+      })
+      return false
+    }
+    if (!formData.startDate) {
+      toast.error('❌ Validation Error', {
+        description: 'Please select a start date',
+        duration: 3000,
+      })
+      return false
+    }
     return true
   }
 
@@ -134,7 +171,7 @@ export default function AddLoanModal({
     setIsSubmitting(true)
 
     try {
-      const selectedMember = membersData.find(m => m.id === formData.memberId)
+      const selectedMember = members.find(m => m.id === formData.memberId)
       if (!selectedMember) {
         toast.error('❌ Error', {
           description: 'Please select a valid member',
@@ -144,14 +181,14 @@ export default function AddLoanModal({
         return
       }
 
-      const loanData: Loan = {
-        id: editingLoan ? editingLoan.id : generateLoanId(),
+      const loanData = {
+        id: editingLoan ? editingLoan.id : Date.now().toString(),
         member: selectedMember.name,
         memberId: formData.memberId,
         loanAmount: parseFloat(formData.loanAmount),
         interestRate: parseFloat(formData.interestRate),
         totalInstallments: parseInt(formData.totalInstallments),
-        paidInstallments: parseInt(formData.paidInstallments),
+        paidInstallments: parseInt(formData.paidInstallments) || 0,
         startDate: formData.startDate,
         endDate: formData.endDate,
         status: formData.status,
@@ -179,6 +216,13 @@ export default function AddLoanModal({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR'
+    }).format(amount)
   }
 
   const calculateEndDate = () => {
@@ -224,11 +268,11 @@ export default function AddLoanModal({
                 <SelectValue placeholder="Select a member" />
               </SelectTrigger>
               <SelectContent>
-                {membersData.map((member) => (
+                {members.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     <div>
                       <div className="font-medium">{member.name}</div>
-                      <div className="text-xs text-muted-foreground">{member.email}</div>
+                      <div className="text-xs text-muted-foreground">{member.phone}</div>
                     </div>
                   </SelectItem>
                 ))}

@@ -23,14 +23,47 @@ import {
 } from 'lucide-react'
 import AutoTable from '@/components/ui/auto-table'
 import AutoForm from '@/components/ui/auto-form'
-import { membersData } from '@/data/membersData'
 import { toast } from 'sonner'
 
+interface Member {
+  id: string
+  name: string
+  phone: string
+  joinDate: string
+  address: string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function MembersPage() {
-  const [members, setMembers] = useState(membersData)
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
+
+  // Fetch members from API
+  const fetchMembers = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/client/members')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMembers(data.members || [])
+      } else {
+        toast.error('Failed to fetch members')
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error)
+      toast.error('Failed to fetch members')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMembers()
+  }, [])
 
   // Helper function to generate membership ID
   const generateMembershipId = () => {
@@ -56,46 +89,19 @@ export default function MembersPage() {
         }
       }
     },
-    email: {
-      type: 'email',
-      label: 'Email Address',
-      placeholder: 'john@example.com',
-      required: true,
-      validation: {
-        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      }
-    },
     phone: {
       type: 'tel',
       label: 'Phone Number',
-      placeholder: '+1 (555) 123-4567',
+      placeholder: '+91 98765 43210',
       required: true,
       validation: {
         pattern: /^[+]?[\d\s-()]+$/
       }
     },
-    status: {
-      type: 'select',
-      label: 'Status',
-      required: true,
-      options: ['ACTIVE', 'INACTIVE', 'PENDING']
-    },
-    membershipId: {
-      type: 'text-with-button',
-      label: 'Membership ID',
-      placeholder: 'MEM0001',
-      required: true,
-      buttonText: 'Generate',
-      onButtonClick: generateMembershipId,
-      validation: {
-        min: 3,
-        custom: (value: string) => {
-          if (!/^MEM\d+$/.test(value.trim())) {
-            return 'Membership ID should start with MEM followed by numbers'
-          }
-          return null
-        }
-      }
+    joinDate: {
+      type: 'date',
+      label: 'Join Date',
+      required: true
     },
     address: {
       type: 'textarea',
@@ -105,40 +111,44 @@ export default function MembersPage() {
       validation: {
         min: 10
       }
-    },
-    fatherHusbandName: {
-      type: 'text',
-      label: 'Father/Husband Name',
-      placeholder: 'Enter father or husband name',
-      required: false
-    },
-    joinDate: {
-      type: 'date',
-      label: 'Join Date',
-      required: false
     }
   }
 
   // Calculate statistics
   const stats = {
     total: members.length,
-    active: members.filter(m => m.status === 'active').length,
-    inactive: members.filter(m => m.status === 'inactive').length,
-    pending: members.filter(m => m.status === 'pending').length
+    active: members.filter(m => m.phone && m.phone.length > 0).length, // Active = has phone
+    inactive: members.filter(m => !m.phone || m.phone.length === 0).length,
+    pending: 0 // No pending status in new schema
   }
 
-  const handleAddMember = (newMember: any) => {
-    const memberWithId = {
-      ...newMember,
-      id: `uuid-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  const handleAddMember = async (newMember: any) => {
+    try {
+      const response = await fetch('/api/client/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMember)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMembers([...members, data.member])
+        toast.success('✅ Member Added', {
+          description: `${newMember.name} has been added successfully`,
+          duration: 3000
+        })
+        setIsAddModalOpen(false)
+      } else {
+        const error = await response.json()
+        toast.error('Failed to add member', {
+          description: error.error || 'Unknown error',
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to add member:', error)
+      toast.error('Failed to add member')
     }
-    setMembers([...members, memberWithId])
-    toast.success('✅ Member Added', {
-      description: `${newMember.name} has been added successfully`,
-      duration: 3000
-    })
   }
 
   const handleEditMember = (member: any) => {
@@ -146,7 +156,9 @@ export default function MembersPage() {
     setIsAddModalOpen(true)
   }
 
-  const handleUpdateMember = (updatedMember: any) => {
+  const handleUpdateMember = async (updatedMember: any) => {
+    // For now, just update local state
+    // TODO: Implement PUT API endpoint for updating members
     setMembers(members.map(m => m.id === editingMember.id ? { 
       ...editingMember, 
       ...updatedMember, 
@@ -160,9 +172,11 @@ export default function MembersPage() {
     setIsAddModalOpen(false)
   }
 
-  const handleDeleteMember = (memberId: string) => {
+  const handleDeleteMember = async (memberId: string) => {
     const member = members.find(m => m.id === memberId)
     if (confirm(`Are you sure you want to remove ${member?.name}?`)) {
+      // For now, just update local state
+      // TODO: Implement DELETE API endpoint for members
       setMembers(members.filter(m => m.id !== memberId))
       toast.success('✅ Member Removed', {
         description: `${member?.name} has been removed successfully`,
@@ -172,14 +186,7 @@ export default function MembersPage() {
   }
 
   const handleRefresh = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      toast.success('🔄 Data Refreshed', {
-        description: 'Member data has been refreshed',
-        duration: 2000
-      })
-    }, 1000)
+    fetchMembers()
   }
 
   const handleExport = () => {

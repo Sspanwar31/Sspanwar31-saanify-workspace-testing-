@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         status: 'active',
         remainingBalance: totalPayable,
         nextDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        approvedDate: new Date(),
+        description: loan.description || 'No description provided',
         updatedAt: new Date()
       }
     });
@@ -81,6 +81,22 @@ export async function POST(request: NextRequest) {
         transactionDate: new Date()
       }
     });
+
+    // Also send via notification API for consistency
+    try {
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/client/notifications/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: loan.memberId,
+          loanId: loanId,
+          notificationType: 'loan_approved',
+          message: `Your loan request has been approved for ₹${finalLoanAmount.toFixed(2)}.`
+        })
+      });
+    } catch (error) {
+      console.log('Notification API call failed, but passbook entry created:', error);
+    }
 
     return NextResponse.json({
       success: true,

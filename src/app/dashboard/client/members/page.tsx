@@ -26,48 +26,96 @@ import {
 } from 'lucide-react'
 import MembersTable from '@/components/client/MembersTable'
 import AddMemberModal from '@/components/client/AddMemberModal'
-import { membersData } from '@/data/membersData'
 import { toast } from 'sonner'
 
+interface Member {
+  id: string
+  name: string
+  phone: string
+  joinDate: string
+  address: string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function MembersPage() {
-  const [members, setMembers] = useState(membersData)
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
 
+  // Fetch members from API
+  const fetchMembers = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/client/members')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMembers(data.members || [])
+      } else {
+        toast.error('Failed to fetch members')
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error)
+      toast.error('Failed to fetch members')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMembers()
+  }, [])
+
   // Filter members based on search and filters
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.membershipId.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === 'all' || member.role === selectedRole
-    const matchesStatus = selectedStatus === 'all' || member.status === selectedStatus
-    return matchesSearch && matchesRole && matchesStatus
+                         member.phone.includes(searchTerm) ||
+                         member.address.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = selectedStatus === 'all' || 
+      (selectedStatus === 'active' && member.phone && member.phone.length > 0) ||
+      (selectedStatus === 'inactive' && (!member.phone || member.phone.length === 0))
+    return matchesSearch && matchesStatus
   })
 
   // Calculate statistics
   const stats = {
     total: members.length,
-    active: members.filter(m => m.status === 'ACTIVE').length,
-    inactive: members.filter(m => m.status === 'INACTIVE').length,
-    pending: members.filter(m => m.status === 'PENDING').length
+    active: members.filter(m => m.phone && m.phone.length > 0).length, // Active = has phone
+    inactive: members.filter(m => !m.phone || m.phone.length === 0).length,
+    pending: 0 // No pending status in new schema
   }
 
-  const handleAddMember = (newMember: any) => {
-    const memberWithId = {
-      ...newMember,
-      id: `M${String(members.length + 1).padStart(3, '0')}`,
-      joinDate: new Date().toISOString().split('T')[0],
-      lastLogin: null
+  const handleAddMember = async (newMember: any) => {
+    try {
+      const response = await fetch('/api/client/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMember)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMembers([...members, data.member])
+        toast.success('✅ Member Added', {
+          description: `${newMember.name} has been added successfully`,
+          duration: 3000
+        })
+        setIsAddModalOpen(false)
+      } else {
+        const error = await response.json()
+        toast.error('Failed to add member', {
+          description: error.error || 'Unknown error',
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to add member:', error)
+      toast.error('Failed to add member')
     }
-    setMembers([...members, memberWithId])
-    toast.success('✅ Member Added', {
-      description: `${newMember.name} has been added successfully`,
-      duration: 3000
-    })
   }
 
   const handleEditMember = (member: any) => {
@@ -75,8 +123,14 @@ export default function MembersPage() {
     setIsAddModalOpen(true)
   }
 
-  const handleUpdateMember = (updatedMember: any) => {
-    setMembers(members.map(m => m.id === updatedMember.id ? updatedMember : m))
+  const handleUpdateMember = async (updatedMember: any) => {
+    // For now, just update local state
+    // TODO: Implement PUT API endpoint for updating members
+    setMembers(members.map(m => m.id === editingMember.id ? { 
+      ...editingMember, 
+      ...updatedMember, 
+      updatedAt: new Date().toISOString() 
+    } : m))
     toast.success('✅ Member Updated', {
       description: `${updatedMember.name} has been updated successfully`,
       duration: 3000
@@ -85,9 +139,11 @@ export default function MembersPage() {
     setIsAddModalOpen(false)
   }
 
-  const handleDeleteMember = (memberId: string) => {
+  const handleDeleteMember = async (memberId: string) => {
     const member = members.find(m => m.id === memberId)
     if (confirm(`Are you sure you want to remove ${member?.name}?`)) {
+      // For now, just update local state
+      // TODO: Implement DELETE API endpoint for members
       setMembers(members.filter(m => m.id !== memberId))
       toast.success('✅ Member Removed', {
         description: `${member?.name} has been removed successfully`,
@@ -97,14 +153,7 @@ export default function MembersPage() {
   }
 
   const handleRefresh = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      toast.success('🔄 Data Refreshed', {
-        description: 'Member data has been refreshed',
-        duration: 2000
-      })
-    }, 1000)
+    fetchMembers()
   }
 
   const handleExport = () => {
@@ -114,27 +163,13 @@ export default function MembersPage() {
     })
   }
 
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      ADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
-      MEMBER: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-      TREASURER: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
-    }
-    return (
-      <Badge className={variants[role as keyof typeof variants] || variants.MEMBER}>
-        {role}
-      </Badge>
-    )
-  }
-
   const getStatusBadge = (status: string) => {
     const variants = {
-      ACTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
-      INACTIVE: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300',
-      PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+      active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
+      inactive: 'bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-300'
     }
     return (
-      <Badge className={variants[status as keyof typeof variants] || variants.ACTIVE}>
+      <Badge className={variants[status as keyof typeof variants] || variants.active}>
         {status}
       </Badge>
     )
@@ -271,26 +306,14 @@ export default function MembersPage() {
               />
             </div>
           </div>
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="All Roles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="MEMBER">Member</SelectItem>
-              <SelectItem value="TREASURER">Treasurer</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-full md:w-40">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="INACTIVE">Inactive</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -306,7 +329,6 @@ export default function MembersPage() {
           members={filteredMembers}
           onEdit={handleEditMember}
           onDelete={handleDeleteMember}
-          getRoleBadge={getRoleBadge}
           getStatusBadge={getStatusBadge}
         />
       </motion.div>

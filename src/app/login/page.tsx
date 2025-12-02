@@ -113,11 +113,19 @@ export default function UnifiedLoginPage() {
       })
 
       console.log('Response status:', response.status)
-      const data = await response.json()
-      console.log('Response data:', data)
+      
+      let data
+      try {
+        data = await response.json()
+        console.log('Response data:', data)
+      } catch (parseError) {
+        console.error('Failed to parse response JSON:', parseError)
+        throw new Error('Invalid server response')
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
+        const errorMessage = data?.error || data?.message || 'Login failed'
+        throw new Error(errorMessage)
       }
       
       // Success toast based on user type

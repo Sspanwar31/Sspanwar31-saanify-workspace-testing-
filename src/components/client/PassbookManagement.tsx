@@ -49,11 +49,11 @@ interface Transaction {
 interface Member {
   id: string
   name: string
-  email: string
   phone: string
-  role: string
-  status: string
-  joinedAt: string
+  joinDate: string
+  address: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function PassbookManagement() {
@@ -72,7 +72,25 @@ export default function PassbookManagement() {
     description: ''
   })
 
-  // Mock data
+  // Fetch real members from API
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch('/api/client/members')
+        const data = await response.json()
+        
+        if (response.ok) {
+          setMembers(data.members)
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error)
+      }
+    }
+
+    fetchMembers()
+  }, [])
+
+  // Mock transactions (will be replaced with real API later)
   useEffect(() => {
     const mockTransactions: Transaction[] = [
       {
@@ -99,30 +117,8 @@ export default function PassbookManagement() {
       }
     ]
 
-    const mockMembers: Member[] = [
-      {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1234567890',
-        role: 'MEMBER',
-        status: 'ACTIVE',
-        joinedAt: '2024-01-01'
-      },
-      {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        phone: '+0987654321',
-        role: 'MEMBER',
-        status: 'ACTIVE',
-        joinedAt: '2024-01-02'
-      }
-    ]
-
     setTimeout(() => {
       setTransactions(mockTransactions)
-      setMembers(mockMembers)
       setLoading(false)
     }, 1000)
   }, [])
@@ -441,7 +437,7 @@ export default function PassbookManagement() {
                 <SelectContent>
                   {members.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.name}
+                      {member.name} ({member.phone})
                     </SelectItem>
                   ))}
                 </SelectContent>

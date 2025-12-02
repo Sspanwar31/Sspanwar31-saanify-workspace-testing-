@@ -57,6 +57,22 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Also send via notification API for consistency
+    try {
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/client/notifications/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: loan.memberId,
+          loanId: loanId,
+          notificationType: 'loan_rejected',
+          message: 'Your loan request has been rejected.'
+        })
+      });
+    } catch (error) {
+      console.log('Notification API call failed, but passbook entry created:', error);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Loan request rejected successfully',

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { membersData } from '@/data/membersData';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +9,10 @@ export async function GET(request: NextRequest) {
 
     // If specific member is requested
     if (memberId) {
-      const member = membersData.find(m => m.id === memberId);
+      const member = await db.member.findUnique({
+        where: { id: memberId }
+      });
+      
       if (!member) {
         return NextResponse.json({ error: 'Member not found' }, { status: 404 });
       }
@@ -45,7 +47,16 @@ export async function GET(request: NextRequest) {
       });
 
       return NextResponse.json({
-        member,
+        member: {
+          id: member.id,
+          name: member.name,
+          phone: member.phone || '',
+          email: null, // No email field in database
+          joinDate: member.joiningDate,
+          address: member.address || '',
+          createdAt: member.createdAt,
+          updatedAt: member.updatedAt
+        },
         currentBalance,
         totalDeposits,
         activeLoan: activeLoan ? {
@@ -57,27 +68,42 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Get all members from database
+    let membersQuery = {
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        address: true,
+        joiningDate: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    };
+
+    let members = await db.member.findMany(membersQuery);
+
     // If search is provided, filter members
-    let filteredMembers = membersData;
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredMembers = membersData.filter(member =>
+      members = members.filter(member =>
         member.name.toLowerCase().includes(searchLower) ||
-        member.phone.includes(search) ||
-        member.email?.toLowerCase().includes(searchLower)
+        member.phone?.includes(search) ||
+        member.address?.toLowerCase().includes(searchLower)
       );
     }
 
-    // Only return active members for dropdown
-    const activeMembers = filteredMembers.filter(member => member.status === 'active');
-
     return NextResponse.json({
-      members: activeMembers.map(member => ({
+      members: members.map(member => ({
         id: member.id,
         name: member.name,
-        phone: member.phone,
-        email: member.email,
-        status: member.status
+        phone: member.phone || '',
+        email: null, // No email field in database
+        joinDate: member.joiningDate,
+        address: member.address || '',
+        createdAt: member.createdAt,
+        updatedAt: member.updatedAt
       }))
     });
 
@@ -85,6 +111,66 @@ export async function GET(request: NextRequest) {
     console.error('Error in members API:', error);
     return NextResponse.json(
       { error: 'Failed to fetch members' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { name, phone, address, joinDate } = body;
+
+    // Validate required fields
+    if (!name || !address || !joinDate) {
+      return NextResponse.json(
+        { error: 'Name, address, and join date are required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if member with same phone already exists
+    const existingMember = await db.member.findFirst({
+      where: { phone }
+    });
+
+    if (existingMember) {
+      return NextResponse.json(
+        { error: 'Member with this phone number already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Create new member
+    const newMember = await db.member.create({
+      data: {
+        name,
+        phone: phone || null,
+        address,
+        joiningDate: new Date(joinDate),
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    return NextResponse.json({
+      member: {
+        id: newMember.id,
+        name: newMember.name,
+        phone: newMember.phone || '',
+        email: null, // No email field in database
+        joinDate: newMember.joiningDate,
+        address: newMember.address,
+        createdAt: newMember.createdAt,
+        updatedAt: newMember.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating member:', error);
+    return NextResponse.json(
+      { error: 'Failed to create member' },
       { status: 500 }
     );
   }

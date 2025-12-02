@@ -615,7 +615,7 @@ export const reportsData = [
   }
 ]
 
-export default {
+const reportsService = {
   getProfitLossStatement,
   getMemberPerformanceReport,
   getLoanPerformanceReport,
@@ -624,3 +624,5 @@ export default {
   getAnnualReport,
   reportsData
 }
+
+export default reportsService

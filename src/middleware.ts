@@ -104,6 +104,13 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/client")) {
+    // Only CLIENT role can access client routes
+    if (userRole !== 'CLIENT') {
+      return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+    }
+  }
+
   if (pathname.startsWith("/dashboard/client")) {
     // Only CLIENT role can access client dashboard
     if (userRole !== 'CLIENT') {

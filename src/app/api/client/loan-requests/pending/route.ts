@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       interestRate: loan.interestRate,
       status: loan.status,
       createdAt: loan.createdAt,
-      description: `Loan request of ₹${loan.loanAmount.toFixed(2)}`
+      description: loan.description || 'No description provided'
     }));
 
     return NextResponse.json({

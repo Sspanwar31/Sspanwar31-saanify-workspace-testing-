@@ -43,14 +43,11 @@ import { cn } from '@/lib/utils'
 interface Member {
   id: string
   name: string
-  email: string
   phone: string
-  status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
-  joinedAt: string
-  fatherHusbandName: string
-  profileImage?: string
-  totalShares?: number
-  lastLoginAt?: string
+  joinDate: string
+  address: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface MembersManagementProps {
@@ -72,75 +69,35 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
 
+  useEffect(() => {
+    fetchMembers()
+  }, [])
+
   const fetchMembers = async () => {
     try {
       setLoading(true)
-      // Mock data for demonstration
-      const mockMembers: EnhancedMember[] = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          status: 'ACTIVE',
-          joinedAt: '2024-01-15',
-          fatherHusbandName: 'Robert Doe',
-          totalShares: 150,
-          lastLoginAt: '2024-10-28',
-          loanCount: 5,
-          savingsAmount: 50000,
-          totalRevenue: 12000,
-          lastActivity: '2024-10-28'
-        },
-        {
-          id: '2',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '+1234567891',
-          status: 'ACTIVE',
-          joinedAt: '2024-02-20',
-          fatherHusbandName: 'William Smith',
-          totalShares: 50,
-          lastLoginAt: '2024-10-26',
-          loanCount: 2,
-          savingsAmount: 25000,
-          totalRevenue: 6000,
-          lastActivity: '2024-10-26'
-        },
-        {
-          id: '3',
-          name: 'Bob Johnson',
-          email: 'bob@example.com',
-          phone: '+1234567892',
-          status: 'PENDING',
-          joinedAt: '2024-03-15',
-          fatherHusbandName: 'James Johnson',
-          totalShares: 25,
-          lastLoginAt: '2024-10-15',
-          loanCount: 0,
-          savingsAmount: 10000,
-          totalRevenue: 3000,
-          lastActivity: '2024-10-15'
-        },
-        {
-          id: '4',
-          name: 'Mary Williams',
-          email: 'mary@example.com',
-          phone: '+1234567893',
-          status: 'ACTIVE',
-          joinedAt: '2024-04-10',
-          fatherHusbandName: 'David Williams',
-          totalShares: 75,
-          lastLoginAt: '2024-10-28',
-          loanCount: 3,
-          savingsAmount: 15000,
-          totalRevenue: 9000,
-          lastActivity: '2024-10-28'
-        }
-      ]
+      const response = await fetch('/api/client/members')
+      const data = await response.json()
       
-      setMembers(mockMembers)
-      setLoading(false)
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch members')
+      }
+
+      const enhancedMembers: EnhancedMember[] = data.members.map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        phone: member.phone,
+        joinDate: member.joinDate,
+        address: member.address,
+        createdAt: member.createdAt,
+        updatedAt: member.updatedAt,
+        loanCount: 0, // Will be calculated from database
+        savingsAmount: 0, // Will be calculated from database
+        totalRevenue: 0, // Will be calculated from database
+        lastActivity: member.updatedAt
+      }))
+      
+      setMembers(enhancedMembers)
     } catch (error) {
       console.error('Failed to fetch members:', error)
       toast.error('Failed to load members')
@@ -151,7 +108,8 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
 
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase())
+                         member.phone.includes(searchTerm) ||
+                         member.address.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesSearch
   })
 
@@ -199,9 +157,9 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
 
   const getMemberStats = () => {
     const total = members.length
-    const active = members.filter(m => m.status === 'ACTIVE').length
-    const inactive = members.filter(m => m.status === 'INACTIVE').length
-    const pending = members.filter(m => m.status === 'PENDING').length
+    const active = members.filter(m => m.loanCount && m.loanCount > 0).length // Active = has loans
+    const inactive = total - active
+    const pending = 0 // No pending status in new schema
     
     return {
       total,
@@ -217,7 +175,49 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {memberStats.map((stat, index) => (
+        {[
+          {
+            title: 'Total Members',
+            value: memberStats.total,
+            change: '+0%',
+            description: 'Registered members',
+            icon: <Users className="h-4 w-4" />,
+            bgGradient: 'from-blue-500 to-blue-600',
+            borderColor: 'border-blue-200',
+            gradient: 'from-blue-400 to-blue-600'
+          },
+          {
+            title: 'Active Members',
+            value: memberStats.active,
+            change: '+0%',
+            description: 'Members with loans',
+            icon: <UserCheck className="h-4 w-4" />,
+            bgGradient: 'from-emerald-500 to-emerald-600',
+            borderColor: 'border-emerald-200',
+            gradient: 'from-emerald-400 to-emerald-600'
+          },
+          {
+            title: 'Inactive Members',
+            value: memberStats.inactive,
+            change: '-0%',
+            description: 'Members without loans',
+            icon: <AlertCircle className="h-4 w-4" />,
+            bgGradient: 'from-slate-500 to-slate-600',
+            borderColor: 'border-slate-200',
+            gradient: 'from-slate-400 to-slate-600'
+          },
+          {
+            title: 'Active Rate',
+            value: memberStats.activePercentage,
+            change: '+0%',
+            description: 'Percentage active',
+            icon: <TrendingUp className="h-4 w-4" />,
+            bgGradient: 'from-purple-500 to-purple-600',
+            borderColor: 'border-purple-200',
+            gradient: 'from-purple-400 to-purple-600',
+            suffix: '%'
+          }
+        ].map((stat, index) => (
         <motion.div
           key={stat.title}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -355,7 +355,7 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
                 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {memberStats.trial}
+                    0
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-400">
                     Trial Users
@@ -369,7 +369,7 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
                     Member Growth
                   </span>
                   <span className="font-medium text-slate-900 dark:text-white">
-                    {memberStats.growth}% this month
+                    0% this month
                   </span>
                 </div>
               </div>
@@ -396,10 +396,10 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { role: 'ADMIN', count: members.filter(m => m.role === 'ADMIN').length },
-                { role: 'MEMBER', count: members.filter(m => m.role === 'MEMBER').length },
-                { role: 'TREASURER', count: members.filter(m => m.role === 'TREASURER').length },
-                { role: 'LOCKED', count: members.filter(m => m.role === 'LOCKED').length }
+                { role: 'MEMBER', count: members.length },
+                { role: 'ADMIN', count: 0 },
+                { role: 'TREASURER', count: 0 },
+                { role: 'LOCKED', count: 0 }
               ].map((item, index) => (
                 <motion.div
                   key={item.role}
@@ -454,6 +454,100 @@ export function MembersManagement({ societyInfo }: MembersManagementProps) {
             </CardContent>
             </Card>
           </motion.div>
+
+      {/* Members Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <Card className="border-2 border-slate-200 dark:border-slate-700">
+          <CardHeader className="bg-gradient-to-r from-slate-500 to-slate-600 text-white">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-white" />
+                Members Directory
+              </CardTitle>
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder="Search members..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-64 bg-white/10 border-white/20 text-white placeholder-white/70"
+                />
+                <Select value={sortBy} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="joinedAt">Join Date</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-semibold">ID</TableHead>
+                  <TableHead className="font-semibold">Name</TableHead>
+                  <TableHead className="font-semibold">Phone</TableHead>
+                  <TableHead className="font-semibold">Join Date</TableHead>
+                  <TableHead className="font-semibold">Address</TableHead>
+                  <TableHead className="font-semibold">Created At</TableHead>
+                  <TableHead className="font-semibold">Updated At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedMembers.map((member) => (
+                  <TableRow key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <TableCell className="font-medium">{member.id}</TableCell>
+                    <TableCell className="font-medium">{member.name}</TableCell>
+                    <TableCell>{member.phone}</TableCell>
+                    <TableCell>{formatDate(member.joinDate)}</TableCell>
+                    <TableCell>{member.address}</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>{formatDateTime(member.createdAt)}</TableCell>
+                    <TableCell>{formatDateTime(member.updatedAt)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {paginatedMembers.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  {searchTerm ? 'No members found matching your search' : 'No members found'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
         </div>
   )
+}
+
+// Helper functions for date formatting
+const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }

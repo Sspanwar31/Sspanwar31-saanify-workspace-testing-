@@ -13,14 +13,15 @@ import {
   User,
   Calendar,
   Wallet,
-  ArrowRight
+  ArrowRight,
+  TrendingUp
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -170,6 +171,8 @@ export default function EnhancedLoanApproval() {
           loanId: selectedLoan.id,
           finalLoanAmount: finalLoanAmount,
           interestRate: 1, // Fixed 1% per month
+          installmentsCount: 12, // Default 12 months
+          installmentAmount: finalLoanAmount / 12, // Simple calculation
         })
       })
 
@@ -331,115 +334,197 @@ export default function EnhancedLoanApproval() {
       </Card>
 
       {/* ========================================================= */}
-      {/* FINAL APPROVED MODAL DESIGN (FIXED LOGIC) */}
+      {/* FINAL APPROVED MODAL DESIGN (MODERN CLIENT THEME) */}
       {/* ========================================================= */}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-               Approve Loan <ArrowRight className="h-4 w-4 text-gray-400"/>
+        <DialogPortal>
+          <DialogOverlay className="bg-transparent backdrop-blur-none" />
+          <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto bg-white border-2 border-gray-200 shadow-2xl">
+          <DialogHeader className="pb-4 border-b border-emerald-100">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-white"/>
+              </div>
+              Approve Loan
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600 mt-2">
               Enter loan details to approve (1% monthly interest)
             </DialogDescription>
           </DialogHeader>
 
           {selectedLoan && (
-            <div className="grid gap-5 py-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
               
               {/* 1. Member Info */}
-              <div className="flex flex-col gap-1">
-                <Label className="text-gray-500 text-xs uppercase tracking-wide">Member</Label>
-                <div className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-emerald-100">
+                <Label className="text-emerald-600 text-xs font-semibold uppercase tracking-wider mb-2 block">Member Details</Label>
+                <div className="text-xl font-bold text-gray-900 dark:text-white capitalize flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-emerald-600"/>
+                  </div>
                   {selectedLoan.memberName}
                 </div>
               </div>
 
-              {/* 2. Deposit & Limit Stats (API DATA) */}
-              <div className="bg-slate-50 dark:bg-slate-900 border rounded-md p-4 space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-blue-500"/> Total Deposit
-                  </span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {passbookLoading ? "Calculating..." : formatCurrency(totalDeposits)}
-                  </span>
+              {/* 2. Deposit & Limit Stats (MODERN CARDS) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-emerald-600 mb-2">
+                    <Wallet className="h-4 w-4"/>
+                    <span className="text-xs font-semibold uppercase">Total Deposit</span>
+                  </div>
+                  <div className="text-lg font-bold text-emerald-900">
+                    {passbookLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                        Calculating...
+                      </div>
+                    ) : (
+                      formatCurrency(totalDeposits)
+                    )}
+                  </div>
                 </div>
-                <div className="h-px bg-gray-200 dark:bg-gray-700"></div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">80% Eligibility Limit</span>
-                  <span className={`font-bold ${isLimitExceeded && !overrideEnabled ? 'text-red-500' : 'text-green-600'}`}>
+                
+                <div className={`bg-gradient-to-br rounded-xl p-4 border transition-all duration-300 ${
+                  isLimitExceeded && !overrideEnabled 
+                    ? 'from-red-50 to-red-100 border-red-200' 
+                    : 'from-teal-50 to-teal-100 border-teal-200'
+                }`}>
+                  <div className={`flex items-center gap-2 mb-2 ${
+                    isLimitExceeded && !overrideEnabled ? 'text-red-600' : 'text-teal-600'
+                  }`}>
+                    <TrendingUp className="h-4 w-4"/>
+                    <span className="text-xs font-semibold uppercase">80% Limit</span>
+                  </div>
+                  <div className={`text-lg font-bold ${
+                    isLimitExceeded && !overrideEnabled ? 'text-red-900' : 'text-teal-900'
+                  }`}>
                     {passbookLoading ? "..." : formatCurrency(limitAmount)}
-                  </span>
+                  </div>
                 </div>
               </div>
 
-              {/* 3. Warning (Only if limit exceeded) */}
-              {isLimitExceeded && (
-                <div className="flex items-start gap-3 bg-red-50 border border-red-100 p-3 rounded-md">
-                  <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              {/* 3. Warning (Only if limit exceeded and override is disabled) */}
+              {isLimitExceeded && !overrideEnabled && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-3 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 p-4 rounded-xl"
+                >
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-red-600"/>
+                  </div>
                   <div>
-                    <p className="text-sm font-semibold text-red-800">Limit Exceeded</p>
+                    <p className="text-sm font-bold text-red-800">Limit Exceeded</p>
                     <p className="text-xs text-red-600 mt-1">
                       Requested amount is greater than 80% of deposits. You must enable override to proceed.
                     </p>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* 4. Loan Amount Input */}
-              <div className="space-y-2">
-                <Label htmlFor="loanAmount">Final Loan Amount (₹)</Label>
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-emerald-100">
+                <Label htmlFor="loanAmount" className="text-emerald-600 text-xs font-semibold uppercase tracking-wider mb-3 block">
+                  Loan Amount (₹)
+                </Label>
                 <Input
                   id="loanAmount"
                   type="number"
                   value={finalLoanAmount}
                   onChange={(e) => setFinalLoanAmount(Number(e.target.value))}
-                  className={`text-lg font-medium ${isLimitExceeded && !overrideEnabled ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  className={`text-lg font-bold border-2 rounded-lg transition-all duration-200 ${
+                    isLimitExceeded && !overrideEnabled 
+                      ? "border-red-300 bg-red-50 text-red-900 focus-visible:ring-red-500 focus-visible:border-red-500" 
+                      : "border-emerald-200 bg-emerald-50 text-emerald-900 focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
+                  }`}
                 />
               </div>
 
               {/* 5. Override Toggle */}
-              <div className="flex items-center space-x-3 pt-1 p-2 rounded hover:bg-gray-50 transition-colors">
-                <Switch 
-                  id="override" 
-                  checked={overrideEnabled}
-                  onCheckedChange={setOverrideEnabled}
-                />
-                <Label htmlFor="override" className="text-sm font-medium cursor-pointer text-gray-700">
-                  Allow 100% loan (override 80% limit)
-                </Label>
+              <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch 
+                      id="override" 
+                      checked={overrideEnabled}
+                      onCheckedChange={setOverrideEnabled}
+                      className="scale-110"
+                    />
+                    <div>
+                      <Label htmlFor="override" className="text-sm font-bold cursor-pointer text-teal-800">
+                        Enable Override
+                      </Label>
+                      <p className="text-xs text-teal-600 mt-1">
+                        Allow loan amount up to 100% of deposits
+                      </p>
+                    </div>
+                  </div>
+                  {overrideEnabled && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center"
+                    >
+                      <CheckCircle className="h-4 w-4 text-white"/>
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
-              {/* 6. Static Info Footer (Fixed 1%) */}
-              <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
-                <div className="bg-gray-50 p-2 rounded text-center border">
-                  <p className="text-gray-500 text-xs">Interest Rate</p>
-                  <p className="font-semibold text-gray-900">1% / month</p>
+              {/* 6. Static Info Footer (MODERN DESIGN) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-amber-600 mb-2">
+                    <span className="text-xs font-bold uppercase">Interest Rate</span>
+                  </div>
+                  <p className="font-bold text-amber-900 text-lg">1% / month</p>
                 </div>
-                <div className="bg-gray-50 p-2 rounded text-center border">
-                  <p className="text-gray-500 text-xs">Loan Date</p>
-                  <p className="font-semibold text-gray-900">Current Month</p>
+                <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-teal-600 mb-2">
+                    <Calendar className="h-4 w-4"/>
+                    <span className="text-xs font-bold uppercase">Loan Date</span>
+                  </div>
+                  <p className="font-bold text-teal-900 text-lg">Current Month</p>
                 </div>
               </div>
 
             </div>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button variant="ghost" onClick={() => setIsApprovalModalOpen(false)}>
+          <DialogFooter className="mt-6 pt-4 border-t border-emerald-100 flex justify-between items-center">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsApprovalModalOpen(false)}
+              className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg px-6 py-3"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleApprove} 
               disabled={!canApprove || processingAction === 'approve'}
-              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+              className={`rounded-lg px-8 py-3 font-bold transition-all duration-200 text-lg ${
+                !canApprove 
+                  ? 'bg-gray-300 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+              }`}
             >
-              {processingAction === 'approve' ? 'Processing...' : 'Approve Loan'}
+              {processingAction === 'approve' ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5"/>
+                  Approve Loan
+                </div>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </DialogPortal>
+    </Dialog>
     </div>
   )
 }

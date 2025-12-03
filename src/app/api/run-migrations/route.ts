@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import * as bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {

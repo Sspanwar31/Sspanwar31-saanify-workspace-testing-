@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import * as bcrypt from "bcryptjs";
 
 // Helper: SQL चलाने के लिए
 async function runSql(sql: string) {

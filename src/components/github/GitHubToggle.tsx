@@ -29,7 +29,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 
@@ -450,6 +450,9 @@ export default function GitHubToggle() {
                 {isConfigured ? 'Connected' : 'Not Connected'}
               </Badge>
             </DialogTitle>
+            <DialogDescription>
+              Configure GitHub repository integration for automated backups and code synchronization
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

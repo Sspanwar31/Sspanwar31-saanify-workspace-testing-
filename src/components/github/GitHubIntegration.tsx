@@ -31,7 +31,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 
@@ -433,6 +433,9 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                 </Button>
               </div>
             </DialogTitle>
+            <DialogDescription>
+              Configure GitHub repository integration for automated backups and code synchronization
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">

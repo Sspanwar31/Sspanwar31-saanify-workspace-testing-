@@ -61,7 +61,7 @@ export default function SimplifiedAllLoans() {
           remainingBalance: loan.remainingBalance,
           nextEmiDate: loan.endDate || calculateNextDate(loan.startDate, 12),
           interestRate: loan.interest,
-          totalInterestEarned: calculateTotalInterest(loan),
+          totalInterestEarned: loan.totalInterestEarned || 0, // Use API calculated value
           status: loan.remainingBalance > 0 ? 'active' : 'closed',
           startDate: loan.startDate,
           // Fixed: End Date behavior - blank for active, actual date for closed
@@ -98,17 +98,10 @@ export default function SimplifiedAllLoans() {
     return date.toISOString().split('T')[0]
   }
 
-  const calculateTotalInterest = (loan: any): number => {
-    if (!loan.emi || !loan.interest) return 0
-    const totalPayable = loan.emi * 12 // Assuming 12 months tenure
-    return totalPayable - loan.amount
-  }
-
   // Filter loans
   const filteredLoans = useMemo(() => {
     return loans.filter(loan => {
-      const matchesSearch = loan.memberName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           loan.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = loan.memberName.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = statusFilter === 'all' || loan.status === statusFilter
       return matchesSearch && matchesStatus
     })
@@ -142,12 +135,12 @@ export default function SimplifiedAllLoans() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300',
-      closed: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+      active: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-200 dark:border-blue-800 shadow-md',
+      pending: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-2 border-amber-200 dark:border-amber-800 shadow-md',
+      closed: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-2 border-emerald-200 dark:border-emerald-800 shadow-md'
     }
     return (
-      <Badge className={variants[status as keyof typeof variants] || variants.pending}>
+      <Badge className={`${variants[status as keyof typeof variants] || variants.pending} px-3 py-1.5 text-xs font-semibold uppercase tracking-wide rounded-full`}>
         {status}
       </Badge>
     )
@@ -169,183 +162,250 @@ export default function SimplifiedAllLoans() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Loans</CardTitle>
-            <CreditCard className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalLoans}</div>
-            <p className="text-xs text-blue-100">All registered loans</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-blue-600 to-blue-700 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-blue-100">Total Loans</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <CreditCard className="h-5 w-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold mb-1">{stats.totalLoans}</div>
+              <p className="text-sm text-blue-100 font-medium">All registered loans</p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <Users className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeLoans}</div>
-            <p className="text-xs text-green-100">Currently active</p>
-          </CardContent>
-        </Card>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-emerald-100">Active</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold mb-1">{stats.activeLoans}</div>
+              <p className="text-sm text-emerald-100 font-medium">Currently active</p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Calendar className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingLoans}</div>
-            <p className="text-xs text-amber-100">Awaiting approval</p>
-          </CardContent>
-        </Card>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-amber-600 to-amber-700 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-amber-100">Pending</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold mb-1">{stats.pendingLoans}</div>
+              <p className="text-sm text-amber-100 font-medium">Awaiting approval</p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Closed</CardTitle>
-            <TrendingUp className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.closedLoans}</div>
-            <p className="text-xs text-purple-100">Completed loans</p>
-          </CardContent>
-        </Card>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-purple-600 to-purple-700 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-purple-100">Closed</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold mb-1">{stats.closedLoans}</div>
+              <p className="text-sm text-purple-100 font-medium">Completed loans</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Search and Filter Bar */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search loans by member name or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full"
-              />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card className="border-0 shadow-lg bg-white dark:bg-gray-800/50 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search loans by member name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 w-full h-12 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-xl transition-all duration-200 bg-gray-50 dark:bg-gray-700/50"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full lg:w-48 h-12 border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-xl transition-all duration-200 bg-gray-50 dark:bg-gray-700/50">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-40">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="flex flex-col sm:flex-row gap-4 justify-center"
+      >
         <Button
           variant="outline"
           onClick={handleRefresh}
           disabled={loading}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 h-12 px-6 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl transition-all duration-200 text-base font-medium"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           Refresh Data
         </Button>
         <Button
           variant="outline"
           onClick={handleExport}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 h-12 px-6 border-2 border-gray-200 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-400 rounded-xl transition-all duration-200 text-base font-medium"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-5 w-5" />
           Export Loans
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Simplified Loans Table */}
-      <Card className="border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-blue-600" />
-            All Loans Register
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-          ) : filteredLoans.length === 0 ? (
-            <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No Loans Found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {searchTerm 
-                  ? 'Try adjusting your search terms to find loans you\'re looking for.'
-                  : 'No loans have been added yet.'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">Member Name</th>
-                    <th className="text-left p-4 font-medium">Loan Amount</th>
-                    <th className="text-left p-4 font-medium">Remaining Balance</th>
-                    <th className="text-left p-4 font-medium">Next EMI Date</th>
-                    <th className="text-left p-4 font-medium">Interest</th>
-                    <th className="text-left p-4 font-medium">Total Interest Earned</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                    <th className="text-left p-4 font-medium">Start Date</th>
-                    <th className="text-left p-4 font-medium">End Date</th>
-                    <th className="text-left p-4 font-medium">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLoans.map((loan, index) => (
-                    <tr key={loan.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <td className="p-4 font-medium">{loan.memberName}</td>
-                      <td className="p-4 font-semibold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(loan.loanAmount)}
-                      </td>
-                      <td className="p-4 font-semibold text-orange-600 dark:text-orange-400">
-                        {formatCurrency(loan.remainingBalance)}
-                      </td>
-                      <td className="p-4">{loan.nextEmiDate}</td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-1">
-                          <Percent className="h-4 w-4 text-muted-foreground" />
-                          <span>{loan.interestRate}%</span>
-                        </div>
-                      </td>
-                      <td className="p-4 font-semibold text-green-600 dark:text-green-400">
-                        {formatCurrency(loan.totalInterestEarned)}
-                      </td>
-                      <td className="p-4">{getStatusBadge(loan.status)}</td>
-                      <td className="p-4">{formatDate(loan.startDate)}</td>
-                      <td className="p-4">
-                        {/* Fixed: Show End Date only for closed loans, blank for active */}
-                        {loan.endDate ? formatDate(loan.endDate) : '-'}
-                      </td>
-                      <td className="p-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                        {loan.description || 'No description provided'}
-                      </td>
+      {/* Modern Loans Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Card className="border-0 shadow-xl bg-white dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="flex items-center gap-3 text-blue-800 dark:text-blue-200">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
+              All Loans Register
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-4">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Loading loan data...</p>
+                </div>
+              </div>
+            ) : filteredLoans.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
+                    <CreditCard className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    No Loans Found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                    {searchTerm 
+                      ? 'Try adjusting your search terms to find loans you\'re looking for.'
+                      : 'No loans have been added yet.'
+                    }
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700/50 border-b-2 border-gray-200 dark:border-gray-600">
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Member Name</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Loan Amount</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Remaining Balance</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Next EMI Date</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Interest</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Total Interest Earned</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Start Date</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">End Date</th>
+                      <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </thead>
+                  <tbody>
+                    {filteredLoans.map((loan, index) => (
+                      <motion.tr 
+                        key={loan.id} 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 transition-all duration-200"
+                      >
+                        <td className="p-4 font-medium text-gray-900 dark:text-gray-100">{loan.memberName}</td>
+                        <td className="p-4 font-semibold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(loan.loanAmount)}
+                        </td>
+                        <td className="p-4 font-semibold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(loan.remainingBalance)}
+                        </td>
+                        <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{loan.nextEmiDate}</td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                              <span className="font-semibold text-green-700 dark:text-green-300 text-sm">
+                                {formatCurrency(loan.loanAmount * 0.01)}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">(1%)</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                            <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                              {formatCurrency(loan.totalInterestEarned)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{formatDate(loan.startDate)}</td>
+                        <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">
+                          {loan.endDate ? formatDate(loan.endDate) : '-'}
+                        </td>
+                        <td className="p-4">{getStatusBadge(loan.status)}</td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

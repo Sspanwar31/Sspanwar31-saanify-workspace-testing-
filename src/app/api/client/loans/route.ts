@@ -38,8 +38,22 @@ export async function GET(request: NextRequest) {
         }
       });
 
+      // Calculate total interest earned from interest payments
+      const interestPaymentsResult = await db.passbookEntry.aggregate({
+        where: {
+          loanRequestId: loan.id,
+          interestAuto: {
+            gt: 0
+          }
+        },
+        _sum: {
+          interestAuto: true
+        }
+      });
+
       const totalPaid = paidInstallmentsResult._sum.loanInstallment || 0;
       const paidCount = paidInstallmentsResult._count.id || 0;
+      const totalInterestEarned = interestPaymentsResult._sum.interestAuto || 0;
       
       // Calculate EMI if not present
       const emi = loan.loanAmount && loan.interestRate ? 
@@ -61,6 +75,7 @@ export async function GET(request: NextRequest) {
         remainingBalance: Math.max(0, loan.remainingBalance - totalPaid),
         paidInstallments: paidCount,
         totalInstallments: 12,
+        totalInterestEarned: totalInterestEarned, // Actual interest earned from payments
         description: `Loan of ₹${loan.loanAmount.toFixed(2)}`,
         created_at: loan.createdAt.toISOString(),
         updated_at: loan.updatedAt.toISOString()

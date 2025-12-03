@@ -77,6 +77,7 @@ export default function PassbookPageModern() {
   const [loanRequestAmount, setLoanRequestAmount] = useState(0);
   const [selectedMemberForLoan, setSelectedMemberForLoan] = useState<string>('');
   const [members, setMembers] = useState<Member[]>([]);
+  const [membersWithActiveLoans, setMembersWithActiveLoans] = useState<Set<string>>(new Set());
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
   // Fetch passbook entries
@@ -103,7 +104,24 @@ export default function PassbookPageModern() {
       const response = await fetch('/api/client/members');
       if (response.ok) {
         const data = await response.json();
-        setMembers(data.members || []);
+        const membersList = data.members || [];
+        setMembers(membersList);
+        console.log('Members loaded:', membersList);
+        
+        // Also fetch active loans to determine which members have existing loans
+        try {
+          const loansResponse = await fetch('/api/client/loans');
+          if (loansResponse.ok) {
+            const loansData = await loansResponse.json();
+            const activeLoans = loansData.loans?.filter((loan: any) => loan.status === 'active') || [];
+            const memberIdsWithActiveLoans = new Set(activeLoans.map((loan: any) => loan.memberId));
+            setMembersWithActiveLoans(memberIdsWithActiveLoans);
+            console.log('Active loans found:', activeLoans);
+            console.log('Member IDs with active loans:', Array.from(memberIdsWithActiveLoans));
+          }
+        } catch (error) {
+          console.error('Error fetching active loans:', error);
+        }
       }
     } catch (error) {
       console.error('Error fetching members:', error);
@@ -199,9 +217,17 @@ export default function PassbookPageModern() {
   // Handle loan request submission
   const handleLoanRequest = async () => {
     if (!selectedMemberForLoan) {
+    console.log("handleLoanRequest called");
+    console.log("selectedMemberForLoan:", selectedMemberForLoan);
       toast.error('Please select a member first');
       return;
     }
+    
+    // Active loan check removed - members can now request multiple loans
+    // if (membersWithActiveLoans.has(selectedMemberForLoan)) {
+    //   toast.error('This member already has an active loan. Please repay the existing loan before requesting a new one.');
+    //   return;
+    // }
     
     try {
       const response = await fetch('/api/client/loan-request/create', {
@@ -592,7 +618,10 @@ export default function PassbookPageModern() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Member *</label>
-                <Select value={selectedMemberForLoan} onValueChange={setSelectedMemberForLoan}>
+                  <Select value={selectedMemberForLoan} onValueChange={(value) => {
+                    console.log('Member selected:', value);
+                    setSelectedMemberForLoan(value);
+                  }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a member" />
                   </SelectTrigger>
@@ -601,16 +630,34 @@ export default function PassbookPageModern() {
                       <div className="p-2 text-center text-sm text-gray-500">
                         Loading members...
                       </div>
-                    ) : (
+                    ) : members && members.length > 0 ? (
                       members.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
-                          {member.name}
+                          <div className="flex items-center justify-between w-full">
+                            <span>{member.name}</span>
+                          </div>
                         </SelectItem>
                       ))
+                    ) : (
+                      <div className="p-2 text-center text-sm text-gray-500">
+                        No members available
+                      </div>
                     )}
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Warning message for selected member with active loan - REMOVED */}
+              {/* {selectedMemberForLoan && membersWithActiveLoans.has(selectedMemberForLoan) && (
+                <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      This member already has an active loan. Please repay the existing loan before requesting a new one.
+                    </span>
+                  </div>
+                </div>
+              )} */}
               
               <div>
                 <label className="text-sm font-medium mb-2 block">Loan Amount (Optional)</label>

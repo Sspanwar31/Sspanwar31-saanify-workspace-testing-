@@ -12,8 +12,10 @@ interface PassbookTableProps {
 }
 
 export default function PassbookTable({ transactions }: PassbookTableProps) {
-  // Filter out notification entries
-  const filteredTransactions = transactions.filter(transaction => transaction.mode !== "Notification");
+  // Filter out notification entries and loan rejection entries
+  const filteredTransactions = transactions.filter(transaction => 
+    transaction.mode !== "Notification" && transaction.mode !== "Loan Rejected"
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

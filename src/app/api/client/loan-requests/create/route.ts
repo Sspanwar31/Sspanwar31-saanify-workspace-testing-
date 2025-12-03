@@ -27,20 +27,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if there's already an active loan
-    const existingActiveLoan = await db.loan.findFirst({
-      where: {
-        memberId: memberId,
-        status: 'active'
-      }
-    });
+    // Active loan check removed - members can now request multiple loans
+    // const existingActiveLoan = await db.loan.findFirst({
+    //   where: {
+    //     memberId: memberId,
+    //     status: 'active'
+    //   }
+    // });
 
-    if (existingActiveLoan) {
-      return NextResponse.json(
-        { error: 'Member already has an active loan' },
-        { status: 400 }
-      );
-    }
+    // if (existingActiveLoan) {
+    //   return NextResponse.json(
+    //     { error: 'Member already has an active loan' },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Use amount if provided; otherwise store 0
     const loanAmount = amount && amount > 0 ? amount : 0;
@@ -51,13 +51,11 @@ export async function POST(request: NextRequest) {
       data: {
         memberId: memberId,
         loanAmount: loanAmount,
-        requestAmount: requestAmount,
         interestRate: 1.0,
         status: 'pending',
         remainingBalance: 0,
         description: description || 'Loan request',
-        startDate: null,
-        endDate: null
+        nextDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       }
     });
 

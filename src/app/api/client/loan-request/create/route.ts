@@ -25,20 +25,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if there's already an active loan
-    const existingActiveLoan = await db.loan.findFirst({
-      where: {
-        memberId: memberId,
-        status: 'active'
-      }
-    });
+    // Active loan check removed - members can now request multiple loans
+    // const existingActiveLoan = await db.loan.findFirst({
+    //   where: {
+    //     memberId: memberId,
+    //     status: 'active'
+    //   }
+    // });
 
-    if (existingActiveLoan) {
-      return NextResponse.json(
-        { error: 'Member already has an active loan' },
-        { status: 400 }
-      );
-    }
+    // if (existingActiveLoan) {
+    //   return NextResponse.json(
+    //     { error: 'Member already has an active loan. Please repay the existing loan before requesting a new one.' },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Create a loan request (could be a separate table or just create the loan directly)
     // For now, we'll create the loan directly with "pending" status
@@ -55,21 +55,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Create a passbook entry to track the loan request
-    if (loanAmount > 0) {
-      await db.passbookEntry.create({
-        data: {
-          memberId: memberId,
-          loanRequestId: newLoan.id,
-          loanInstallment: 0,
-          interestAuto: 0,
-          fineAuto: 0,
-          mode: 'Loan',
-          description: `Loan request of ₹${loanAmount.toFixed(2)} - pending approval`,
-          transactionDate: new Date(),
-        }
-      });
-    }
+    // NOTE: Loan requests should NOT create passbook entries
+    // Passbook entries are only created when loans are approved or rejected
+    // This prevents unwanted "Loan" entries in passbook before approval
 
     return NextResponse.json({
       success: true,

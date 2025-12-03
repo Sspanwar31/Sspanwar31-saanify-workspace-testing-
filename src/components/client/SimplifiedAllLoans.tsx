@@ -13,7 +13,10 @@ import {
   BookOpen, 
   Percent,
   Search,
-  Filter
+  Filter,
+  Edit,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react'
 
 // UI Components
@@ -22,7 +25,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { loansData, Loan } from '@/data/loansData'
+import EditLoanModal from './EditLoanModal'
 
 // Types
 interface SimplifiedLoan {
@@ -45,6 +50,10 @@ export default function SimplifiedAllLoans() {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [editingLoan, setEditingLoan] = useState<SimplifiedLoan | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [loanToDelete, setLoanToDelete] = useState<string | null>(null)
 
   // Fetch loans from API
   const fetchLoans = async () => {
@@ -131,6 +140,50 @@ export default function SimplifiedAllLoans() {
       description: 'Loan data is being exported to CSV',
       duration: 3000
     })
+  }
+
+  const handleEditLoan = (loan: SimplifiedLoan) => {
+    setEditingLoan(loan)
+    setIsEditModalOpen(true)
+  }
+
+  const handleDeleteLoan = (loanId: string) => {
+    setLoanToDelete(loanId)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!loanToDelete) return
+
+    try {
+      const response = await fetch(`/api/client/loans/${loanToDelete}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('✅ Loan Deleted', {
+          description: 'Loan has been deleted successfully',
+          duration: 3000
+        })
+        fetchLoans() // Refresh the loans list
+      } else {
+        toast.error('❌ Delete Failed', {
+          description: data.error || 'Failed to delete loan',
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting loan:', error)
+      toast.error('❌ Delete Failed', {
+        description: 'An unexpected error occurred',
+        duration: 3000
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setLoanToDelete(null)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -356,6 +409,7 @@ export default function SimplifiedAllLoans() {
                       <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Start Date</th>
                       <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">End Date</th>
                       <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                      <th className="text-center p-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -397,6 +451,28 @@ export default function SimplifiedAllLoans() {
                           {loan.endDate ? formatDate(loan.endDate) : '-'}
                         </td>
                         <td className="p-4">{getStatusBadge(loan.status)}</td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditLoan(loan)}
+                              className="flex items-center gap-1 h-8 px-3 border-blue-200 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              <Edit className="h-3 w-3" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteLoan(loan.id)}
+                              className="flex items-center gap-1 h-8 px-3 border-red-200 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
                       </motion.tr>
                     ))}
                   </tbody>
@@ -406,6 +482,45 @@ export default function SimplifiedAllLoans() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Edit Loan Modal */}
+      <EditLoanModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        loan={editingLoan}
+        onLoanUpdated={fetchLoans}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Loan
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this loan? This action cannot be undone.
+              <br />
+              <span className="text-amber-600 font-medium">
+                Note: Loans with existing payment records cannot be deleted.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="flex items-center gap-2">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Loan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

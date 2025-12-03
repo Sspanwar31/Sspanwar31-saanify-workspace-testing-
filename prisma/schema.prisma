@@ -227,6 +227,7 @@ model Member {
   loans       Loan[]
   passbook    PassbookEntry[]
   notifications Notification[]
+  maturityRecords MaturityRecord[]
 
   @@index([status])
   @@index([joiningDate])
@@ -328,4 +329,25 @@ model Notification {
   @@index([read])
   @@index([type])
   @@map("notifications")
+}
+
+/// 7. Maturity Records
+model MaturityRecord {
+  id             String   @id @default(uuid())
+  memberId       String
+  schemeName     String
+  principalAmount Float
+  maturityAmount  Float
+  interestRate    Float
+  startDate       DateTime
+  maturityDate    DateTime
+  status          String   @default("active") // active | matured | claimed | overdue
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([status])
+  @@index([maturityDate])
+  @@map("maturity_records")
 }

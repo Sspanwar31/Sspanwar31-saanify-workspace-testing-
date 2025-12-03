@@ -23,38 +23,18 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate member deposits for each pending loan
-    const formattedLoans = await Promise.all(pendingLoans.map(async (loan) => {
-      // Calculate total deposits for the member
-      const totalDeposits = await db.passbookEntry.aggregate({
-        where: {
-          memberId: loan.memberId,
-          depositAmount: { gt: 0 }
-        },
-        _sum: {
-          depositAmount: true
-        }
-      });
-
-      const memberTotalDeposits = totalDeposits._sum.depositAmount || 0;
-      const eligibleAmount = memberTotalDeposits * 0.8;
-
-      return {
-        id: loan.id,
-        memberId: loan.memberId,
-        memberName: loan.member.name,
-        memberPhone: loan.member.phone,
-        memberAddress: loan.member.address,
-        loanAmount: loan.loanAmount, // This is the requested amount
-        requestAmount: loan.requestAmount || loan.loanAmount, // Use requestAmount if available
-        interestRate: loan.interestRate,
-        status: loan.status,
-        createdAt: loan.createdAt,
-        description: loan.description || 'No description provided',
-        memberTotalDeposits,
-        eligibleAmount,
-        exceedsLimit: loan.loanAmount > eligibleAmount
-      };
+    // Format the response
+    const formattedLoans = pendingLoans.map(loan => ({
+      id: loan.id,
+      memberId: loan.memberId,
+      memberName: loan.member.name,
+      memberPhone: loan.member.phone,
+      memberAddress: loan.member.address,
+      loanAmount: loan.loanAmount,
+      interestRate: loan.interestRate,
+      status: loan.status,
+      createdAt: loan.createdAt,
+      description: loan.description || 'No description provided'
     }));
 
     return NextResponse.json({

@@ -91,7 +91,7 @@ export default function Topbar({ onMenuToggle, onSignOut, sidebarOpen }: TopbarP
                 Sunrise Cooperative Society
               </h2>
               <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                Client Portal
+                Digital Passbook Portal
               </p>
             </div>
           </div>

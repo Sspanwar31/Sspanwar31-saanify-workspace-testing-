@@ -216,10 +216,14 @@ export default function PassbookPageModern() {
 
   // Handle loan request submission
   const handleLoanRequest = async () => {
-    if (!selectedMemberForLoan) {
     console.log("handleLoanRequest called");
     console.log("selectedMemberForLoan:", selectedMemberForLoan);
-      toast.error('Please select a member first');
+    
+    if (!selectedMemberForLoan) {
+      toast.error('❌ Please select a member first', {
+        description: 'You must select a member to request a loan',
+        duration: 4000
+      });
       return;
     }
     
@@ -230,6 +234,7 @@ export default function PassbookPageModern() {
     // }
     
     try {
+      console.log("Sending loan request...");
       const response = await fetch('/api/client/loan-request/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,22 +244,46 @@ export default function PassbookPageModern() {
         }),
       });
 
+      console.log("Loan request response:", response);
+
       if (response.ok) {
-        toast.success('✅ Loan Request Sent', {
-          description: 'Your loan request has been submitted successfully',
-          duration: 3000
+        const data = await response.json();
+        console.log("Loan request success:", data);
+        
+        // Show success toast with more details
+        toast.success('🎯 Loan Request Sent Successfully!', {
+          description: `Your loan request for ${loanRequestAmount ? '₹' + loanRequestAmount.toLocaleString('en-IN') : 'the requested amount'} has been submitted and is pending approval.`,
+          duration: 5000,
+          action: {
+            label: "View Status",
+            onClick: () => {
+              // Optionally navigate to loans page to see status
+              window.location.href = '/client/loans';
+            }
+          }
         });
+        
+        // Reset form
         setLoanRequestEnabled(false);
         setLoanRequestAmount(0);
         setSelectedMemberForLoan('');
+        
+        // Refresh data
         fetchPassbookEntries();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to send loan request');
+        console.log("Loan request error:", error);
+        toast.error('❌ Failed to Send Loan Request', {
+          description: error.error || 'Something went wrong. Please try again.',
+          duration: 4000
+        });
       }
     } catch (error) {
       console.error('Error sending loan request:', error);
-      toast.error('Failed to send loan request');
+      toast.error('❌ Network Error', {
+        description: 'Failed to send loan request. Please check your connection and try again.',
+        duration: 4000
+      });
     }
   };
 

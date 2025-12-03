@@ -2,68 +2,92 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CreditCard, Clock, BookOpen } from 'lucide-react'
+import { CreditCard, Clock, BookOpen, RefreshCw, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import EnhancedLoanApproval from '@/components/client/EnhancedLoanApproval'
-import SimplifiedAllLoans from '@/components/client/SimplifiedAllLoans'
+import SimplifiedAllLoansCompact from '@/components/client/SimplifiedAllLoansCompact'
+import { toast } from 'sonner'
 
 export default function IntegratedLoansPage() {
   const [activeTab, setActiveTab] = useState('loan-requests')
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleRefresh = () => {
+    toast.info('🔄 लोन डेटा रिफ़्रेश हो रहा है', {
+      description: 'नवीनतम लोन जानकारी लोड हो रही है',
+      duration: 2000
+    })
+    setRefreshKey(prev => prev + 1)
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6">
+      {/* Compact Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center"
+        className="mb-8"
       >
-        <div className="inline-flex items-center gap-4 mb-6 p-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 shadow-lg">
-          <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-            <CreditCard className="w-8 h-8 text-white" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+              <CreditCard className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                Loan Management
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Manage loan requests and track existing loans
+              </p>
+            </div>
           </div>
-          <div className="text-left">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-800 to-orange-800 dark:from-amber-200 dark:to-orange-200 bg-clip-text text-transparent">
-              Complete Loan Management
-            </h1>
-            <p className="text-amber-700 dark:text-amber-300 font-medium text-lg mt-1">
-              Manage loan requests and existing loans with enhanced approval system
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
           </div>
         </div>
       </motion.div>
 
-      {/* Main Content Tabs */}
+      {/* Compact Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-14 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl shadow-inner">
+          <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <TabsTrigger 
               value="loan-requests" 
-              className="flex items-center gap-3 text-base font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-lg rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
-              <Clock className="h-5 w-5" />
+              <Clock className="h-4 w-4" />
               Loan Requests
             </TabsTrigger>
             <TabsTrigger 
               value="existing-loans" 
-              className="flex items-center gap-3 text-base font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-lg rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
-              <BookOpen className="h-5 w-5" />
+              <BookOpen className="h-4 w-4" />
               All Loans
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="loan-requests" className="mt-8">
-            <EnhancedLoanApproval />
+          <TabsContent value="loan-requests" className="mt-6">
+            <EnhancedLoanApproval key={refreshKey} />
           </TabsContent>
 
-          <TabsContent value="existing-loans" className="mt-8">
-            <SimplifiedAllLoans />
+          <TabsContent value="existing-loans" className="mt-6">
+            <SimplifiedAllLoansCompact key={refreshKey} />
           </TabsContent>
         </Tabs>
       </motion.div>

@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/client/Sidebar'
 import Topbar from '@/components/client/Topbar'
 import LoadingSpinner from '@/components/ui/loading-spinner'
+import ApiStatusMonitor from '@/components/client/ApiStatusMonitor'
+import '@/lib/api-interceptor' // Initialize API notifications
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -151,6 +153,9 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           />
         )}
       </AnimatePresence>
+      
+      {/* API Status Monitor */}
+      <ApiStatusMonitor />
     </div>
   )
 }

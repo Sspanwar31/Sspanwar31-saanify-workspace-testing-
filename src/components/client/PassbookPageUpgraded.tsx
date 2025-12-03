@@ -277,9 +277,17 @@ export default function PassbookPageUpgraded() {
 
   // Handle loan request submission
   const handleLoanRequest = async () => {
-    if (!selectedMember) return;
+    if (!selectedMember) {
+      toast({
+        title: "❌ Validation Error",
+        description: "Please select a member first",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
+      console.log("Sending loan request from upgraded page...");
       const response = await fetch('/api/client/loan-request/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,10 +297,15 @@ export default function PassbookPageUpgraded() {
         }),
       });
 
+      console.log("Loan request response:", response);
+
       if (response.ok) {
+        const data = await response.json();
+        console.log("Loan request success:", data);
+        
         toast({
-          title: "Success",
-          description: "Loan request submitted successfully!",
+          title: "🎯 Loan Request Sent Successfully!",
+          description: `Your loan request for ${watchedValues.loanRequestAmount ? '₹' + watchedValues.loanRequestAmount.toLocaleString('en-IN') : 'the requested amount'} has been submitted and is pending approval.`,
         });
         setLoanRequestEnabled(false);
         form.setValue('loanRequestAmount', 0);
@@ -305,17 +318,18 @@ export default function PassbookPageUpgraded() {
         window.location.href = '/client/loans?tab=requests';
       } else {
         const error = await response.json();
+        console.log("Loan request error:", error);
         toast({
-          title: "Error",
-          description: error.error || 'Failed to send loan request',
+          title: "❌ Failed to Send Loan Request",
+          description: error.error || 'Something went wrong. Please try again.',
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error sending loan request:', error);
       toast({
-        title: "Error",
-        description: 'Failed to send loan request',
+        title: "❌ Network Error",
+        description: 'Failed to send loan request. Please check your connection and try again.',
         variant: "destructive",
       });
     }

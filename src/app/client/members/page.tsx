@@ -24,6 +24,9 @@ import {
 import AutoTable from '@/components/ui/auto-table'
 import AutoForm from '@/components/ui/auto-form'
 import { toast } from 'sonner'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
+import { logApiCall, logApiComplete } from '@/lib/api-interceptor'
 
 interface Member {
   id: string
@@ -44,18 +47,33 @@ export default function MembersPage() {
   // Fetch members from API
   const fetchMembers = async () => {
     setLoading(true)
+    const apiCallId = logApiCall('/api/client/members', 'GET')
+    
     try {
       const response = await fetch('/api/client/members')
       const data = await response.json()
       
       if (response.ok) {
         setMembers(data.members || [])
+        logApiComplete(apiCallId, true)
+        toast.success('✅ मेंबर्स लोड हो गए', {
+          description: `${data.members?.length || 0} मेंबर मिले`,
+          duration: 3000
+        })
       } else {
-        toast.error('Failed to fetch members')
+        logApiComplete(apiCallId, false, data.error)
+        toast.error('❌ मेंबर्स लोड करने में त्रुटि', {
+          description: data.error || 'अज्ञात त्रुटि',
+          duration: 3000
+        })
       }
     } catch (error) {
+      logApiComplete(apiCallId, false, String(error))
       console.error('Failed to fetch members:', error)
-      toast.error('Failed to fetch members')
+      toast.error('❌ नेटवर्क त्रुटि', {
+        description: 'सर्वर से कनेक्ट नहीं हो पा रहा',
+        duration: 3000
+      })
     } finally {
       setLoading(false)
     }
@@ -122,7 +140,30 @@ export default function MembersPage() {
     pending: 0 // No pending status in new schema
   }
 
+  // Format data for table - exclude sensitive columns and format dates
+  const formattedMembers = members.map(member => ({
+    ...member,
+    id: member.id.substring(0, 8) + '...', // Show only first 8 chars of ID
+    joinDate: new Date(member.joinDate).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    }),
+    createdAt: new Date(member.createdAt).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    }),
+    updatedAt: new Date(member.updatedAt).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    })
+  }))
+
   const handleAddMember = async (newMember: any) => {
+    const apiCallId = logApiCall('/api/client/members', 'POST')
+    
     try {
       const response = await fetch('/api/client/members', {
         method: 'POST',
@@ -130,24 +171,30 @@ export default function MembersPage() {
         body: JSON.stringify(newMember)
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
         setMembers([...members, data.member])
-        toast.success('✅ Member Added', {
-          description: `${newMember.name} has been added successfully`,
+        logApiComplete(apiCallId, true)
+        toast.success('✅ मेंबर जोड़ हो गया', {
+          description: `${newMember.name} सफलतापूर्वक जोड़ गया`,
           duration: 3000
         })
         setIsAddModalOpen(false)
       } else {
-        const error = await response.json()
-        toast.error('Failed to add member', {
-          description: error.error || 'Unknown error',
+        logApiComplete(apiCallId, false, data.error)
+        toast.error('❌ मेंबर जोड़ने में त्रुटि', {
+          description: data.error || 'अज्ञात त्रुटि',
           duration: 3000
         })
       }
     } catch (error) {
+      logApiComplete(apiCallId, false, String(error))
       console.error('Failed to add member:', error)
-      toast.error('Failed to add member')
+      toast.error('❌ नेटवर्क त्रुटि', {
+        description: 'सर्वर से कनेक्ट नहीं हो पा रहा',
+        duration: 3000
+      })
     }
   }
 
@@ -174,24 +221,42 @@ export default function MembersPage() {
 
   const handleDeleteMember = async (memberId: string) => {
     const member = members.find(m => m.id === memberId)
-    if (confirm(`Are you sure you want to remove ${member?.name}?`)) {
-      // For now, just update local state
-      // TODO: Implement DELETE API endpoint for members
-      setMembers(members.filter(m => m.id !== memberId))
-      toast.success('✅ Member Removed', {
-        description: `${member?.name} has been removed successfully`,
-        duration: 3000
-      })
+    if (confirm(`क्या आप ${member?.name} को हटाना चाहते हैं?`)) {
+      try {
+        // Note: DELETE API not implemented yet, so just show message
+        toast.info('🗑️ मेंबर डिलीट करना', {
+          description: `${member?.name} को डिलीट कर रहे हैं`,
+          duration: 2000
+        })
+        
+        // For now, just update local state
+        // TODO: Implement DELETE API endpoint for members
+        setMembers(members.filter(m => m.id !== memberId))
+        
+        toast.success('✅ मेंबर हटा दिया गया', {
+          description: `${member?.name} सफलतापूर्वक हटा दिया गया`,
+          duration: 3000
+        })
+      } catch (error) {
+        toast.error('❌ डिलीट करने में त्रुटि', {
+          description: 'मेंबर डिलीट नहीं हो पाया',
+          duration: 3000
+        })
+      }
     }
   }
 
   const handleRefresh = () => {
+    toast.info('🔄 मेंबर्स रिफ़्रेश हो रहे हैं', {
+      description: 'नवीनतम डेटा लोड हो रहा है',
+      duration: 2000
+    })
     fetchMembers()
   }
 
   const handleExport = () => {
-    toast.info('📊 Export Started', {
-      description: 'Member data is being exported to CSV',
+    toast.info('📊 एक्सपोर्ट शुरू', {
+      description: 'मेंबर डेटा CSV में एक्सपोर्ट हो रहा है',
       duration: 3000
     })
   }
@@ -346,28 +411,58 @@ export default function MembersPage() {
         </Button>
       </motion.div>
 
-      {/* Members Table - Passbook Style */}
+      {/* Members Table - Modern Passbook Style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
         className="rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 shadow-lg overflow-hidden"
       >
-        {/* Passbook header */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Members Register
-          </h2>
+        {/* Modern Passbook header */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Members Register</h2>
+                <p className="text-amber-100 text-sm">Complete member directory with details</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold">{members.length}</div>
+              <div className="text-amber-100 text-sm">Total Records</div>
+            </div>
+          </div>
         </div>
         
         <div className="p-6">
-          <AutoTable 
-            data={members} 
-            title=""
-            onEdit={handleEditMember}
-            onDelete={handleDeleteMember}
-          />
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ) : (
+            <ScrollArea className="h-[600px] rounded-md border">
+              <div className="p-4">
+                <AutoTable 
+                  data={formattedMembers} 
+                  title=""
+                  searchable={true}
+                  filterable={true}
+                  sortable={true}
+                  pagination={true}
+                  itemsPerPage={10}
+                  onEdit={handleEditMember}
+                  onDelete={handleDeleteMember}
+                />
+              </div>
+            </ScrollArea>
+          )}
         </div>
       </motion.div>
 

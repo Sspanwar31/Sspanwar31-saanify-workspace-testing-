@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -165,41 +166,45 @@ export default function AutoTable({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="w-full">
+      {/* Header Section */}
+      <div className="mb-6 space-y-4">
         <div className="flex items-center justify-between">
-          <CardTitle>{title}</CardTitle>
-          <Badge variant="outline">{processedData.length} records</Badge>
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+          <Badge variant="outline" className="shrink-0">
+            {processedData.length} records
+          </Badge>
         </div>
         
         {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           {searchable && (
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search all columns..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full"
               />
             </div>
           )}
           
           {filterable && columns.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="whitespace-nowrap">
                     <Filter className="h-4 w-4 mr-2" />
                     Filter
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="max-h-60 overflow-y-auto">
                   {columns.map((column) => (
                     <DropdownMenuItem
                       key={column.key}
                       onClick={() => setFilterColumn(column.key)}
+                      className="cursor-pointer"
                     >
                       {column.label}
                     </DropdownMenuItem>
@@ -212,123 +217,158 @@ export default function AutoTable({
                   placeholder={`Filter ${filterColumn}...`}
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
-                  className="w-48"
+                  className="w-48 lg:w-64"
                 />
               )}
             </div>
           )}
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableHead key={column.key}>
-                    {sortable ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 font-semibold"
-                        onClick={() => handleSort(column.key)}
-                      >
-                        {column.label}
-                        <span className="ml-2">{getSortIcon(column.key)}</span>
-                      </Button>
-                    ) : (
-                      column.label
-                    )}
+      {/* Table Section */}
+      <div className="rounded-md border bg-background">
+        <ScrollArea className="w-full">
+          <div className="min-w-full">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  {columns.map((column) => (
+                    <TableHead key={column.key} className="px-4 py-3 whitespace-nowrap">
+                      {sortable ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 font-semibold hover:bg-transparent justify-start"
+                          onClick={() => handleSort(column.key)}
+                        >
+                          <span className="truncate">{column.label}</span>
+                          <span className="ml-2 shrink-0">{getSortIcon(column.key)}</span>
+                        </Button>
+                      ) : (
+                        <span className="truncate">{column.label}</span>
+                      )}
+                    </TableHead>
+                  ))}
+                  <TableHead className="w-[70px] px-4 py-3 whitespace-nowrap">
+                    <MoreHorizontal className="h-4 w-4" />
                   </TableHead>
-                ))}
-                <TableHead className="w-[50px]">
-                  <MoreHorizontal className="h-4 w-4" />
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length + 1} className="text-center py-8">
-                    No data available
-                  </TableCell>
                 </TableRow>
-              ) : (
-                paginatedData.map((row, index) => (
-                  <TableRow key={index}>
-                    {columns.map((column) => (
-                      <TableCell key={column.key}>
-                        {formatCellValue(row[column.key], column.key)}
-                      </TableCell>
-                    ))}
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {onView && (
-                            <DropdownMenuItem onClick={() => onView(row)}>
-                              View Details
-                            </DropdownMenuItem>
-                          )}
-                          {onEdit && (
-                            <DropdownMenuItem onClick={() => onEdit(row)}>
-                              Edit
-                            </DropdownMenuItem>
-                          )}
-                          {customActions && customActions(row)}
-                          {onDelete && (
-                            <DropdownMenuItem 
-                              onClick={() => onDelete(row)}
-                              className="text-red-600"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell 
+                      colSpan={columns.length + 1} 
+                      className="text-center py-12 text-muted-foreground"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-4xl">📋</div>
+                        <div className="text-lg font-medium">No data available</div>
+                        <div className="text-sm">
+                          {searchTerm || filterValue 
+                            ? 'Try adjusting your search or filter criteria' 
+                            : 'No records found in the database'
+                          }
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        
-        {/* Pagination */}
-        {pagination && totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} results
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-3 py-1 text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
+                ) : (
+                  paginatedData.map((row, index) => (
+                    <TableRow 
+                      key={row.id || index} 
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      {columns.map((column) => (
+                        <TableCell 
+                          key={column.key} 
+                          className="px-4 py-3 max-w-xs"
+                        >
+                          <div className="truncate" title={String(row[column.key])}>
+                            {formatCellValue(row[column.key], column.key)}
+                          </div>
+                        </TableCell>
+                      ))}
+                      <TableCell className="px-4 py-3 whitespace-nowrap">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 hover:bg-muted"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {onView && (
+                              <DropdownMenuItem 
+                                onClick={() => onView(row)}
+                                className="cursor-pointer"
+                              >
+                                View Details
+                              </DropdownMenuItem>
+                            )}
+                            {onEdit && (
+                              <DropdownMenuItem 
+                                onClick={() => onEdit(row)}
+                                className="cursor-pointer"
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {customActions && customActions(row)}
+                            {onDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => onDelete(row)}
+                                className="text-red-600 cursor-pointer hover:text-red-700 hover:bg-red-50"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </ScrollArea>
+      </div>
+      
+      {/* Pagination */}
+      {pagination && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-1">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} results
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="shrink-0"
+            >
+              Previous
+            </Button>
+            <span className="flex items-center px-3 py-1 text-sm min-w-[100px] justify-center">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="shrink-0"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

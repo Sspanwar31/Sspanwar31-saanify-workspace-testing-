@@ -1,5 +1,9 @@
 'use client';
 
+// ⚠️ DISABLED - OLD PASSBOOK PAGE (REPLACED BY NEW SYSTEM)
+// This file is disabled and renamed to avoid confusion
+// Use the new passbook system instead
+
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -86,7 +90,7 @@ const paymentModes = [
   { value: 'Other', label: 'Other' },
 ];
 
-export default function PassbookPage() {
+export default function PassbookPage_DISABLED_OLD() {
   const { toast } = useToast();
   const { mutate } = useSWRConfig();
   
@@ -355,11 +359,19 @@ export default function PassbookPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* ⚠️ DISABLED WARNING */}
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            <strong>⚠️ DISABLED:</strong> This is the old passbook page (PassbookPage_DISABLED_OLD). 
+            Please use the new passbook system instead. This component is kept for reference only.
+          </AlertDescription>
+        </Alert>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Passbook Management</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage member transactions and entries</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Passbook Management (DISABLED)</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage member transactions and entries (OLD VERSION)</p>
           </div>
           {editingEntry && (
             <Badge variant="secondary" className="text-sm">
@@ -368,365 +380,391 @@ export default function PassbookPage() {
           )}
         </div>
 
-        {/* Entry Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              {editingEntry ? 'Edit Entry' : 'New Entry'}
-            </CardTitle>
-            <CardDescription>
-              {editingEntry ? 'Modify the transaction details' : 'Create a new passbook entry'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Member Select */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Member *</label>
-                  <Controller
-                    name="memberId"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select onValueChange={handleMemberChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select member" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {isLoadingMembers ? (
-                            <div className="p-2">
-                              <Skeleton className="h-4 w-full" />
-                            </div>
-                          ) : (
-                            members.map((member) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4" />
-                                  {member.name} — {member.id.slice(-8)}
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+        {/* Rest of the component remains the same but is disabled */}
+        <div className="opacity-50 pointer-events-none">
+          {/* Entry Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                {editingEntry ? 'Edit Entry' : 'New Entry'}
+              </CardTitle>
+              <CardDescription>
+                {editingEntry ? 'Modify the transaction details' : 'Create a new passbook entry'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Member Select */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Member *</label>
+                    <Controller
+                      name="memberId"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select onValueChange={handleMemberChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select member" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {isLoadingMembers ? (
+                              <div className="p-2">
+                                <Skeleton className="h-4 w-full" />
+                              </div>
+                            ) : (
+                              members.map((member) => (
+                                <SelectItem key={member.id} value={member.id}>
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4" />
+                                    {member.name} — {member.id.slice(-8)}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {form.formState.errors.memberId && (
+                      <p className="text-sm text-red-600">{form.formState.errors.memberId.message}</p>
                     )}
-                  />
-                  {form.formState.errors.memberId && (
-                    <p className="text-sm text-red-600">{form.formState.errors.memberId.message}</p>
-                  )}
-                </div>
-
-                {/* Deposit Date */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Deposit Date *</label>
-                  <Controller
-                    name="depositDate"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, 'PPP') : 'Pick a date'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  />
-                  {form.formState.errors.depositDate && (
-                    <p className="text-sm text-red-600">{form.formState.errors.depositDate.message}</p>
-                  )}
-                </div>
-
-                {/* Payment Mode */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Payment Mode *</label>
-                  <Controller
-                    name="paymentMode"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select payment mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {paymentModes.map((mode) => (
-                            <SelectItem key={mode.value} value={mode.value}>
-                              {mode.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.paymentMode && (
-                    <p className="text-sm text-red-600">{form.formState.errors.paymentMode.message}</p>
-                  )}
-                </div>
-
-                {/* Deposit Amount */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Deposit Amount</label>
-                  <Controller
-                    name="depositAmount"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.depositAmount && (
-                    <p className="text-sm text-red-600">{form.formState.errors.depositAmount.message}</p>
-                  )}
-                </div>
-
-                {/* Installment Amount */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Loan Installment</label>
-                  <Controller
-                    name="installmentAmount"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                  {form.formState.errors.installmentAmount && (
-                    <p className="text-sm text-red-600">{form.formState.errors.installmentAmount.message}</p>
-                  )}
-                </div>
-
-                {/* Interest */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Interest (Auto-calculated)</label>
-                  <Controller
-                    name="interest"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                  {selectedMember?.activeLoan && (
-                    <p className="text-xs text-gray-500">
-                      1% of outstanding loan: ₹{selectedMember.activeLoan.outstandingBalance.toFixed(2)}
-                    </p>
-                  )}
-                </div>
-
-                {/* Fine */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Fine (Auto-calculated)</label>
-                  <Controller
-                    name="fine"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    )}
-                  />
-                  {watchedValues.depositDate && (
-                    <p className="text-xs text-gray-500">
-                      ₹10/day after 15th: {Math.max(0, watchedValues.depositDate.getDate() - 15)} days
-                    </p>
-                  )}
-                </div>
-
-                {/* Note */}
-                <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                  <label className="text-sm font-medium">Note / Description</label>
-                  <Controller
-                    name="note"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Textarea
-                        placeholder="Enter any additional notes..."
-                        {...field}
-                      />
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Live Preview */}
-              {preview && selectedMember && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20"
-                >
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    Live Preview
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Previous Balance:</span>
-                      <p className="font-medium">₹{preview.previousBalance.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Net Change:</span>
-                      <p className={`font-medium ${preview.netChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {preview.netChange >= 0 ? '+' : ''}₹{preview.netChange.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">New Balance:</span>
-                      <p className="font-medium text-lg">₹{preview.newBalance.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Member:</span>
-                      <p className="font-medium">{selectedMember.member.name}</p>
-                    </div>
                   </div>
-                </motion.div>
-              )}
 
-              {/* Form Actions */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !selectedMember}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {isSubmitting ? 'Saving...' : (editingEntry ? 'Update Entry' : 'Save Entry')}
-                </Button>
-                {editingEntry && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={cancelEdit}
-                    className="flex items-center gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Cancel Edit
-                  </Button>
+                  {/* Deposit Date */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Deposit Date *</label>
+                    <Controller
+                      name="depositDate"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value ? format(field.value, 'PPP') : 'Pick a date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    />
+                    {form.formState.errors.depositDate && (
+                      <p className="text-sm text-red-600">{form.formState.errors.depositDate.message}</p>
+                    )}
+                  </div>
+
+                  {/* Payment Mode */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Payment Mode *</label>
+                    <Controller
+                      name="paymentMode"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select payment mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paymentModes.map((mode) => (
+                              <SelectItem key={mode.value} value={mode.value}>
+                                {mode.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {form.formState.errors.paymentMode && (
+                      <p className="text-sm text-red-600">{form.formState.errors.paymentMode.message}</p>
+                    )}
+                  </div>
+
+                  {/* Deposit Amount */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Deposit Amount</label>
+                    <Controller
+                      name="depositAmount"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-9"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      )}
+                    />
+                    {form.formState.errors.depositAmount && (
+                      <p className="text-sm text-red-600">{form.formState.errors.depositAmount.message}</p>
+                    )}
+                  </div>
+
+                  {/* Installment Amount */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Installment Amount</label>
+                    <Controller
+                      name="installmentAmount"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-9"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      )}
+                    />
+                    {form.formState.errors.installmentAmount && (
+                      <p className="text-sm text-red-600">{form.formState.errors.installmentAmount.message}</p>
+                    )}
+                  </div>
+
+                  {/* Interest */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Interest</label>
+                    <Controller
+                      name="interest"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-9"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      )}
+                    />
+                    {form.formState.errors.interest && (
+                      <p className="text-sm text-red-600">{form.formState.errors.interest.message}</p>
+                    )}
+                  </div>
+
+                  {/* Fine */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Fine</label>
+                    <Controller
+                      name="fine"
+                      control={form.control}
+                      render={({ field }) => (
+                        <div className="relative">
+                          <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-9"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      )}
+                    />
+                    {form.formState.errors.fine && (
+                      <p className="text-sm text-red-600">{form.formState.errors.fine.message}</p>
+                    )}
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                    <label className="text-sm font-medium">Note</label>
+                    <Controller
+                      name="note"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Textarea
+                          placeholder="Enter any additional notes..."
+                          className="resize-none"
+                          rows={3}
+                          {...field}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Member Info & Preview */}
+                {selectedMember && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Member Info */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Member Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Name:</span>
+                          <span className="font-medium">{selectedMember.member.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Phone:</span>
+                          <span className="font-medium">{selectedMember.member.phone}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Current Balance:</span>
+                          <span className="font-medium">₹{selectedMember.currentBalance.toLocaleString('en-IN')}</span>
+                        </div>
+                        {selectedMember.activeLoan && (
+                          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Loan Balance:</span>
+                              <span className="font-medium text-red-600">₹{selectedMember.activeLoan.outstandingBalance.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Loan Amount:</span>
+                              <span className="font-medium">₹{selectedMember.activeLoan.loanAmount.toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Balance Preview */}
+                    {preview && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Balance Preview</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Previous Balance:</span>
+                            <span className="font-medium">₹{preview.previousBalance.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Net Change:</span>
+                            <span className={`font-medium ${preview.netChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {preview.netChange >= 0 ? '+' : ''}₹{preview.netChange.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between text-lg font-bold">
+                              <span>New Balance:</span>
+                              <span className={preview.newBalance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                ₹{preview.newBalance.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => form.reset()}
-                >
-                  Reset Form
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
 
-        {/* Transaction History */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Transaction History
-            </CardTitle>
-            <CardDescription>
-              Recent passbook entries with edit and delete options
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingEntries ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : passbookEntries.length === 0 ? (
-              <div className="text-center py-8">
-                <IndianRupee className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">No passbook entries found</p>
-                <p className="text-sm text-gray-500 mt-1">Create your first entry above</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Member</th>
-                      <th className="text-right p-2">Deposit</th>
-                      <th className="text-right p-2">Installment</th>
-                      <th className="text-right p-2">Interest</th>
-                      <th className="text-right p-2">Fine</th>
-                      <th className="text-right p-2">Balance</th>
-                      <th className="text-left p-2">Mode</th>
-                      <th className="text-left p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <AnimatePresence>
-                      {passbookEntries.map((entry, index) => (
-                        <motion.tr
-                          key={entry.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="border-b hover:bg-gray-50 dark:hover:bg-gray-800"
-                        >
-                          <td className="p-2">{format(new Date(entry.date), 'MMM dd, yyyy')}</td>
-                          <td className="p-2">
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {entry.memberName}
+                {/* Form Actions */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  {editingEntry && (
+                    <Button type="button" variant="outline" onClick={cancelEdit}>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Edit
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={isSubmitting}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSubmitting ? 'Saving...' : (editingEntry ? 'Update Entry' : 'Create Entry')}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Passbook Entries Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Entries</CardTitle>
+              <CardDescription>Latest passbook transactions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingEntries ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : passbookEntries.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No entries found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4">Date</th>
+                        <th className="text-left py-3 px-4">Member</th>
+                        <th className="text-right py-3 px-4">Deposit</th>
+                        <th className="text-right py-3 px-4">Installment</th>
+                        <th className="text-right py-3 px-4">Interest</th>
+                        <th className="text-right py-3 px-4">Fine</th>
+                        <th className="text-right py-3 px-4">Balance</th>
+                        <th className="text-left py-3 px-4">Mode</th>
+                        <th className="text-left py-3 px-4">Description</th>
+                        <th className="text-center py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {passbookEntries.map((entry) => (
+                        <tr key={entry.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="py-3 px-4">{format(new Date(entry.date), 'dd MMM yyyy')}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium">{entry.memberName}</span>
                             </div>
                           </td>
-                          <td className="p-2 text-right">
+                          <td className="py-3 px-4 text-right">
                             {entry.deposit > 0 && (
-                              <span className="text-green-600">+₹{entry.deposit.toFixed(2)}</span>
+                              <span className="text-green-600 font-medium">+₹{entry.deposit.toLocaleString('en-IN')}</span>
                             )}
                           </td>
-                          <td className="p-2 text-right">
+                          <td className="py-3 px-4 text-right">
                             {entry.installment > 0 && (
-                              <span className="text-red-600">-₹{entry.installment.toFixed(2)}</span>
+                              <span className="text-red-600 font-medium">-₹{entry.installment.toLocaleString('en-IN')}</span>
                             )}
                           </td>
-                          <td className="p-2 text-right">
+                          <td className="py-3 px-4 text-right">
                             {entry.interest > 0 && (
-                              <span className="text-blue-600">+₹{entry.interest.toFixed(2)}</span>
+                              <span className="text-blue-600 font-medium">+₹{entry.interest.toLocaleString('en-IN')}</span>
                             )}
                           </td>
-                          <td className="p-2 text-right">
+                          <td className="py-3 px-4 text-right">
                             {entry.fine > 0 && (
-                              <span className="text-orange-600">+₹{entry.fine.toFixed(2)}</span>
+                              <span className="text-orange-600 font-medium">+₹{entry.fine.toLocaleString('en-IN')}</span>
                             )}
                           </td>
-                          <td className="p-2 text-right font-medium">₹{entry.balance.toFixed(2)}</td>
-                          <td className="p-2">
-                            <Badge variant="outline">{entry.mode}</Badge>
+                          <td className="py-3 px-4 text-right font-medium">
+                            ₹{entry.balance.toLocaleString('en-IN')}
                           </td>
-                          <td className="p-2">
-                            <div className="flex gap-1">
+                          <td className="py-3 px-4">
+                            <Badge variant="outline" className="text-xs">
+                              {entry.mode}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                            {entry.description}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-center gap-1">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -749,16 +787,12 @@ export default function PassbookPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Entry</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete this entry for {entry.memberName}? 
-                                      This action cannot be undone and will affect the running balance.
+                                      Are you sure you want to delete this entry? This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(entry.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
+                                    <AlertDialogAction onClick={() => handleDelete(entry.id)}>
                                       Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
@@ -766,15 +800,15 @@ export default function PassbookPage() {
                               </AlertDialog>
                             </div>
                           </td>
-                        </motion.tr>
+                        </tr>
                       ))}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

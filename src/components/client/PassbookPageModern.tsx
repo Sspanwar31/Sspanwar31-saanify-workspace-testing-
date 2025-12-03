@@ -5,6 +5,22 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 
+// Debug wrapper for toast notifications
+const debugToast = {
+  success: (msg: string, opts?: any, source?: string) => {
+    console.log('[Toast Success]', source, msg);
+    toast.success(msg, opts);
+  },
+  error: (msg: string, opts?: any, source?: string) => {
+    console.log('[Toast Error]', source, msg);
+    toast.error(msg, opts);
+  },
+  info: (msg: string, opts?: any, source?: string) => {
+    console.log('[Toast Info]', source, msg);
+    toast.info(msg, opts);
+  }
+};
+
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,7 +99,7 @@ export default function PassbookPageModern() {
       }
     } catch (error) {
       console.error('Error fetching passbook entries:', error);
-      toast.error('Failed to fetch passbook entries');
+      debugToast.error('Failed to fetch passbook entries', {}, 'fetchPassbookEntries');
     } finally {
       setIsLoadingEntries(false);
     }
@@ -100,7 +116,7 @@ export default function PassbookPageModern() {
       }
     } catch (error) {
       console.error('Error fetching members:', error);
-      toast.error('Failed to fetch members');
+      debugToast.error('Failed to fetch members', {}, 'fetchMembers');
     } finally {
       setIsLoadingMembers(false);
     }
@@ -137,19 +153,19 @@ export default function PassbookPageModern() {
         });
 
         if (response.ok) {
-          toast.success('✅ Entry Deleted', {
+          debugToast.success('✅ Entry Deleted', {
             description: 'Passbook entry has been deleted successfully',
             duration: 3000
-          });
+          }, 'handleDelete');
           fetchPassbookEntries();
           mutate('/api/client/passbook');
         } else {
           const error = await response.json();
-          toast.error(error.error || 'Failed to delete entry');
+          debugToast.error(error.error || 'Failed to delete entry', {}, 'handleDelete');
         }
       } catch (error) {
         console.error('Error deleting entry:', error);
-        toast.error('Failed to delete entry');
+        debugToast.error('Failed to delete entry', {}, 'handleDelete');
       } finally {
         setDeletingEntry(null);
       }
@@ -176,24 +192,24 @@ export default function PassbookPageModern() {
   const handleRefresh = () => {
     setIsLoadingEntries(true);
     fetchPassbookEntries();
-    toast.success('🔄 Data Refreshed', {
+    debugToast.success('🔄 Data Refreshed', {
       description: 'Passbook data has been refreshed',
       duration: 2000
-    });
+    }, 'handleRefresh');
   };
 
   const handleExport = () => {
-    toast.info('📊 Export Started', {
+    debugToast.info('📊 Export Started', {
       description: 'Passbook data is being exported to CSV',
       duration: 3000
-    });
+    }, 'handleExport');
   };
 
   // Handle loan request submission (amount optional)
   const handleLoanRequest = async () => {
     // validate member selected
     if (!selectedMemberForLoan) {
-      toast.error('Please select a valid member');
+      debugToast.error('Please select a valid member', {}, 'handleLoanRequest');
       return;
     }
 
@@ -222,10 +238,10 @@ export default function PassbookPageModern() {
       if (response.ok) {
         const result = await response.json();
         console.log('Loan request success:', result);
-        toast.success('✅ Loan Request Sent', {
+        debugToast.success('✅ Loan Request Sent', {
           description: 'Your loan request has been submitted successfully',
           duration: 3000
-        });
+        }, 'handleLoanRequest');
         setLoanRequestEnabled(false);
         setLoanRequestAmount(0);
         setSelectedMemberForLoan('');
@@ -233,11 +249,11 @@ export default function PassbookPageModern() {
       } else {
         const error = await response.json();
         console.error('Loan request error:', error);
-        toast.error(error.error || 'Failed to send loan request');
+        debugToast.error(error.error || 'Failed to send loan request', {}, 'handleLoanRequest');
       }
     } catch (error) {
       console.error('Error sending loan request:', error);
-      toast.error('Failed to send loan request');
+      debugToast.error('Failed to send loan request', {}, 'handleLoanRequest');
     }
   };
 

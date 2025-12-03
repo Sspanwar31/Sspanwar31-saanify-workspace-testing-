@@ -108,35 +108,35 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // E) Create notification (separate from passbook)
-      await tx.notification.create({
-        data: {
-          memberId: loan.memberId,
-          title: "Loan Update",
-          message: `Your loan request has been approved for ₹${finalLoanAmount.toFixed(2)}.`,
-          type: "loan",
-          read: false,
-        }
-      });
+      // E) Create notification (separate from passbook) - TEMPORARILY DISABLED
+      // await tx.notification.create({
+      //   data: {
+      //     memberId: loan.memberId,
+      //     title: "Loan Update",
+      //     message: `Your loan request has been approved for ₹${finalLoanAmount.toFixed(2)}.`,
+      //     type: "loan",
+      //     read: false,
+      //   }
+      // });
 
       return updatedLoan;
     });
 
-    // Also send via notification API for consistency
-    try {
-      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/client/notifications/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: loan.memberId,
-          loanId: loanId,
-          notificationType: 'loan_approved',
-          message: `Your loan request has been approved for ₹${finalLoanAmount.toFixed(2)}.`
-        })
-      });
-    } catch (error) {
-      console.log('Notification API call failed, but database operations succeeded:', error);
-    }
+    // Also send via notification API for consistency - TEMPORARILY DISABLED
+    // try {
+    //   await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/client/notifications/send`, {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       memberId: loan.memberId,
+    //       loanId: loanId,
+    //       notificationType: 'loan_approved',
+    //       message: `Your loan request has been approved for ₹${finalLoanAmount.toFixed(2)}.`
+    //     })
+    //   });
+    // } catch (error) {
+    //   console.log('Notification API call failed, but database operations succeeded:', error);
+    // }
 
     return NextResponse.json({
       success: true,

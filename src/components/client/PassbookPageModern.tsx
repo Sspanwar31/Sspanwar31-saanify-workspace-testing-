@@ -14,19 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { 
   Calculator, 
-  Users, 
   Plus, 
   Download, 
   RefreshCw, 
-  UserPlus,
-  Shield,
-  UserCheck,
-  AlertCircle,
-  CheckCircle,
   Edit,
   Trash2,
   IndianRupee,
-  Calendar,
   Wallet,
   Receipt,
   Target,
@@ -74,7 +67,7 @@ export default function PassbookPageModern() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loanRequestEnabled, setLoanRequestEnabled] = useState(false);
-  const [loanRequestAmount, setLoanRequestAmount] = useState(0);
+  const [loanRequestAmount, setLoanRequestAmount] = useState<number>(0);
   const [selectedMemberForLoan, setSelectedMemberForLoan] = useState<string>('');
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
@@ -196,24 +189,39 @@ export default function PassbookPageModern() {
     });
   };
 
-  // Handle loan request submission
+  // Handle loan request submission (amount optional)
   const handleLoanRequest = async () => {
+    // validate member selected
     if (!selectedMemberForLoan) {
-      toast.error('Please select a member first');
+      toast.error('Please select a valid member');
       return;
     }
-    
+
+    // Allow amount optional:
+    // If loanRequestAmount > 0 -> include amount in payload
+    // If amount is 0 or empty -> do not include amount (server will treat as request without amount)
+    const payload: any = {
+      memberId: selectedMemberForLoan,
+      description: 'Loan request from member portal'
+    };
+    if (loanRequestAmount && loanRequestAmount > 0) {
+      payload.amount = loanRequestAmount;
+    }
+
     try {
-      const response = await fetch('/api/client/loan-request/create', {
+      console.log('Sending loan request payload:', payload);
+
+      const response = await fetch('/api/client/loan-requests/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: selectedMemberForLoan,
-          amount: loanRequestAmount || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('Loan request response status:', response.status);
+      
       if (response.ok) {
+        const result = await response.json();
+        console.log('Loan request success:', result);
         toast.success('✅ Loan Request Sent', {
           description: 'Your loan request has been submitted successfully',
           duration: 3000
@@ -224,6 +232,7 @@ export default function PassbookPageModern() {
         fetchPassbookEntries();
       } else {
         const error = await response.json();
+        console.error('Loan request error:', error);
         toast.error(error.error || 'Failed to send loan request');
       }
     } catch (error) {
@@ -286,8 +295,6 @@ export default function PassbookPageModern() {
           </div>
         </div>
       </motion.div>
-
-      {/* Loan Status Removed as requested */}
 
       {/* Statistics Cards */}
       <motion.div
@@ -359,7 +366,7 @@ export default function PassbookPageModern() {
         </Card>
       </motion.div>
 
-      {/* Filters */}
+      {/* Filters & Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -429,16 +436,16 @@ export default function PassbookPageModern() {
                       <th className="text-right p-4 font-medium">Installment</th>
                       <th className="text-right p-4 font-medium">Interest</th>
                       <th className="text-right p-4 font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        Total Amount
-                        <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
-                      </div>
-                    </th>
+                        <div className="flex items-center justify-end gap-2">
+                          Total Amount
+                          <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
+                        </div>
+                      </th>
                       <th className="text-center p-4 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEntries.map((entry, index) => (
+                    {filteredEntries.map((entry) => (
                       <tr key={entry.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <td className="p-4">
                           <div>
@@ -617,12 +624,15 @@ export default function PassbookPageModern() {
                 <Input
                   type="number"
                   placeholder="Enter amount or leave empty"
-                  value={loanRequestAmount || ''}
-                  onChange={(e) => setLoanRequestAmount(parseFloat(e.target.value) || 0)}
+                  value={loanRequestAmount ? loanRequestAmount : ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setLoanRequestAmount(v === '' ? 0 : parseFloat(v));
+                  }}
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  If not specified, admin will determine the loan amount
+                  If not specified, client will determine the loan amount later
                 </p>
               </div>
               

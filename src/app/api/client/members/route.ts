@@ -129,16 +129,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if member with same phone already exists
-    const existingMember = await db.member.findFirst({
-      where: { phone }
-    });
+    // Check if member with same phone already exists (skip if phone empty)
+    if (phone && phone.trim() !== '') {
+      const existingMember = await db.member.findFirst({
+        where: { phone }
+      });
 
-    if (existingMember) {
-      return NextResponse.json(
-        { error: 'Member with this phone number already exists' },
-        { status: 409 }
-      );
+      if (existingMember) {
+        return NextResponse.json(
+          { error: 'Member with this phone number already exists' },
+          { status: 409 }
+        );
+      }
     }
 
     // Create new member

@@ -121,7 +121,7 @@ export default function Sidebar({ onClose, pathname }: SidebarProps) {
                   Saanify
                 </h1>
                 <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                  Digital Passbook
+                  Client Portal
                 </p>
               </div>
             </div>

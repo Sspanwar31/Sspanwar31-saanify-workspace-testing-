@@ -132,14 +132,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           {/* Page Content */}
           <main className="flex-1 overflow-auto">
             <div className="max-w-7xl mx-auto p-6">
-              {/* Passbook-style page header decoration */}
-              <div className="mb-6 text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full border border-amber-200 dark:border-amber-800">
-                  <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Digital Passbook System</span>
-                  <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
-                </div>
-              </div>
+  
               {children}
             </div>
           </main>

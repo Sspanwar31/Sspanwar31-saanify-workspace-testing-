@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Create proper notification for member
+    // Create notification (NOT in passbook)
     await db.notification.create({
       data: {
         memberId: loan.memberId,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         })
       });
     } catch (error) {
-      console.log('Notification API call failed, but passbook entry created:', error);
+      console.log('Notification API call failed, but database operations succeeded:', error);
     }
 
     return NextResponse.json({

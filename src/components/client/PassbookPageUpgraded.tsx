@@ -121,6 +121,7 @@ export default function PassbookPageUpgraded() {
   const [deletingEntry, setDeletingEntry] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [loanRequestEnabled, setLoanRequestEnabled] = useState(false);
+  const [showLoanSuccess, setShowLoanSuccess] = useState(false);
 
   // Form
   const form = useForm<FormData>({
@@ -290,12 +291,28 @@ export default function PassbookPageUpgraded() {
       });
 
       if (response.ok) {
+        // Show success state
+        setShowLoanSuccess(true);
+        console.log('✅ Success state set to true - showing success message');
+        
         toast({
-          title: "Success",
-          description: "Loan request submitted successfully!",
+          title: "🎉 लोन रिक्वेस्ट सफलतापूर्वक भेजा गया!",
+          description: "आपका लोन रिक्वेस्ट सफलतापूर्वक सबमिट हो गया है। कृपया एडमिन से अप्रूवल का इंतजार करें।",
+          variant: "default",
         });
+        
+        // Also show a confirmation alert for additional visibility
+        setTimeout(() => {
+          alert('✅ लोन रिक्वेस्ट सफलतापूर्वक भेजा गया!\n\nआपका लोन रिक्वेस्ट सफलतापूर्वक सबमिट हो गया है। कृपया एडमिन से अप्रूवल का इंतजार करें।');
+        }, 1000);
+        
         setLoanRequestEnabled(false);
         form.setValue('loanRequestAmount', 0);
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setShowLoanSuccess(false);
+        }, 5000);
         
         // Clear form completely
         form.reset();
@@ -953,6 +970,77 @@ export default function PassbookPageUpgraded() {
           </Card>
         </div>
       </div>
+
+      {/* Loan Request Success Message */}
+      {showLoanSuccess && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 50 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 50 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-lg shadow-2xl max-w-sm border-2 border-green-400"
+        >
+          <div className="flex items-center gap-3">
+            <motion.div 
+              initial={{ rotate: 0 }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
+            >
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </motion.div>
+            <div>
+              <motion.h3 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="font-bold text-lg"
+              >
+                🎉 वाह! सफलता!
+              </motion.h3>
+              <motion.p 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-green-100 text-sm"
+              >
+                आपका लोन रिक्वेस्ट सफलतापूर्वक भेजा गया है
+              </motion.p>
+              <motion.p 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-green-200 text-xs mt-1"
+              >
+                कृपया एडमिन से अप्रूवल का इंतजार करें
+              </motion.p>
+            </div>
+          </div>
+          
+          {/* Confetti dots animation */}
+          <div className="absolute -top-2 -right-2">
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0, rotate: 0 }}
+                animate={{ scale: [0, 1, 0], rotate: [0, 180, 360] }}
+                transition={{
+                  duration: 1,
+                  delay: i * 0.1,
+                  repeat: 0,
+                }}
+                className="absolute w-2 h-2 bg-yellow-300 rounded-full"
+                style={{
+                  top: `${Math.random() * 20 - 10}px`,
+                  left: `${Math.random() * 20 - 10}px`,
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
     </>
   );
 }

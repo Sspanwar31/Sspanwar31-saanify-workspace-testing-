@@ -9,15 +9,58 @@ import { useSWRConfig } from 'swr';
 const debugToast = {
   success: (msg: string, opts?: any, source?: string) => {
     console.log('[Toast Success]', source, msg);
-    toast.success(msg, opts);
+    // Make success notifications more prominent
+    toast.success(msg, {
+      ...opts,
+      duration: opts?.duration || 5000,
+      position: 'top-center',
+      style: {
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        color: 'white',
+        border: 'none',
+        fontSize: '16px',
+        fontWeight: '600',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)',
+      }
+    });
   },
   error: (msg: string, opts?: any, source?: string) => {
     console.log('[Toast Error]', source, msg);
-    toast.error(msg, opts);
+    toast.error(msg, {
+      ...opts,
+      duration: 5000,
+      position: 'top-center',
+      style: {
+        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+        color: 'white',
+        border: 'none',
+        fontSize: '16px',
+        fontWeight: '600',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)',
+      }
+    });
   },
   info: (msg: string, opts?: any, source?: string) => {
     console.log('[Toast Info]', source, msg);
-    toast.info(msg, opts);
+    toast.info(msg, {
+      ...opts,
+      duration: 5000,
+      position: 'top-center',
+      style: {
+        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+        color: 'white',
+        border: 'none',
+        fontSize: '16px',
+        fontWeight: '600',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)',
+      }
+    });
   }
 };
 
@@ -85,6 +128,7 @@ export default function PassbookPageModern() {
   const [loanRequestEnabled, setLoanRequestEnabled] = useState(false);
   const [loanRequestAmount, setLoanRequestAmount] = useState<number>(0);
   const [selectedMemberForLoan, setSelectedMemberForLoan] = useState<string>('');
+  const [showLoanSuccess, setShowLoanSuccess] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
@@ -238,14 +282,33 @@ export default function PassbookPageModern() {
       if (response.ok) {
         const result = await response.json();
         console.log('Loan request success:', result);
-        debugToast.success('✅ Loan Request Sent', {
-          description: 'Your loan request has been submitted successfully',
-          duration: 3000
+        
+        // Show success state
+        setShowLoanSuccess(true);
+        console.log('✅ Success state set to true - showing success message');
+        
+        // Show prominent success notification
+        debugToast.success('🎉 लोन रिक्वेस्ट सफलतापूर्वक भेजा गया!', {
+          description: `आपका लोन रिक्वेस्ट सफलतापूर्वक सबमिट हो गया है। रिक्वेस्ट ID: ${result.loanId?.slice(0, 8) || 'N/A'}`,
+          duration: 6000
         }, 'handleLoanRequest');
+        
+        // Reset form
         setLoanRequestEnabled(false);
         setLoanRequestAmount(0);
         setSelectedMemberForLoan('');
         fetchPassbookEntries();
+        
+        // Also show a confirmation alert for additional visibility
+        setTimeout(() => {
+          alert('✅ लोन रिक्वेस्ट सफलतापूर्वक भेजा गया!\n\nआपका लोन रिक्वेस्ट सफलतापूर्वक सबमिट हो गया है। कृपया एडमिन से अप्रूवल का इंतजार करें।');
+        }, 1000);
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setShowLoanSuccess(false);
+        }, 5000);
+        
       } else {
         const error = await response.json();
         console.error('Loan request error:', error);
@@ -676,6 +739,77 @@ export default function PassbookPageModern() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Loan Request Success Message */}
+      {showLoanSuccess && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 50 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 50 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-lg shadow-2xl max-w-sm border-2 border-green-400"
+        >
+          <div className="flex items-center gap-3">
+            <motion.div 
+              initial={{ rotate: 0 }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
+            >
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </motion.div>
+            <div>
+              <motion.h3 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="font-bold text-lg"
+              >
+                🎉 वाह! सफलता!
+              </motion.h3>
+              <motion.p 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-green-100 text-sm"
+              >
+                आपका लोन रिक्वेस्ट सफलतापूर्वक भेजा गया है
+              </motion.p>
+              <motion.p 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-green-200 text-xs mt-1"
+              >
+                कृपया एडमिन से अप्रूवल का इंतजार करें
+              </motion.p>
+            </div>
+          </div>
+          
+          {/* Confetti dots animation */}
+          <div className="absolute -top-2 -right-2">
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0, rotate: 0 }}
+                animate={{ scale: [0, 1, 0], rotate: [0, 180, 360] }}
+                transition={{
+                  duration: 1,
+                  delay: i * 0.1,
+                  repeat: 0,
+                }}
+                className="absolute w-2 h-2 bg-yellow-300 rounded-full"
+                style={{
+                  top: `${Math.random() * 20 - 10}px`,
+                  left: `${Math.random() * 20 - 10}px`,
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
       )}
     </div>
   );

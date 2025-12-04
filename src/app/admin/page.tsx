@@ -1145,6 +1145,7 @@ export default function AdminDashboard() {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'clients', label: 'Client Management', icon: Users },
               { id: 'billing', label: 'Subscription & Billing', icon: CreditCard },
+              { id: 'maturity', label: 'Maturity Management', icon: Calendar },
               { id: 'analytics', label: 'Analytics', icon: Activity },
               { id: 'activity', label: 'Activity Monitor', icon: Activity },
               { id: 'data-charts', label: 'Data Visualization', icon: LineChart },
@@ -1701,6 +1702,112 @@ export default function AdminDashboard() {
                     </Card>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ================= MATURITY TAB ================= */}
+            {activeTab === 'maturity' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Maturity Management</h2>
+                    <p className="text-white/60">Automated 36-month maturity system with 12% interest</p>
+                  </div>
+                  <Button 
+                    onClick={() => router.push('/admin/maturity')}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Manage Maturity
+                  </Button>
+                </div>
+
+                {/* Maturity Overview */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white">Active Maturities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-green-400 mb-2">--</div>
+                        <p className="text-white/60 text-sm">Currently active</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white">Matured Amount</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-yellow-400 mb-2">₹--</div>
+                        <p className="text-white/60 text-sm">Ready to claim</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white">Claimed This Month</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-400 mb-2">--</div>
+                        <p className="text-white/60 text-sm">Successfully claimed</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Quick Actions */}
+                <Card className="backdrop-blur-xl bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button 
+                        variant="outline" 
+                        className="border-white/20 text-white hover:bg-white/10 justify-start"
+                        onClick={async () => {
+                          toast({
+                            title: "Generating Records",
+                            description: "🔄 Auto-generating maturity records..."
+                          })
+                          try {
+                            const response = await fetch('/api/maturity', { method: 'POST' })
+                            if (response.ok) {
+                              toast({
+                                title: "Success",
+                                description: "✅ Maturity records generated successfully"
+                              })
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "❌ Failed to generate records",
+                              variant: "destructive"
+                            })
+                          }
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Generate Records
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="border-white/20 text-white hover:bg-white/10 justify-start"
+                        onClick={() => router.push('/admin/maturity')}
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        View All Records
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 

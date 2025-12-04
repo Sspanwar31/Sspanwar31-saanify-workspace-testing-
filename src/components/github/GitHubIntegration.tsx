@@ -25,7 +25,7 @@ import {
   Cloud
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -233,6 +233,10 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
 
     if (!silent) setIsLoading(true)
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+
       const response = await fetch('/api/github/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -240,11 +244,26 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
           action: 'backup', 
           config,
           message: `🚀 Auto Backup: ${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}`
-        })
+        }),
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        let errorMessage = `HTTP error! status: ${response.status}`
+        
+        // Provide more specific error messages
+        if (response.status === 502) {
+          errorMessage = '⏰ Backup timed out - the repository is too large. Try using "Quick Git Backup" instead.'
+        } else if (response.status === 504) {
+          errorMessage = '⏰ Gateway timeout - the server took too long to respond. Please try again.'
+        } else if (errorText) {
+          errorMessage = `Server error: ${errorText}`
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -268,9 +287,94 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
       }
     } catch (error) {
       console.error('Backup error:', error)
-      if (!silent) setMessage({ type: 'error', text: '❌ Error creating backup' })
+      
+      let errorMessage = '❌ Error creating backup'
+      
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = '⏰ Backup timed out after 60 seconds. Repository may be too large - try using "Quick Git Backup" instead.'
+        } else if (error.message.includes('502')) {
+          errorMessage = '⏰ Backup operation timed out. Please try "Quick Git Backup" for faster results.'
+        } else if (error.message.includes('504')) {
+          errorMessage = '⏰ Gateway timeout. The server took too long to respond. Please try again.'
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = '🌐 Network error. Please check your internet connection and try again.'
+        } else {
+          errorMessage = `❌ ${error.message}`
+        }
+      }
+      
+      if (!silent) setMessage({ type: 'error', text: errorMessage })
     } finally {
       if (!silent) setIsLoading(false)
+    }
+  }
+
+  // Quick Git Backup (faster, uses local git commands)
+  const createQuickGitBackup = async () => {
+    if (!isConfigured) {
+      setMessage({ type: 'error', text: '⚠️ Please configure GitHub settings first' })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout for quick backup
+
+      const response = await fetch('/api/github/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'quick-backup', 
+          config,
+          useGit: true,
+          pushToGitHub: true
+        }),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Quick backup failed: ${errorText || response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        const now = new Date().toISOString()
+        setLastBackupTime(now)
+        localStorage.setItem('github-last-backup', now)
+        
+        setMessage({ 
+          type: 'success', 
+          text: `⚡ Quick backup complete! Changes pushed to GitHub` 
+        })
+        
+        if (showHistory) {
+          loadBackupHistory()
+        }
+      } else {
+        setMessage({ type: 'error', text: data.error || '❌ Quick backup failed' })
+      }
+    } catch (error) {
+      console.error('Quick backup error:', error)
+      
+      let errorMessage = '❌ Error creating quick backup'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = '⏰ Quick backup timed out. Please try again.'
+        } else {
+          errorMessage = `❌ ${error.message}`
+        }
+      }
+      
+      setMessage({ type: 'error', text: errorMessage })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -529,6 +633,9 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                       <Zap className="h-5 w-5" />
                       Quick Actions
                     </CardTitle>
+                    <CardDescription className="text-sm text-purple-600">
+                      Choose between full backup (all files) or quick git backup (changes only)
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Button
@@ -545,6 +652,25 @@ export default function GitHubIntegration({ isOpen, onOpenChange }: GitHubIntegr
                         <>
                           <Upload className="h-4 w-4 mr-2" />
                           Create Backup
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={createQuickGitBackup}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="w-full border-green-200 hover:bg-green-50 text-green-700"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Quick Backup...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Quick Git Backup
                         </>
                       )}
                     </Button>

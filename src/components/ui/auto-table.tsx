@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -20,7 +20,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Search, Filter, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Search, Filter, MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, SkipBack, SkipForward, HelpCircle } from 'lucide-react'
 
 interface AutoTableProps {
   data: any[]
@@ -55,6 +61,8 @@ export default function AutoTable({
   const [currentPage, setCurrentPage] = useState(1)
   const [filterColumn, setFilterColumn] = useState<string>('')
   const [filterValue, setFilterValue] = useState<string>('')
+  const [horizontalScroll, setHorizontalScroll] = useState(0)
+  const tableRef = useRef<HTMLDivElement>(null)
 
   // Get columns from data keys
   const columns = useMemo(() => {
@@ -129,6 +137,68 @@ export default function AutoTable({
     return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
   }
 
+  // Horizontal scroll functions
+  const scrollLeft = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+    }
+  }
+
+  const scrollRight = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+    }
+  }
+
+  const scrollToStart = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollTo({ left: 0, behavior: 'smooth' })
+    }
+  }
+
+  const scrollToEnd = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollTo({ left: tableRef.current.scrollWidth, behavior: 'smooth' })
+    }
+  }
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            scrollLeft()
+          }
+          break
+        case 'ArrowRight':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            scrollRight()
+          }
+          break
+        case 'Home':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            scrollToStart()
+          }
+          break
+        case 'End':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            scrollToEnd()
+          }
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const formatCellValue = (value: any, column: string) => {
     if (value === null || value === undefined) return '-'
     
@@ -166,15 +236,43 @@ export default function AutoTable({
   }
 
   return (
-    <div className="w-full">
-      {/* Header Section */}
-      <div className="mb-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <Badge variant="outline" className="shrink-0">
-            {processedData.length} records
-          </Badge>
-        </div>
+    <TooltipProvider>
+      <div className="w-full">
+        {/* Header Section */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="shrink-0">
+                {processedData.length} records
+              </Badge>
+              {columns.length > 6 && (
+                <>
+                  <Badge variant="secondary" className="shrink-0 text-xs">
+                    Use scroll controls ↔️
+                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <HelpCircle className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="space-y-2 text-sm">
+                        <p className="font-medium">Table Navigation:</p>
+                        <ul className="space-y-1 text-xs">
+                          <li>• Use arrow buttons to scroll left/right</li>
+                          <li>• <kbd>Ctrl</kbd>+<kbd>←</kbd> / <kbd>Ctrl</kbd>+<kbd>→</kbd> to scroll</li>
+                          <li>• <kbd>Ctrl</kbd>+<kbd>Home</kbd> / <kbd>Ctrl</kbd>+<kbd>End</kbd> for start/end</li>
+                          <li>• Actions column stays visible while scrolling</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+            </div>
+          </div>
         
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
@@ -226,14 +324,56 @@ export default function AutoTable({
       </div>
       
       {/* Table Section */}
-      <div className="rounded-md border bg-background">
+      <div className="rounded-md border bg-background relative">
+        {/* Horizontal Scroll Controls */}
+        {columns.length > 6 && (
+          <div className="absolute top-2 left-2 z-10 flex gap-1 bg-background/90 backdrop-blur-sm rounded-md border p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={scrollToStart}
+              className="h-7 w-7 p-0"
+              title="Scroll to start (Ctrl+Home)"
+            >
+              <SkipBack className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={scrollLeft}
+              className="h-7 w-7 p-0"
+              title="Scroll left (Ctrl+←)"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={scrollRight}
+              className="h-7 w-7 p-0"
+              title="Scroll right (Ctrl+→)"
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={scrollToEnd}
+              className="h-7 w-7 p-0"
+              title="Scroll to end (Ctrl+End)"
+            >
+              <SkipForward className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        
         <ScrollArea className="w-full">
-          <div className="min-w-full">
+          <div ref={tableRef} className="min-w-full overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   {columns.map((column) => (
-                    <TableHead key={column.key} className="px-4 py-3 whitespace-nowrap">
+                    <TableHead key={column.key} className="px-4 py-3 whitespace-nowrap min-w-[120px]">
                       {sortable ? (
                         <Button
                           variant="ghost"
@@ -249,7 +389,7 @@ export default function AutoTable({
                       )}
                     </TableHead>
                   ))}
-                  <TableHead className="w-[70px] px-4 py-3 whitespace-nowrap">
+                  <TableHead className="w-[70px] px-4 py-3 whitespace-nowrap sticky right-0 bg-background">
                     <MoreHorizontal className="h-4 w-4" />
                   </TableHead>
                 </TableRow>
@@ -282,14 +422,14 @@ export default function AutoTable({
                       {columns.map((column) => (
                         <TableCell 
                           key={column.key} 
-                          className="px-4 py-3 max-w-xs"
+                          className="px-4 py-3 max-w-xs min-w-[120px]"
                         >
                           <div className="truncate" title={String(row[column.key])}>
                             {formatCellValue(row[column.key], column.key)}
                           </div>
                         </TableCell>
                       ))}
-                      <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <TableCell className="px-4 py-3 whitespace-nowrap sticky right-0 bg-background border-l">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button 
@@ -344,31 +484,80 @@ export default function AutoTable({
           <div className="text-sm text-muted-foreground">
             Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} results
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="shrink-0 h-8 w-8 p-0"
+              title="First page"
+            >
+              <SkipBack className="h-3 w-3" />
+            </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 p-0"
+              title="Previous page"
             >
-              Previous
+              <ChevronLeft className="h-3 w-3" />
             </Button>
-            <span className="flex items-center px-3 py-1 text-sm min-w-[100px] justify-center">
-              Page {currentPage} of {totalPages}
-            </span>
+            
+            {/* Page numbers */}
+            <div className="flex items-center gap-1 mx-2">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="shrink-0 h-8 w-8 p-0 text-xs"
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+            </div>
+            
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 p-0"
+              title="Next page"
             >
-              Next
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="shrink-0 h-8 w-8 p-0"
+              title="Last page"
+            >
+              <SkipForward className="h-3 w-3" />
             </Button>
           </div>
         </div>
       )}
     </div>
+    </TooltipProvider>
   )
 }

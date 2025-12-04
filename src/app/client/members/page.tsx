@@ -111,7 +111,7 @@ export default function MembersPage() {
       type: 'tel',
       label: 'Phone Number',
       placeholder: '+91 98765 43210',
-      required: true,
+      required: false,
       validation: {
         pattern: /^[+]?[\d\s-()]+$/
       }
@@ -168,7 +168,12 @@ export default function MembersPage() {
       const response = await fetch('/api/client/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMember)
+        body: JSON.stringify({
+          name: newMember.name,
+          phone: newMember.phone,
+          address: newMember.address,
+          joinDate: newMember.joinDate
+        })
       })
 
       const data = await response.json()
@@ -204,42 +209,83 @@ export default function MembersPage() {
   }
 
   const handleUpdateMember = async (updatedMember: any) => {
-    // For now, just update local state
-    // TODO: Implement PUT API endpoint for updating members
-    setMembers(members.map(m => m.id === editingMember.id ? { 
-      ...editingMember, 
-      ...updatedMember, 
-      updatedAt: new Date().toISOString() 
-    } : m))
-    toast.success('✅ Member Updated', {
-      description: `${updatedMember.name} has been updated successfully`,
-      duration: 3000
-    })
-    setEditingMember(null)
-    setIsAddModalOpen(false)
-  }
-
-  const handleDeleteMember = async (memberId: string) => {
-    const member = members.find(m => m.id === memberId)
-    if (confirm(`क्या आप ${member?.name} को हटाना चाहते हैं?`)) {
-      try {
-        // Note: DELETE API not implemented yet, so just show message
-        toast.info('🗑️ मेंबर डिलीट करना', {
-          description: `${member?.name} को डिलीट कर रहे हैं`,
-          duration: 2000
+    const apiCallId = logApiCall('/api/client/members/[memberId]', 'PUT')
+    
+    try {
+      const response = await fetch(`/api/client/members/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingMember.id,
+          ...updatedMember
         })
-        
-        // For now, just update local state
-        // TODO: Implement DELETE API endpoint for members
-        setMembers(members.filter(m => m.id !== memberId))
-        
-        toast.success('✅ मेंबर हटा दिया गया', {
-          description: `${member?.name} सफलतापूर्वक हटा दिया गया`,
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMembers(members.map(m => m.id === editingMember.id ? { 
+          ...editingMember, 
+          ...updatedMember, 
+          updatedAt: new Date().toISOString() 
+        } : m))
+        logApiComplete(apiCallId, true)
+        toast.success('✅ मेंबर अपडेट हो गया', {
+          description: `${updatedMember.name} की जानकारी सफलतापूर्वक अपडेट हो गई`,
           duration: 3000
         })
+        setEditingMember(null)
+        setIsAddModalOpen(false)
+      } else {
+        logApiComplete(apiCallId, false, data.error)
+        toast.error('❌ मेंबर अपडेट करने में त्रुटि', {
+          description: data.error || 'अज्ञात त्रुटि',
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      logApiComplete(apiCallId, false, String(error))
+      console.error('Failed to update member:', error)
+      toast.error('❌ नेटवर्क त्रुटि', {
+        description: 'सर्वर से कनेक्ट नहीं हो पा रहा',
+        duration: 3000
+      })
+    }
+  }
+
+  const handleDeleteMember = async (member: any) => {
+    const memberId = member.id || member
+    const memberName = member.name || members.find(m => m.id === memberId)?.name || 'इस मेंबर'
+    
+    if (confirm(`क्या आप ${memberName} को हटाना चाहते हैं?`)) {
+      const apiCallId = logApiCall('/api/client/members/[memberId]', 'DELETE')
+      
+      try {
+        const response = await fetch(`/api/client/members/${memberId}`, {
+          method: 'DELETE'
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          setMembers(members.filter(m => m.id !== memberId))
+          logApiComplete(apiCallId, true)
+          toast.success('✅ मेंबर हटा दिया गया', {
+            description: `${memberName} सफलतापूर्वक हटा दिया गया`,
+            duration: 3000
+          })
+        } else {
+          logApiComplete(apiCallId, false, data.error)
+          toast.error('❌ मेंबर हटाने में त्रुटि', {
+            description: data.error || 'अज्ञात त्रुटि',
+            duration: 3000
+          })
+        }
       } catch (error) {
-        toast.error('❌ डिलीट करने में त्रुटि', {
-          description: 'मेंबर डिलीट नहीं हो पाया',
+        logApiComplete(apiCallId, false, String(error))
+        console.error('Failed to delete member:', error)
+        toast.error('❌ नेटवर्क त्रुटि', {
+          description: 'सर्वर से कनेक्ट नहीं हो पा रहा',
           duration: 3000
         })
       }
@@ -447,21 +493,19 @@ export default function MembersPage() {
               <Skeleton className="h-8 w-full" />
             </div>
           ) : (
-            <ScrollArea className="h-[600px] rounded-md border">
-              <div className="p-4">
-                <AutoTable 
-                  data={formattedMembers} 
-                  title=""
-                  searchable={true}
-                  filterable={true}
-                  sortable={true}
-                  pagination={true}
-                  itemsPerPage={10}
-                  onEdit={handleEditMember}
-                  onDelete={handleDeleteMember}
-                />
-              </div>
-            </ScrollArea>
+            <div className="p-4">
+              <AutoTable 
+                data={formattedMembers} 
+                title=""
+                searchable={true}
+                filterable={true}
+                sortable={true}
+                pagination={true}
+                itemsPerPage={15}
+                onEdit={handleEditMember}
+                onDelete={handleDeleteMember}
+              />
+            </div>
           )}
         </div>
       </motion.div>

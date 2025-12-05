@@ -37,7 +37,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     try {
       // For now, disable WebSocket to prevent connection errors
       // TODO: Implement proper WebSocket server setup
-      console.log('WebSocket connection disabled - server not configured')
       setConnectionStatus('error')
       return
       
@@ -120,7 +119,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   const sendMessage = (type: string, data: any) => {
     // WebSocket disabled - return false for now
-    console.log('WebSocket message disabled:', type, data)
+    // TODO: Implement proper WebSocket server setup
     return false
     
     // Original code (commented out)

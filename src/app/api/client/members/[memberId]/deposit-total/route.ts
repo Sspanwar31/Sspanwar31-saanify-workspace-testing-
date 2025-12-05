@@ -27,8 +27,10 @@ export async function GET(
     const totalDeposits = passbookEntries.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
 
     return NextResponse.json({
+      success: true,
       memberId,
-      totalDeposits,
+      totalDeposit: totalDeposits, // Changed to match frontend expectation
+      totalDeposits: totalDeposits, // Keep for backward compatibility
       entryCount: passbookEntries.length
     });
 

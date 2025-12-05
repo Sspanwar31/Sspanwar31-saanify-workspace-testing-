@@ -93,13 +93,16 @@ export default function EnhancedLoanApproval() {
   const fetchMemberTotalDeposit = async (memberId: string) => {
     setPassbookLoading(true)
     try {
+      console.log("🔍 DEBUG: Fetching deposit total for memberId:", memberId)
       const response = await fetch(`/api/client/members/${memberId}/deposit-total`)
       
       if (response.ok) {
         const data = await response.json()
+        console.log("🔍 DEBUG: Deposit API response:", data)
         if (data.success) {
           // Set the member passbook with deposit data for compatibility
           // Use the totalDeposit directly from API response
+          console.log("🔍 DEBUG: Using totalDeposit from API:", data.totalDeposit)
           setMemberPassbook([{
             mode: 'DEPOSIT',
             deposit: data.totalDeposit, // Use API calculated total
@@ -107,10 +110,12 @@ export default function EnhancedLoanApproval() {
           }])
         }
       } else {
-        // Fallback to members API if deposit-total fails
-        const response2 = await fetch(`/api/client/members?memberId=${memberId}`)
+        console.log("🔍 DEBUG: Deposit API failed, trying fallback with individual member API")
+        // Fallback to individual member API if deposit-total fails
+        const response2 = await fetch(`/api/client/members/${memberId}`)
         if(response2.ok) {
            const data2 = await response2.json()
+           console.log("🔍 DEBUG: Fallback member API response:", data2)
            if (data2.totalDeposits !== undefined) {
              setMemberPassbook([{
                mode: 'DEPOSIT',
@@ -121,12 +126,13 @@ export default function EnhancedLoanApproval() {
         }
       }
     } catch (error) {
-      console.error("Error fetching member deposit", error)
-      // Fallback to members API
+      console.error("🔍 DEBUG: Error fetching member deposit", error)
+      // Fallback to individual member API
       try {
-        const response2 = await fetch(`/api/client/members?memberId=${memberId}`)
+        const response2 = await fetch(`/api/client/members/${memberId}`)
         if(response2.ok) {
            const data2 = await response2.json()
+           console.log("🔍 DEBUG: Emergency fallback response:", data2)
            if (data2.totalDeposits !== undefined) {
              setMemberPassbook([{
                mode: 'DEPOSIT',
@@ -136,7 +142,7 @@ export default function EnhancedLoanApproval() {
            }
         }
       } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError)
+        console.error("🔍 DEBUG: Fallback also failed:", fallbackError)
       }
     } finally {
       setPassbookLoading(false)
@@ -231,9 +237,18 @@ export default function EnhancedLoanApproval() {
       return sum + val
     }, 0)
   
+  console.log("🔍 DEBUG: memberPassbook:", memberPassbook)
+  console.log("🔍 DEBUG: calculated totalDeposits:", totalDeposits)
+  
   const limitAmount = totalDeposits * 0.8
   const isLimitExceeded = finalLoanAmount > limitAmount
   const canApprove = !isLimitExceeded || overrideEnabled
+  
+  console.log("🔍 DEBUG: finalLoanAmount:", finalLoanAmount)
+  console.log("🔍 DEBUG: limitAmount (80%):", limitAmount)
+  console.log("🔍 DEBUG: isLimitExceeded:", isLimitExceeded)
+  console.log("🔍 DEBUG: overrideEnabled:", overrideEnabled)
+  console.log("🔍 DEBUG: canApprove:", canApprove)
 
   return (
     <div className="space-y-6 p-6">

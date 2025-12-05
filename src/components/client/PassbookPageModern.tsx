@@ -229,7 +229,7 @@ export default function PassbookPageModern() {
     
     // Active loan check removed - members can now request multiple loans
     // if (membersWithActiveLoans.has(selectedMemberForLoan)) {
-    //   toast.error('This member already has an active loan. Please repay the existing loan before requesting a new one.');
+    //   toast.error('This member already has an active loan. Please repay existing loan before requesting a new one.');
     //   return;
     // }
     
@@ -484,11 +484,11 @@ export default function PassbookPageModern() {
                       <th className="text-right p-4 font-medium">Installment</th>
                       <th className="text-right p-4 font-medium">Interest</th>
                       <th className="text-right p-4 font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        Total Amount
-                        <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
-                      </div>
-                    </th>
+                        <div className="flex items-center justify-end gap-2">
+                          Total Amount
+                          <span className="text-xs text-gray-500 font-normal">(Deposit + Installment + Interest + Fine)</span>
+                        </div>
+                      </th>
                       <th className="text-center p-4 font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -682,7 +682,7 @@ export default function PassbookPageModern() {
                   <div className="flex items-center gap-2 text-orange-800">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      This member already has an active loan. Please repay the existing loan before requesting a new one.
+                      This member already has an active loan. Please repay existing loan before requesting a new one.
                     </span>
                   </div>
                 </div>

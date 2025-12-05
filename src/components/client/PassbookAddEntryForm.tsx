@@ -229,7 +229,7 @@ export default function PassbookAddEntryForm({
   // Fetch member details
   const fetchMemberDetails = useCallback(async (memberId: string) => {
     try {
-      const response = await fetch(`/api/client/members?memberId=${memberId}`);
+      const response = await fetch(`/api/client/members/${memberId}`);
       if (response.ok) {
         const data = await response.json();
         
@@ -243,10 +243,13 @@ export default function PassbookAddEntryForm({
         
         setSelectedMember(memberData);
         
-        // Auto-calculate interest and fine based on loan
+        // Auto-calculate interest and fine based on loan (Hybrid Auto/Manual)
         if (memberData.activeLoan) {
           const interest = Math.round((memberData.activeLoan.outstandingBalance * 0.01) * 100) / 100;
-          form.setValue('interest', interest);
+          // Only set interest if current value is 0 (to preserve manual edits)
+          if (form.getValues('interest') === 0) {
+            form.setValue('interest', interest);
+          }
         } else {
           // Reset interest to 0 if member has no active loan
           form.setValue('interest', 0);
@@ -256,7 +259,10 @@ export default function PassbookAddEntryForm({
         if (depositDate) {
           const daysLate = Math.max(0, depositDate.getDate() - 15);
           const fine = daysLate * 10;
-          form.setValue('fine', fine);
+          // Only set fine if current value is 0 (to preserve manual edits)
+          if (form.getValues('fine') === 0) {
+            form.setValue('fine', fine);
+          }
         }
       } else {
         console.error('Failed to fetch member details:', response.status);
@@ -274,37 +280,62 @@ export default function PassbookAddEntryForm({
 
     const { depositAmount, installmentAmount, interest, fine } = watchedValues;
     
-    // A. Previous Total Balance = SUM(All Deposits Only)
-    const previousTotalBalance = selectedMember.totalDeposits || 0;
+    // A. Previous Balance = SUM(All Deposits Only) - For Display Only
+    const previousBalance = selectedMember.totalDeposits || 0;
     
-    // C. Total Balance (For Today's Entry Only)
-    const totalBalance = depositAmount + installmentAmount + interest + fine;
+    // B. Today's Total = Deposit + Installment + Interest + Fine
+    const todayTotal = depositAmount + installmentAmount + interest + fine;
     
-    // D. New Remaining Loan = OldRemainingLoan - Installment
-    const oldRemainingLoan = selectedMember.activeLoan?.outstandingBalance || 0;
-    const newRemainingLoan = Math.max(0, oldRemainingLoan - installmentAmount);
+    // C. New Balance = Today's Total ONLY (No Previous Balance)
+    // इस entry में user ने जो भरा है उनका total only
+    const newBalance = todayTotal;
+    
+    // D. Live Loan Reduction Preview
+    const currentLoanBalance = selectedMember.activeLoan?.outstandingBalance || 0;
+    const loanReductionPreview = Math.max(0, currentLoanBalance - installmentAmount);
 
     return {
-      previousTotalBalance,
+      previousBalance,
       depositAmount,
       installmentAmount,
       interest,
       fine,
-      totalBalance,
-      oldRemainingLoan,
-      newRemainingLoan,
+      todayTotal,
+      newBalance,
+      currentLoanBalance,
+      loanReductionPreview,
       memberName: selectedMember.member.name || 'Unknown Member'
     };
   }, [selectedMember, watchedValues]);
 
-  // Auto-calculate fine when date changes
+  // Auto-calculate fine when date changes (Hybrid Auto/Manual)
   useEffect(() => {
-    if (watchedValues.depositDate) {
+    if (watchedValues.depositDate && selectedMember) {
       const daysLate = Math.max(0, watchedValues.depositDate.getDate() - 15);
       const fine = daysLate * 10;
-      form.setValue('fine', fine);
+      
+      // Only auto-calculate if user hasn't manually entered a value
+      // This preserves manual edits while still providing auto-calculation
+      if (form.getValues('fine') === 0 || !form.getValues('fine')) {
+        form.setValue('fine', fine);
+      }
     }
-  }, [watchedValues.depositDate, form]);
+  }, [watchedValues.depositDate, form, selectedMember]);
+
+  // Auto-calculate interest when member changes (Hybrid Auto/Manual)
+  useEffect(() => {
+    if (selectedMember && selectedMember.activeLoan) {
+      const interest = Math.round((selectedMember.activeLoan.outstandingBalance * 0.01) * 100) / 100;
+      
+      // Only auto-calculate if user hasn't manually entered a value
+      if (form.getValues('interest') === 0 || !form.getValues('interest')) {
+        form.setValue('interest', interest);
+      }
+    } else {
+      // Reset interest to 0 if member has no active loan
+      form.setValue('interest', 0);
+    }
+  }, [selectedMember, form]);
 
   // Initial data fetch and form setup for editing
   useEffect(() => {
@@ -557,7 +588,7 @@ export default function PassbookAddEntryForm({
 
                     {/* Interest */}
                     <FormField
-                      label="Interest"
+                      label="Interest (Auto-calculated)"
                       error={form.formState.errors.interest?.message}
                     >
                       <Controller
@@ -576,11 +607,16 @@ export default function PassbookAddEntryForm({
                           </div>
                         )}
                       />
+                      {selectedMember?.activeLoan && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Auto: 1% of outstanding loan (₹{selectedMember.activeLoan.outstandingBalance.toFixed(2)})
+                        </p>
+                      )}
                     </FormField>
 
                     {/* Fine */}
                     <FormField
-                      label="Fine"
+                      label="Fine (Auto-calculated)"
                       error={form.formState.errors.fine?.message}
                     >
                       <Controller
@@ -599,6 +635,11 @@ export default function PassbookAddEntryForm({
                           </div>
                         )}
                       />
+                      {watchedValues.depositDate && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Auto: ₹10/day after 15th ({Math.max(0, watchedValues.depositDate.getDate() - 15)} days late)
+                        </p>
+                      )}
                     </FormField>
                   </div>
 
@@ -696,13 +737,19 @@ export default function PassbookAddEntryForm({
                         <span className="font-medium">{preview.memberName}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Previous Balance</span>
-                        <span className="font-medium">₹{preview.previousTotalBalance.toLocaleString('en-IN')}</span>
+                        <span className="text-sm text-muted-foreground">Previous Balance (Deposits Only)</span>
+                        <span className="font-medium">₹{preview.previousBalance.toLocaleString('en-IN')}</span>
                       </div>
-                      {preview.oldRemainingLoan > 0 && (
+                      {preview.currentLoanBalance > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Current Loan</span>
-                          <span className="font-medium">₹{preview.oldRemainingLoan.toLocaleString('en-IN')}</span>
+                          <span className="text-sm text-muted-foreground">Outstanding Loan</span>
+                          <span className="font-medium text-orange-600">₹{preview.currentLoanBalance.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      {preview.currentLoanBalance === 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Outstanding Loan</span>
+                          <span className="font-medium text-gray-400">-</span>
                         </div>
                       )}
                     </div>
@@ -755,22 +802,33 @@ export default function PassbookAddEntryForm({
                     )}
 
                     <PreviewCard
-                      title="Total Balance"
-                      value={`₹${preview.totalBalance.toLocaleString('en-IN')}`}
+                      title="New Balance"
+                      value={`₹${preview.newBalance.toLocaleString('en-IN')}`}
                       icon={<Receipt className="h-4 w-4 text-white" />}
                       gradient="from-teal-500 to-teal-600"
                     />
 
-                    {preview.newRemainingLoan !== preview.oldRemainingLoan && (
+                    {/* Live Loan Reduction Preview */}
+                    {preview.currentLoanBalance > 0 && preview.installmentAmount > 0 && (
                       <PreviewCard
-                        title="New Loan Balance"
-                        value={`₹${preview.newRemainingLoan.toLocaleString('en-IN')}`}
+                        title="Loan Balance After Payment"
+                        value={`₹${preview.loanReductionPreview.toLocaleString('en-IN')}`}
                         icon={<TrendingDown className="h-4 w-4 text-white" />}
-                        gradient="from-amber-500 to-amber-600"
+                        gradient="from-green-500 to-green-600"
                         trend={{
-                          value: Math.round(((preview.oldRemainingLoan - preview.newRemainingLoan) / preview.oldRemainingLoan) * 100),
-                          isPositive: preview.newRemainingLoan < preview.oldRemainingLoan
+                          value: Math.round(((preview.currentLoanBalance - preview.loanReductionPreview) / preview.currentLoanBalance) * 100),
+                          isPositive: preview.loanReductionPreview < preview.currentLoanBalance
                         }}
+                      />
+                    )}
+
+                    {/* Show current loan balance if no installment */}
+                    {preview.currentLoanBalance > 0 && preview.installmentAmount === 0 && (
+                      <PreviewCard
+                        title="Current Loan Balance"
+                        value={`₹${preview.currentLoanBalance.toLocaleString('en-IN')}`}
+                        icon={<Wallet className="h-4 w-4 text-white" />}
+                        gradient="from-orange-500 to-orange-600"
                       />
                     )}
                   </>

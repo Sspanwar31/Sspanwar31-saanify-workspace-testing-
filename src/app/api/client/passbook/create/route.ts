@@ -88,21 +88,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Calculate new member balance
-    const allEntries = await db.passbookEntry.findMany({
-      where: { memberId: memberId },
-      orderBy: { transactionDate: 'asc' }
-    });
-
-    let runningBalance = 0;
-    allEntries.forEach(entry => {
-      const depositAmt = entry.depositAmount || 0;
-      const installmentAmt = entry.loanInstallment || 0;
-      const interestAmt = entry.interestAuto || 0;
-      const fineAmt = entry.fineAuto || 0;
-      
-      runningBalance = runningBalance + depositAmt - installmentAmt + interestAmt + fineAmt;
-    });
+    // Calculate new member balance - CURRENT ENTRY ONLY
+    // As per requirement: NEW BALANCE = इस entry में user ने जो भरा है उनका total
+    const currentEntryTotal = (deposit || 0) + (installment || 0) + calculatedInterest + calculatedFine;
+    const entryBalance = currentEntryTotal;
 
     // Get updated loan status
     let loanBalance = 0;
@@ -135,7 +124,7 @@ export async function POST(request: NextRequest) {
         fine: passbookEntry.fineAuto || 0,
         mode: passbookEntry.mode,
         description: passbookEntry.description || '',
-        balance: runningBalance,
+        balance: entryBalance,
         loanBalance: loanBalance,
         remainingLoan: remainingLoan,
         createdAt: passbookEntry.createdAt,

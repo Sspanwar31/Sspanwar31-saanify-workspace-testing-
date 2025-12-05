@@ -8,22 +8,86 @@ type RouteParams = { params: Promise<{ memberId: string }> };
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { memberId } = await params;
+    
+    // Find the member
     const member = await db.member.findUnique({
-      where: { id: memberId },
-      include: { loans: { where: { status: 'active' } } }
+      where: { id: memberId }
     });
 
     if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
 
+    // Calculate total deposits from passbook entries
+    const passbookEntries = await db.passbookEntry.findMany({
+      where: { memberId },
+      select: {
+        depositAmount: true,
+        loanInstallment: true,
+        interestAuto: true,
+        fineAuto: true
+      }
+    });
+
+    // Calculate totals
+    const totalDeposits = passbookEntries.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
+    const totalInstallments = passbookEntries.reduce((sum, entry) => sum + (entry.loanInstallment || 0), 0);
+    const totalInterest = passbookEntries.reduce((sum, entry) => sum + (entry.interestAuto || 0), 0);
+    const totalFines = passbookEntries.reduce((sum, entry) => sum + (entry.fineAuto || 0), 0);
+    
+    // Current balance = totalDeposits - totalInstallments + totalInterest + totalFines
+    const currentBalance = totalDeposits - totalInstallments + totalInterest + totalFines;
+
+    // Find active loan
+    const activeLoan = await db.loan.findFirst({
+      where: {
+        memberId: memberId,
+        status: 'active'
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Calculate outstanding loan balance
+    let outstandingBalance = 0;
+    if (activeLoan) {
+      const totalPaid = await db.passbookEntry.aggregate({
+        where: {
+          memberId: memberId,
+          loanRequestId: activeLoan.id,
+          loanInstallment: {
+            gt: 0
+          }
+        },
+        _sum: {
+          loanInstallment: true
+        }
+      });
+      
+      const paidAmount = totalPaid._sum.loanInstallment || 0;
+      outstandingBalance = Math.max(0, activeLoan.remainingBalance - paidAmount);
+    }
+
     return NextResponse.json({ 
-        member: {
-            ...member,
-            joiningDate: member.joiningDate.toISOString(),
-            createdAt: member.createdAt.toISOString(),
-            updatedAt: member.updatedAt.toISOString(),
-        } 
+      member: {
+        id: member.id,
+        name: member.name,
+        phone: member.phone || '',
+        address: member.address || '',
+        joiningDate: member.joiningDate.toISOString(),
+        createdAt: member.createdAt.toISOString(),
+        updatedAt: member.updatedAt.toISOString(),
+      },
+      currentBalance: currentBalance,
+      totalDeposits: totalDeposits,
+      activeLoan: activeLoan ? {
+        loanId: activeLoan.id,
+        outstandingBalance: outstandingBalance,
+        loanAmount: activeLoan.loanAmount,
+        interestRate: activeLoan.interestRate
+      } : null
     });
   } catch (error) {
+    console.error('Error fetching member details:', error);
     return NextResponse.json({ error: 'Server Error' }, { status: 500 });
   }
 }

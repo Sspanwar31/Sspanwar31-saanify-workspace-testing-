@@ -91,7 +91,7 @@ export const checkDatabaseConnection = async (): Promise<DatabaseHealthStatus> =
 };
 
 // Middleware to check DB connection before processing requests
-export const withDatabaseCheck = (handler: Function) => {
+export const withDatabaseCheck = (handler: (req: Request, ...args: any[]) => Promise<Response> | Response) => {
   return async (req: Request, ...args: any[]) => {
     const dbHealth = await checkDatabaseConnection();
     

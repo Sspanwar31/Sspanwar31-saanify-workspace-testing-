@@ -246,7 +246,7 @@ export default function AutoTable({
               <Badge variant="outline" className="shrink-0">
                 {processedData.length} records
               </Badge>
-              {columns.length > 6 && (
+              {columns.length > 4 && (
                 <>
                   <Badge variant="secondary" className="shrink-0 text-xs">
                     Use scroll controls ↔️
@@ -324,9 +324,9 @@ export default function AutoTable({
       </div>
       
       {/* Table Section */}
-      <div className="rounded-md border bg-background relative">
+      <div className="rounded-md border bg-background relative overflow-hidden">
         {/* Horizontal Scroll Controls */}
-        {columns.length > 6 && (
+        {columns.length > 4 && (
           <div className="absolute top-2 left-2 z-10 flex gap-1 bg-background/90 backdrop-blur-sm rounded-md border p-1">
             <Button
               variant="ghost"
@@ -367,29 +367,35 @@ export default function AutoTable({
           </div>
         )}
         
-        <ScrollArea className="w-full">
-          <div ref={tableRef} className="min-w-full overflow-x-auto">
-            <Table>
+        <ScrollArea className="w-full max-h-[70vh]">
+          <div ref={tableRef} className="overflow-x-auto">
+            <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   {columns.map((column) => (
-                    <TableHead key={column.key} className="px-4 py-3 whitespace-nowrap min-w-[120px]">
+                    <TableHead key={column.key} className={`px-3 py-3 whitespace-nowrap ${
+                      column.key === 'name' ? 'min-w-[150px] max-w-[200px]' : 
+                      column.key === 'phone' ? 'min-w-[120px] max-w-[140px]' :
+                      column.key === 'email' ? 'min-w-[180px] max-w-[220px]' :
+                      column.key === 'address' ? 'min-w-[200px] max-w-[250px]' :
+                      'min-w-[100px] max-w-[150px]'
+                    }`}>
                       {sortable ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-auto p-0 font-semibold hover:bg-transparent justify-start"
+                          className="h-auto p-0 font-semibold hover:bg-transparent justify-start w-full"
                           onClick={() => handleSort(column.key)}
                         >
-                          <span className="truncate">{column.label}</span>
+                          <span className="truncate text-left">{column.label}</span>
                           <span className="ml-2 shrink-0">{getSortIcon(column.key)}</span>
                         </Button>
                       ) : (
-                        <span className="truncate">{column.label}</span>
+                        <span className="truncate text-left font-medium">{column.label}</span>
                       )}
                     </TableHead>
                   ))}
-                  <TableHead className="w-[70px] px-4 py-3 whitespace-nowrap sticky right-0 bg-background">
+                  <TableHead className="w-[80px] px-3 py-3 whitespace-nowrap sticky right-0 bg-background border-l">
                     <MoreHorizontal className="h-4 w-4" />
                   </TableHead>
                 </TableRow>
@@ -422,14 +428,20 @@ export default function AutoTable({
                       {columns.map((column) => (
                         <TableCell 
                           key={column.key} 
-                          className="px-4 py-3 max-w-xs min-w-[120px]"
+                          className={`px-3 py-3 ${
+                            column.key === 'name' ? 'max-w-[200px]' : 
+                            column.key === 'phone' ? 'max-w-[140px]' :
+                            column.key === 'email' ? 'max-w-[220px]' :
+                            column.key === 'address' ? 'max-w-[250px]' :
+                            'max-w-[150px]'
+                          }`}
                         >
                           <div className="truncate" title={String(row[column.key])}>
                             {formatCellValue(row[column.key], column.key)}
                           </div>
                         </TableCell>
                       ))}
-                      <TableCell className="px-4 py-3 whitespace-nowrap sticky right-0 bg-background border-l">
+                      <TableCell className="px-3 py-3 whitespace-nowrap sticky right-0 bg-background border-l">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button 

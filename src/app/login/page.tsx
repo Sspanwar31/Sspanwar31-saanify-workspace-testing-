@@ -124,8 +124,17 @@ export default function UnifiedLoginPage() {
       }
 
       if (!response.ok) {
-        const errorMessage = data?.error || data?.message || 'Login failed'
-        throw new Error(errorMessage)
+        let errorMessage = data?.error || data?.message || 'Login failed';
+        
+        // Handle validation errors specifically
+        if (data?.details && Array.isArray(data.details)) {
+          const validationErrors = data.details.map((err: any) => 
+            err.message
+          ).join(', ');
+          errorMessage = `Validation failed: ${validationErrors}`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
       // Success toast based on user type

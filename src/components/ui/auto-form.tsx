@@ -75,6 +75,29 @@ export default function AutoForm({
     if (editingData) {
       const filteredData = { ...editingData }
       memoizedExcludeFields.forEach(field => delete filteredData[field])
+      
+      // Convert dates from display format to input format for date fields
+      Object.keys(memoizedFields).forEach(key => {
+        const field = memoizedFields[key]
+        if (field.type === 'date' && filteredData[key]) {
+          // If date is in DD/MM/YYYY format, convert to yyyy-MM-dd
+          const dateValue = filteredData[key]
+          if (typeof dateValue === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)) {
+            const [day, month, year] = dateValue.split('/')
+            const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+            filteredData[key] = isoDate
+          }
+          // If date is already in yyyy-MM-dd format, keep it
+          else if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            filteredData[key] = dateValue
+          }
+          // If it's a full ISO date string, extract just the date part
+          else if (typeof dateValue === 'string' && dateValue.includes('T')) {
+            filteredData[key] = dateValue.split('T')[0]
+          }
+        }
+      })
+      
       setFormData(filteredData)
       prevEditingDataRef.current = editingData
     } else {
@@ -109,6 +132,11 @@ export default function AutoForm({
     // Skip validation for empty optional fields
     if (!value || value.trim() === '') {
       return null
+    }
+
+    // Email validation
+    if (field.type === 'email' && !/\S+@\S+\.\S+/.test(value)) {
+      return 'Please enter a valid email address'
     }
 
     // Length validation
@@ -151,8 +179,11 @@ export default function AutoForm({
     e.preventDefault()
     
     if (!validateForm()) {
+      const errorMessages = Object.values(errors).filter(Boolean)
       toast.error('⚠️ Validation Error', {
-        description: 'Please fix errors in the form',
+        description: errorMessages.length > 0 
+          ? errorMessages[0] 
+          : 'Please fill in all required fields correctly',
         duration: 3000
       })
       return

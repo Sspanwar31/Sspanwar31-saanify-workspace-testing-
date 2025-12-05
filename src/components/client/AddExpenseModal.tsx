@@ -52,8 +52,27 @@ export default function AddExpenseModal({
   useEffect(() => {
     if (isOpen) {
       if (editingExpense) {
+        // Convert date from display format to input format if needed
+        const convertDate = (dateStr: string) => {
+          if (!dateStr) return new Date().toISOString().split('T')[0]
+          // If date is in DD/MM/YYYY format, convert to yyyy-MM-dd
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+            const [day, month, year] = dateStr.split('/')
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+          }
+          // If date is already in yyyy-MM-dd format, keep it
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr
+          }
+          // If it's a full ISO date string, extract just the date part
+          if (dateStr.includes('T')) {
+            return dateStr.split('T')[0]
+          }
+          return dateStr
+        }
+
         setFormData({
-          date: editingExpense.date,
+          date: convertDate(editingExpense.date),
           category: editingExpense.category,
           amount: editingExpense.amount.toString(),
           mode: editingExpense.mode,

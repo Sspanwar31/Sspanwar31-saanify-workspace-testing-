@@ -84,7 +84,19 @@ export default function SignupPage() {
     setIsLoading(true);
     setError("");
 
-    // Validate passwords match
+    // Client-side validation
+    if (!formData.name.trim() || formData.name.length < 2) {
+      setError("Name must be at least 2 characters long");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
@@ -132,7 +144,24 @@ export default function SignupPage() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create account");
+        let errorMessage = "Failed to create account";
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          if (errorData.details && Array.isArray(errorData.details)) {
+            // Show specific validation errors
+            const validationErrors = errorData.details.map((err: any) => 
+              `${err.field}: ${err.message}`
+            ).join(', ');
+            errorMessage = `Validation failed: ${validationErrors}`;
+          } else {
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (parseError) {
+          errorMessage = `Server error: ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       setSuccess(true);

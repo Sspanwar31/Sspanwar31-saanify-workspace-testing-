@@ -21,7 +21,7 @@ import {
   User,
   Calendar
 } from 'lucide-react'
-import AutoTable from '@/components/ui/auto-table'
+import MembersTable from '@/components/ui/members-table'
 import AutoForm from '@/components/ui/auto-form'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -143,6 +143,7 @@ export default function MembersPage() {
   // Format data for table - exclude sensitive columns and format dates
   const formattedMembers = members.map(member => ({
     ...member,
+    originalId: member.id, // Store original ID for reference
     id: member.id.substring(0, 8) + '...', // Show only first 8 chars of ID
     joinDate: new Date(member.joinDate).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -204,7 +205,14 @@ export default function MembersPage() {
   }
 
   const handleEditMember = (member: any) => {
-    setEditingMember(member)
+    // Find the original member data from the members array, not the formatted data
+    const originalMember = members.find(m => m.id === member.id || m.id === member.originalId)
+    if (originalMember) {
+      setEditingMember(originalMember)
+    } else {
+      // Fallback to the member data if original not found
+      setEditingMember(member)
+    }
     setIsAddModalOpen(true)
   }
 
@@ -494,14 +502,8 @@ export default function MembersPage() {
             </div>
           ) : (
             <div className="p-4">
-              <AutoTable 
+              <MembersTable 
                 data={formattedMembers} 
-                title=""
-                searchable={true}
-                filterable={true}
-                sortable={true}
-                pagination={true}
-                itemsPerPage={15}
                 onEdit={handleEditMember}
                 onDelete={handleDeleteMember}
               />

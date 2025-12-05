@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 interface Member {
   id?: string
   name: string
-  email: string
+  email?: string | null
   phone: string
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   membershipId: string
@@ -35,7 +35,7 @@ interface AddMemberModalProps {
 export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMember }: AddMemberModalProps) {
   const [formData, setFormData] = useState<Member>({
     name: '',
-    email: '',
+    email: null,
     phone: '',
     status: 'ACTIVE',
     membershipId: '',
@@ -54,7 +54,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
     } else {
       setFormData({
         name: '',
-        email: '',
+        email: null,
         phone: '',
         status: 'ACTIVE',
         membershipId: '',
@@ -76,10 +76,11 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
       newErrors.name = 'Name must be at least 2 characters'
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
+    // Email is optional now since database doesn't support it
+    if (formData.email && formData.email.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address'
+      }
     }
 
     if (!formData.phone.trim()) {
@@ -196,13 +197,13 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, editingMembe
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Email Address <span className="text-red-500">*</span>
+                    Email Address (Optional)
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="john@example.com"
-                    value={formData.email}
+                    value={formData.email || ''}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className={errors.email ? 'border-red-500' : ''}
                   />

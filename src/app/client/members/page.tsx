@@ -140,11 +140,11 @@ export default function MembersPage() {
     pending: 0 // No pending status in new schema
   }
 
-  // Format data for table - exclude sensitive columns and format dates
+  // Format data for table - preserve full ID but add display ID
   const formattedMembers = members.map(member => ({
     ...member,
     originalId: member.id, // Store original ID for reference
-    id: member.id.substring(0, 8) + '...', // Show only first 8 chars of ID
+    displayId: member.id.substring(0, 8) + '...', // Show only first 8 chars for display
     joinDate: new Date(member.joinDate).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: '2-digit', 
@@ -229,7 +229,17 @@ export default function MembersPage() {
         })
       })
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError)
+        console.error('Response status:', response.status)
+        console.error('Response headers:', Object.fromEntries(response.headers.entries()))
+        console.error('Response text:', await response.text())
+        // If JSON parsing fails, create a fallback error object
+        data = { error: 'Invalid server response' }
+      }
 
       if (response.ok) {
         setMembers(members.map(m => m.id === editingMember.id ? { 
@@ -262,18 +272,64 @@ export default function MembersPage() {
   }
 
   const handleDeleteMember = async (member: any) => {
-    const memberId = member.id || member
+    // Enhanced logging for debugging
+    console.log('🗑️ [FRONTEND] Delete member initiated');
+    console.log('📝 [FRONTEND] Member object:', member);
+    
+    // Get the full member ID - handle both truncated and full IDs
+    let memberId = member.originalId || member.id || member;
+    
+    // If ID is truncated (contains '...'), find the original full ID
+    if (typeof memberId === 'string' && memberId.includes('...')) {
+      console.log('🔍 [FRONTEND] Truncated ID detected, finding original...');
+      const originalMember = members.find(m => m.id.startsWith(memberId.substring(0, 8)));
+      if (originalMember) {
+        memberId = originalMember.id;
+        console.log('✅ [FRONTEND] Found original ID:', memberId);
+      } else {
+        console.error('❌ [FRONTEND] Could not find original member for truncated ID:', memberId);
+        toast.error('❌ ID Resolution Error', {
+          description: 'Could not resolve member ID for deletion',
+          duration: 3000
+        });
+        return;
+      }
+    }
+    
+    // Also try to find by originalId if available
+    if (!memberId && member.originalId) {
+      memberId = member.originalId;
+      console.log('🔄 [FRONTEND] Using originalId:', memberId);
+    }
+    
+    console.log('📝 [FRONTEND] Final Member ID:', memberId);
+    console.log('🔍 [FRONTEND] Member ID type:', typeof memberId);
+    console.log('📏 [FRONTEND] Member ID length:', memberId?.length);
+    
     const memberName = member.name || members.find(m => m.id === memberId)?.name || 'इस मेंबर'
+    
+    const url = `/api/client/members/${memberId}`;
+    console.log('🌐 [FRONTEND] Request URL:', url);
     
     if (confirm(`क्या आप ${memberName} को हटाना चाहते हैं?`)) {
       const apiCallId = logApiCall('/api/client/members/[memberId]', 'DELETE')
       
       try {
-        const response = await fetch(`/api/client/members/${memberId}`, {
-          method: 'DELETE'
+        console.log('📡 [FRONTEND] Sending DELETE request...');
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Include HTTP-only cookies
         })
 
+        console.log('📡 [FRONTEND] Response status:', response.status);
+        console.log('📡 [FRONTEND] Response headers:', Object.fromEntries(response.headers.entries()));
+
         const data = await response.json()
+        console.log('📡 [FRONTEND] Response data:', data);
 
         if (response.ok) {
           setMembers(members.filter(m => m.id !== memberId))
@@ -284,6 +340,7 @@ export default function MembersPage() {
           })
         } else {
           logApiComplete(apiCallId, false, data.error)
+          console.error('❌ [FRONTEND] Error response:', data);
           toast.error('❌ मेंबर हटाने में त्रुटि', {
             description: data.error || 'अज्ञात त्रुटि',
             duration: 3000
@@ -291,7 +348,7 @@ export default function MembersPage() {
         }
       } catch (error) {
         logApiComplete(apiCallId, false, String(error))
-        console.error('Failed to delete member:', error)
+        console.error('💥 [FRONTEND] Delete error:', error)
         toast.error('❌ नेटवर्क त्रुटि', {
           description: 'सर्वर से कनेक्ट नहीं हो पा रहा',
           duration: 3000

@@ -144,12 +144,15 @@ export default function MembersTable({
               ) : (
                 paginatedData.map((member, index) => (
                   <TableRow 
-                    key={member.id || index} 
+                    key={member.originalId || member.id || index} 
                     className="hover:bg-muted/50 transition-colors"
                   >
                     <TableCell className="px-3 py-3">
                       <div className="font-medium truncate" title={member.name}>
                         {member.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        ID: {member.displayId || member.id}
                       </div>
                     </TableCell>
                     <TableCell className="px-3 py-3">

@@ -29,7 +29,7 @@ import {
 interface Member {
   id: string
   name: string
-  email: string
+  email?: string | null
   phone: string
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
   membershipId: string
@@ -217,7 +217,7 @@ const MembersTable = ({
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-3 w-3 text-slate-400" />
                         <span className="text-slate-600 dark:text-slate-400 truncate max-w-[150px]">
-                          {member.email}
+                          {member.email || 'No email'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">

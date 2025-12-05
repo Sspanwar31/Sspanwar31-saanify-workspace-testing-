@@ -124,17 +124,34 @@ export default function MembersPage() {
   }
 
   const handleUpdateMember = async (updatedMember: any) => {
-    // For now, just update local state
-    // TODO: Implement PUT API endpoint for updating members
-    setMembers(members.map(m => m.id === editingMember.id ? { 
-      ...editingMember, 
-      ...updatedMember, 
-      updatedAt: new Date().toISOString() 
-    } : m))
-    toast.success('✅ Member Updated', {
-      description: `${updatedMember.name} has been updated successfully`,
-      duration: 3000
-    })
+    try {
+      const response = await fetch(`/api/client/members/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMember)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMembers(members.map(m => m.id === editingMember.id ? data.member : m))
+        toast.success('✅ Member Updated', {
+          description: `${updatedMember.name} has been updated successfully`,
+          duration: 3000
+        })
+      } else {
+        const error = await response.json()
+        toast.error('Failed to update member', {
+          description: error.error || 'Unknown error',
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update member:', error)
+      toast.error('Failed to update member', {
+        description: 'Network error occurred',
+        duration: 3000
+      })
+    }
     setEditingMember(null)
     setIsAddModalOpen(false)
   }
@@ -142,13 +159,31 @@ export default function MembersPage() {
   const handleDeleteMember = async (memberId: string) => {
     const member = members.find(m => m.id === memberId)
     if (confirm(`Are you sure you want to remove ${member?.name}?`)) {
-      // For now, just update local state
-      // TODO: Implement DELETE API endpoint for members
-      setMembers(members.filter(m => m.id !== memberId))
-      toast.success('✅ Member Removed', {
-        description: `${member?.name} has been removed successfully`,
-        duration: 3000
-      })
+      try {
+        const response = await fetch(`/api/client/members/${memberId}`, {
+          method: 'DELETE'
+        })
+
+        if (response.ok) {
+          setMembers(members.filter(m => m.id !== memberId))
+          toast.success('✅ Member Removed', {
+            description: `${member?.name} has been removed successfully`,
+            duration: 3000
+          })
+        } else {
+          const error = await response.json()
+          toast.error('Failed to remove member', {
+            description: error.error || 'Unknown error',
+            duration: 3000
+          })
+        }
+      } catch (error) {
+        console.error('Failed to delete member:', error)
+        toast.error('Failed to remove member', {
+          description: 'Network error occurred',
+          duration: 3000
+        })
+      }
     }
   }
 

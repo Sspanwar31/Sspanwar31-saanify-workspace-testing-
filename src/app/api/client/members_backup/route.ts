@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       address: member.address || '',
       createdAt: member.createdAt,
       updatedAt: member.updatedAt,
-      membershipId: 'MEM' + member.id.slice(-6).toUpperCase(),
+      membershipId: `MEM${member.id.slice(-6).toUpperCase()}`,
       status: 'ACTIVE', // Default status
       lastLogin: member.updatedAt, // Using updatedAt as last login
       activeLoans: member._count.loans

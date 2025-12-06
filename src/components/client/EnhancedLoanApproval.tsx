@@ -6,14 +6,12 @@ import { toast } from 'sonner'
 import { 
   RefreshCw, 
   CheckCircle, 
-  XCircle, 
   AlertTriangle,
   IndianRupee,
   Clock,
   User,
   Calendar,
   Wallet,
-  ArrowRight,
   TrendingUp
 } from 'lucide-react'
 
@@ -48,7 +46,7 @@ interface LoanRequest {
 
 interface PassbookEntry {
   mode: string
-  deposit?: number  // Main deposit field from API
+  deposit?: number
   depositAmount?: number 
   amount?: number
   date?: string
@@ -82,7 +80,7 @@ export default function EnhancedLoanApproval() {
         toast.error('Failed to fetch pending requests')
       }
     } catch (error) {
-      console.error(error)
+      // Error logged silently to avoid console spam
       toast.error('Error fetching requests')
     } finally {
       setLoading(false)
@@ -93,46 +91,40 @@ export default function EnhancedLoanApproval() {
   const fetchMemberTotalDeposit = async (memberId: string) => {
     setPassbookLoading(true)
     try {
-      console.log("🔍 DEBUG: Fetching deposit total for memberId:", memberId)
+      // Primary API Call
       const response = await fetch(`/api/client/members/${memberId}/deposit-total`)
       
       if (response.ok) {
         const data = await response.json()
-        console.log("🔍 DEBUG: Deposit API response:", data)
         if (data.success) {
-          // Set the member passbook with deposit data for compatibility
-          // Use the totalDeposit directly from API response
-          console.log("🔍 DEBUG: Using totalDeposit from API:", data.totalDeposit)
           setMemberPassbook([{
             mode: 'DEPOSIT',
-            deposit: data.totalDeposit, // Use API calculated total
+            deposit: data.totalDeposit,
             date: new Date().toISOString().split('T')[0]
           }])
+          return; // Exit if successful
         }
-      } else {
-        console.log("🔍 DEBUG: Deposit API failed, trying fallback with individual member API")
-        // Fallback to individual member API if deposit-total fails
-        const response2 = await fetch(`/api/client/members/${memberId}`)
-        if(response2.ok) {
-           const data2 = await response2.json()
-           console.log("🔍 DEBUG: Fallback member API response:", data2)
-           if (data2.totalDeposits !== undefined) {
-             setMemberPassbook([{
-               mode: 'DEPOSIT',
-               deposit: data2.totalDeposits,
-               date: new Date().toISOString().split('T')[0]
-             }])
-           }
-        }
+      } 
+      
+      // Fallback 1: Individual member API if deposit-total fails
+      const response2 = await fetch(`/api/client/members/${memberId}`)
+      if(response2.ok) {
+          const data2 = await response2.json()
+          if (data2.totalDeposits !== undefined) {
+            setMemberPassbook([{
+              mode: 'DEPOSIT',
+              deposit: data2.totalDeposits,
+              date: new Date().toISOString().split('T')[0]
+            }])
+          }
       }
+      
     } catch (error) {
-      console.error("🔍 DEBUG: Error fetching member deposit", error)
-      // Fallback to individual member API
+      // Fallback 2: Catch block fallback
       try {
         const response2 = await fetch(`/api/client/members/${memberId}`)
         if(response2.ok) {
            const data2 = await response2.json()
-           console.log("🔍 DEBUG: Emergency fallback response:", data2)
            if (data2.totalDeposits !== undefined) {
              setMemberPassbook([{
                mode: 'DEPOSIT',
@@ -142,7 +134,7 @@ export default function EnhancedLoanApproval() {
            }
         }
       } catch (fallbackError) {
-        console.error("🔍 DEBUG: Fallback also failed:", fallbackError)
+        // Silent failure to keep console clean
       }
     } finally {
       setPassbookLoading(false)
@@ -225,30 +217,20 @@ export default function EnhancedLoanApproval() {
     }).format(amount)
   }
 
-  // --- FIXED CALCULATIONS (Using correct 'deposit' field from API) ---
+  // --- FIXED CALCULATIONS (Cleaned logs) ---
   const totalDeposits = memberPassbook
     .filter((entry) => {
       const mode = (entry.mode || '').toLowerCase()
-      return mode.includes('deposit') && !mode.includes('interest') // safer check
+      return mode.includes('deposit') && !mode.includes('interest')
     })
     .reduce((sum, entry) => {
-      // Use the 'deposit' field from API response first, then fallback to other fields
       const val = Number(entry.deposit) || Number(entry.depositAmount) || Number(entry.amount) || 0
       return sum + val
     }, 0)
   
-  console.log("🔍 DEBUG: memberPassbook:", memberPassbook)
-  console.log("🔍 DEBUG: calculated totalDeposits:", totalDeposits)
-  
   const limitAmount = totalDeposits * 0.8
   const isLimitExceeded = finalLoanAmount > limitAmount
   const canApprove = !isLimitExceeded || overrideEnabled
-  
-  console.log("🔍 DEBUG: finalLoanAmount:", finalLoanAmount)
-  console.log("🔍 DEBUG: limitAmount (80%):", limitAmount)
-  console.log("🔍 DEBUG: isLimitExceeded:", isLimitExceeded)
-  console.log("🔍 DEBUG: overrideEnabled:", overrideEnabled)
-  console.log("🔍 DEBUG: canApprove:", canApprove)
 
   return (
     <div className="space-y-6 p-6">

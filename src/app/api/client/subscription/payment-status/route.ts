@@ -3,30 +3,6 @@ import { db } from '@/lib/db'
 import jwt from 'jsonwebtoken'
 import { encodeImageUrl } from '@/lib/screenshot-utils'
 
-// Helper function to properly encode URL
-function encodeImageUrl(url: string | null): string | null {
-  if (!url) return null
-  
-  // If URL already has correct format, just ensure proper encoding
-  if (url.startsWith('/uploads/payment-proofs/')) {
-    // Extract filename and encode it properly
-    const parts = url.split('/')
-    const filename = parts[parts.length - 1]
-    const encodedFilename = encodeURIComponent(filename)
-    return `/uploads/payment-proofs/${encodedFilename}`
-  }
-  
-  // If URL is already a full HTTP URL, return as-is
-  if (url.startsWith('http')) {
-    return url
-  }
-  
-  // Extract filename and construct proper path with encoding
-  const fileName = url.split('/').pop()
-  const encodedFileName = encodeURIComponent(fileName || '')
-  return `/uploads/payment-proofs/${encodedFileName}`
-}
-
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 // Helper function to verify JWT token

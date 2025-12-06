@@ -33,13 +33,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update loan status to rejected
-    const updatedLoan = await db.loan.update({
-      where: { id: loanId },
-      data: {
-        status: 'rejected',
-        updatedAt: new Date()
-      }
+    // Delete the loan request completely instead of just updating status
+    // This prevents rejected loans from appearing in the loans table
+    await db.loan.delete({
+      where: { id: loanId }
     });
 
     // Create proper notification for member
@@ -59,8 +56,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Loan request rejected successfully',
-      loan: updatedLoan
+      message: 'Loan request rejected and removed successfully'
     });
 
   } catch (error) {

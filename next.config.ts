@@ -8,11 +8,6 @@ const nextConfig: NextConfig = {
   },
   // Enable React strict mode for better development experience
   reactStrictMode: true,
-  // Remove webpack watch options to allow normal HMR functionality
-  eslint: {
-    // 构建时忽略ESLint错误
-    ignoreDuringBuilds: true,
-  },
   // Add rewrites to serve uploaded files
   async rewrites() {
     return [

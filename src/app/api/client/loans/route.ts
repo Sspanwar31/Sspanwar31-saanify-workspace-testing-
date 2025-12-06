@@ -3,8 +3,13 @@ import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all loans with member information
+    // Get only approved and active loans (exclude rejected and pending loans)
     const loans = await db.loan.findMany({
+      where: {
+        status: {
+          in: ['active', 'approved', 'completed']
+        }
+      },
       include: {
         member: {
           select: {

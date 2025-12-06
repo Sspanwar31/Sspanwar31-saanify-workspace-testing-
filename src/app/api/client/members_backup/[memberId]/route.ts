@@ -19,11 +19,33 @@ export async function GET(
     // Get member's current balance from passbook
     const memberPassbook = await db.passbookEntry.findMany({
       where: { memberId },
+      select: {
+        depositAmount: true,
+        loanInstallment: true,
+        interestAuto: true,
+        fineAuto: true,
+        mode: true,
+        loanRequestId: true,
+        transactionDate: true
+      },
       orderBy: { transactionDate: 'asc' }
     });
 
-    // Calculate total deposits (sum of all deposits only)
-    const totalDeposits = memberPassbook.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
+    // Calculate total deposits (excluding loan disbursements)
+    const totalDeposits = memberPassbook.reduce((sum, entry) => {
+      // Only count actual deposits, not loan disbursements
+      // Exclude entries that have loanRequestId (loan-related entries)
+      // Exclude entries with mode indicating loan disbursement
+      const isLoanRelated = entry.loanRequestId !== null || 
+                           entry.mode.toLowerCase().includes('loan') ||
+                           entry.mode.toLowerCase().includes('disbursal') ||
+                           entry.mode.toLowerCase().includes('approved');
+      
+      if (!isLoanRelated && entry.depositAmount && entry.depositAmount > 0) {
+        return sum + entry.depositAmount;
+      }
+      return sum;
+    }, 0);
     
     // Calculate current balance (deposits - installments + interest + fines)
     let currentBalance = 0;

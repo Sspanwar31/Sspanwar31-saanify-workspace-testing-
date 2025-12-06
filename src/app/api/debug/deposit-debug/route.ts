@@ -22,15 +22,45 @@ export async function GET(request: NextRequest) {
     // Get member's passbook entries
     const memberPassbook = await db.passbookEntry.findMany({
       where: { memberId },
+      select: {
+        depositAmount: true,
+        loanInstallment: true,
+        interestAuto: true,
+        fineAuto: true,
+        mode: true,
+        loanRequestId: true,
+        transactionDate: true,
+        description: true,
+        id: true
+      },
       orderBy: { transactionDate: 'asc' }
     });
 
-    // Calculate total deposits (same logic as members API)
-    const totalDeposits = memberPassbook.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
+    // Calculate total deposits (excluding loan disbursements)
+    const totalDeposits = memberPassbook.reduce((sum, entry) => {
+      // Only count actual deposits, not loan disbursements
+      // Exclude entries that have loanRequestId (loan-related entries)
+      // Exclude entries with mode indicating loan disbursement
+      const isLoanRelated = entry.loanRequestId !== null || 
+                           entry.mode.toLowerCase().includes('loan') ||
+                           entry.mode.toLowerCase().includes('disbursal') ||
+                           entry.mode.toLowerCase().includes('approved');
+      
+      if (!isLoanRelated && entry.depositAmount && entry.depositAmount > 0) {
+        return sum + entry.depositAmount;
+      }
+      return sum;
+    }, 0);
 
-    // Show individual entries for debugging
+    // Show individual entries for debugging (excluding loan disbursements)
     const depositEntries = memberPassbook
-      .filter(entry => entry.depositAmount && entry.depositAmount > 0)
+      .filter(entry => {
+        const isLoanRelated = entry.loanRequestId !== null || 
+                             entry.mode.toLowerCase().includes('loan') ||
+                             entry.mode.toLowerCase().includes('disbursal') ||
+                             entry.mode.toLowerCase().includes('approved');
+        return !isLoanRelated && entry.depositAmount && entry.depositAmount > 0;
+      })
       .map(entry => ({
         id: entry.id,
         date: entry.transactionDate,

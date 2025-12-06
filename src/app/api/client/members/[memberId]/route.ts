@@ -23,12 +23,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         depositAmount: true,
         loanInstallment: true,
         interestAuto: true,
-        fineAuto: true
+        fineAuto: true,
+        mode: true,
+        loanRequestId: true
       }
     });
 
-    // Calculate totals
-    const totalDeposits = passbookEntries.reduce((sum, entry) => sum + (entry.depositAmount || 0), 0);
+    // Calculate totals (excluding loan disbursements from deposits)
+    const totalDeposits = passbookEntries.reduce((sum, entry) => {
+      // Only count actual deposits, not loan disbursements
+      // Exclude entries that have loanRequestId (loan-related entries)
+      // Exclude entries with mode indicating loan disbursement
+      const isLoanRelated = entry.loanInstallment !== null && entry.loanInstallment > 0 ||
+                           entry.mode.toLowerCase().includes('loan') ||
+                           entry.mode.toLowerCase().includes('disbursal') ||
+                           entry.mode.toLowerCase().includes('approved');
+      
+      if (!isLoanRelated && entry.depositAmount && entry.depositAmount > 0) {
+        return sum + entry.depositAmount;
+      }
+      return sum;
+    }, 0);
     const totalInstallments = passbookEntries.reduce((sum, entry) => sum + (entry.loanInstallment || 0), 0);
     const totalInterest = passbookEntries.reduce((sum, entry) => sum + (entry.interestAuto || 0), 0);
     const totalFines = passbookEntries.reduce((sum, entry) => sum + (entry.fineAuto || 0), 0);

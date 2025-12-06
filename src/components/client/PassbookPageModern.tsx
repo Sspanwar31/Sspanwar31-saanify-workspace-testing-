@@ -193,7 +193,19 @@ export default function PassbookPageModern() {
   // Calculate statistics
   const stats = {
     total: passbookEntries.length,
-    totalDeposits: passbookEntries.reduce((sum, entry) => sum + entry.deposit, 0),
+    totalDeposits: passbookEntries.reduce((sum, entry) => {
+      // Only count actual deposits, not loan disbursements
+      // Exclude entries with mode indicating loan disbursement
+      const isLoanRelated = entry.mode.toLowerCase().includes('loan') ||
+                           entry.mode.toLowerCase().includes('disbursal') ||
+                           entry.mode.toLowerCase().includes('approved') ||
+                           entry.loanId !== null && entry.loanId !== undefined;
+      
+      if (!isLoanRelated && entry.deposit && entry.deposit > 0) {
+        return sum + entry.deposit;
+      }
+      return sum;
+    }, 0),
     totalInstallments: passbookEntries.reduce((sum, entry) => sum + entry.installment, 0),
     totalInterest: passbookEntries.reduce((sum, entry) => sum + entry.interest, 0),
   };

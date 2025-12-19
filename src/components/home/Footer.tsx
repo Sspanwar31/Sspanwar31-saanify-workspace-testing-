@@ -1,242 +1,146 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, MapPin, Linkedin, Twitter, Youtube, Facebook, Instagram, ArrowUpRight, ExternalLink, ShieldCheck } from 'lucide-react'
-import { toast } from 'sonner'
-import Link from 'next/link'
+import Link from 'next/link';
+import { Mail, MapPin, Twitter, Linkedin, Instagram } from 'lucide-react';
 
 export default function Footer() {
-  const handleLinkClick = (linkName: string, category: string) => {
-    toast.success(`🔗 ${linkName}`, {
-      description: `${category} section clicked!`,
-      duration: 3000,
-    })
-  }
-
-  const handleContactClick = (type: string, value: string) => {
-    if (type === 'email') {
-      toast.info("📧 Email", {
-        description: `Opening email client for ${value}`,
-        duration: 3000,
-      })
-    } else if (type === 'location') {
-      toast.info("📍 Location", {
-        description: `Office located in ${value}`,
-        duration: 3000,
-      })
+  
+  // Smooth Scroll Helper
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
-  }
-
-  const handleSocialClick = (platform: string) => {
-    toast.success(`🌐 ${platform}`, {
-      description: `Follow us on ${platform} for updates!`,
-      duration: 3000,
-    })
-  }
-
-  const handleScrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    toast.success("⬆️ Back to Top", {
-      description: "Welcome back to top!",
-      duration: 2000,
-    })
-  }
-
-  const footerLinks = {
-    product: [
-      { name: "Features", href: "#features" },
-      { name: "Pricing", href: "#pricing" },
-      { name: "Demo", href: "/login" }
-    ],
-    company: [
-      { name: "About Us", href: "#" },
-      { name: "Contact", href: "#" },
-      { name: "Careers", href: "#" },
-      { name: "Blog", href: "#" }
-    ],
-    support: [
-      { name: "Help Center", href: "/contact" },
-      { name: "Documentation", href: "#" },
-      { name: "API Status", href: "#" }
-    ],
-    legal: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Admin Login", href: "/login" }
-    ]
-  }
-
-  const socialLinks = [
-    { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Youtube, href: "#", label: "YouTube" },
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Instagram, href: "#", label: "Instagram" }
-  ]
+  };
 
   return (
-    <>
-      {/* Wave SVG Divider */}
-      <div className="relative bg-muted">
-        <svg 
-          viewBox="0 0 1440 320" 
-          className="w-full h-20 fill-current text-muted"
-          preserveAspectRatio="none"
-        >
-          <path 
-            fillOpacity="1" 
-            d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,106.7C1248,96,1344,96,1392,96L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-          />
-        </svg>
-      </div>
+    <footer className="bg-slate-950 text-slate-300 py-16 border-t border-slate-800">
+      <div className="container mx-auto px-6 max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
 
-      <footer className="bg-gray-50 border-t border-gray-200 text-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Main Footer Content */}
-          <div className="py-16">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-              {/* Brand & Contact */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-                className="lg:col-span-2"
-              >
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Saanify</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed">
-                    Premium financial management solution for modern cooperative societies. 
-                    Streamline operations, enhance compliance, and drive growth.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <motion.div 
-                    className="flex items-center text-slate-600 cursor-pointer hover:text-blue-600 transition-colors duration-200"
-                    onClick={() => handleContactClick('email', 'contact@saanify.com')}
-                    whileHover={{ x: 5 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Mail className="h-4 w-4 mr-3 text-blue-600" />
-                    <span className="text-sm">contact@saanify.com</span>
-                    <ArrowUpRight className="h-3 w-3 ml-auto" />
-                  </motion.div>
-                  <motion.div 
-                    className="flex items-center text-slate-600 cursor-pointer hover:text-blue-600 transition-colors duration-200"
-                    onClick={() => handleContactClick('location', 'Mumbai, India')}
-                    whileHover={{ x: 5 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <MapPin className="h-4 w-4 mr-3 text-blue-600" />
-                    <span className="text-sm">Mumbai, India</span>
-                    <ArrowUpRight className="h-3 w-3 ml-auto" />
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {/* Footer Links */}
-              {Object.entries(footerLinks).map(([category, links], index) => (
-                <motion.div
-                  key={category}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 * index }}
-                  viewport={{ once: true }}
-                >
-                  <h4 className="text-lg font-semibold text-slate-900 mb-4 capitalize">
-                    {category === 'product' ? 'Product' : category === 'company' ? 'Company' : category === 'support' ? 'Support' : 'Legal'}
-                  </h4>
-                  <ul className="space-y-2">
-                    {links.map((link, linkIndex) => (
-                      <motion.li 
-                        key={linkIndex}
-                        whileHover={{ x: 5 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {link.name === "Admin Login" ? (
-                          <Link
-                            href={link.href}
-                            className="text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors duration-200 flex items-center group"
-                          >
-                            <ShieldCheck className="h-3 w-3 mr-1" />
-                            {link.name}
-                            <ArrowUpRight className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                          </Link>
-                        ) : link.href.startsWith('#') ? (
-                          <button
-                            onClick={() => handleLinkClick(link.name, category)}
-                            className="text-slate-600 hover:text-blue-600 text-sm transition-colors duration-200 flex items-center group"
-                          >
-                            {link.name}
-                            <ArrowUpRight className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                          </button>
-                        ) : (
-                          <Link
-                            href={link.href}
-                            className="text-slate-600 hover:text-blue-600 text-sm transition-colors duration-200 flex items-center group"
-                          >
-                            {link.name}
-                            <ArrowUpRight className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                          </Link>
-                        )}
-                      </motion.li>
-                    ))}
-                  </ul>
-                </motion.div>
-              ))}
+          {/* COLUMN 1: BRAND INFO */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                S
+              </div>
+              <span className="text-2xl font-bold text-white">Saanify</span>
+            </div>
+            <p className="text-sm leading-relaxed text-slate-400">
+              Premium financial management solution for modern cooperative societies. 
+              Streamline operations, enhance compliance, and drive growth.
+            </p>
+            
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-3 text-sm hover:text-white transition-colors">
+                <Mail className="w-4 h-4 text-blue-500" />
+                <a href="mailto:contact@saanify.com">contact@saanify.com</a>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="w-4 h-4 text-blue-500" />
+                <span>Mumbai, India</span>
+              </div>
             </div>
           </div>
 
-          {/* Social Links & Copyright */}
-          <div className="border-t border-slate-200 py-8">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-                className="text-slate-600 text-sm"
-              >
-                ©2025 Saanify. All rights reserved. | Stay updated with our latest features and releases.
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-                className="flex space-x-4"
-              >
-                {socialLinks.map((social, index) => (
-                  <motion.button
-                    key={index}
-                    onClick={() => handleSocialClick(social.label)}
-                    aria-label={social.label}
-                    className="w-10 h-10 bg-slate-200 hover:bg-blue-600 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 group"
-                    whileHover={{ y: -5, rotate: 360 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <social.icon className="h-5 w-5 text-slate-600 group-hover:text-white transition-colors duration-200" />
-                  </motion.button>
-                ))}
-                
-                {/* Back to Top Button */}
-                <motion.button
-                  onClick={handleScrollToTop}
-                  aria-label="Back to top"
-                  className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-                  whileHover={{ y: -5 }}
-                  whileTap={{ scale: 0.9 }}
+          {/* COLUMN 2: PRODUCT (Active Scroll Links) */}
+          <div>
+            <h3 className="text-white font-bold mb-6">Product</h3>
+            <ul className="space-y-4 text-sm">
+              <li>
+                <a 
+                  href="#features" 
+                  onClick={(e) => handleScroll(e, 'features')}
+                  className="hover:text-blue-400 transition-colors cursor-pointer"
                 >
-                  <ArrowUpRight className="h-5 w-5 text-white" />
-                </motion.button>
-              </motion.div>
+                  Features
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#pricing" 
+                  onClick={(e) => handleScroll(e, 'pricing')}
+                  className="hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  Pricing
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#testimonials" 
+                  onClick={(e) => handleScroll(e, 'testimonials')}
+                  className="hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  Success Stories
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* COLUMN 3: COMPANY (Active Scroll Links) */}
+          <div>
+            <h3 className="text-white font-bold mb-6">Company</h3>
+            <ul className="space-y-4 text-sm">
+              <li>
+                <a 
+                  href="#about" 
+                  onClick={(e) => handleScroll(e, 'about')}
+                  className="hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#contact" 
+                  onClick={(e) => handleScroll(e, 'contact')}
+                  className="hover:text-blue-400 transition-colors cursor-pointer"
+                >
+                  Contact Support
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* COLUMN 4: LEGAL (Refund Policy Removed) */}
+          <div>
+            <h3 className="text-white font-bold mb-6">Legal</h3>
+            <ul className="space-y-4 text-sm">
+              <li>
+                <Link href="/privacy" className="hover:text-blue-400 transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-blue-400 transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        {/* BOTTOM BAR */}
+        <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs text-slate-500">
+            © {new Date().getFullYear()} Saanify. All rights reserved.
+          </p>
+          
+          <div className="flex gap-4">
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+               <Twitter className="w-4 h-4" />
+            </div>
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+               <Linkedin className="w-4 h-4" />
+            </div>
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+               <Instagram className="w-4 h-4" />
             </div>
           </div>
         </div>
-      </footer>
-    </>
-  )
+      </div>
+    </footer>
+  );
 }

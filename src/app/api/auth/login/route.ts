@@ -1,0 +1,135 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+import * as jwt from "jsonwebtoken"
+import { z } from 'zod'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+const generateTokens = (user: any) => {
+  const payload = { 
+    userId: user.id, 
+    email: user.email, 
+    role: user.role,
+    societyAccountId: user.societyAccountId,
+    subscriptionStatus: user.subscriptionStatus,
+    plan: user.plan,
+    expiryDate: user.expiryDate
+  }
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' })
+  const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' })
+  return { accessToken, refreshToken }
+}
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+  userType: z.enum(['client', 'admin']).optional(),
+  rememberMe: z.boolean().optional()
+})
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    console.log("1. Login Attempt for:", body.email); // LOG
+
+    const validatedData = loginSchema.parse(body)
+
+    // 1. Find User with subscription info
+    const user = await db.user.findUnique({
+      where: { email: validatedData.email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+        societyAccountId: true,
+        subscriptionStatus: true,
+        plan: true,
+        expiryDate: true,
+        trialEndsAt: true,
+        isActive: true
+      }
+    })
+
+    if (!user) {
+      console.log("❌ Error: User Not Found in DB"); // LOG
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+    
+    console.log("2. User Found:", { role: user.role, id: user.id }); // LOG
+
+    // 2. Check Password
+    const isPasswordValid = await bcrypt.compare(validatedData.password, user.password || "")
+    
+    if (!isPasswordValid) {
+      console.log("❌ Error: Password Mismatch"); // LOG
+      console.log("   Input Password:", validatedData.password); 
+      console.log("   DB Hash (First 10 chars):", user.password?.substring(0, 10));
+      return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+    }
+
+    console.log("3. Password Matched ✅"); // LOG
+
+    // 3. Check Role
+    if (validatedData.userType === 'admin') {
+       if (user.role !== 'ADMIN' && user.role !== 'ADMIN') {
+          console.log("❌ Error: Role Mismatch. Required Admin, Got:", user.role); // LOG
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+       }
+    }
+
+    // 4. Success
+    console.log("4. Login Successful! Generating Tokens..."); // LOG
+    
+    // Update Last Login (Ignore error if any)
+    try { await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }) } catch(e) {}
+
+    const tokens = generateTokens(user)
+    
+    // Determine redirect URL based on user role
+    let redirectUrl = '/client/dashboard' // default for clients
+    if (user.role === 'ADMIN') {
+      redirectUrl = '/ADMIN'
+    }
+    
+    const response = NextResponse.json({
+      success: true,
+      message: 'Login successful',
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name, 
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        plan: user.plan,
+        expiryDate: user.expiryDate
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      redirectUrl
+    })
+
+    response.cookies.set('auth-token', tokens.accessToken, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      sameSite: 'lax', 
+      maxAge: 15 * 60,
+      path: '/'
+    })
+    response.cookies.set('refresh-token', tokens.refreshToken, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      sameSite: 'lax', 
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/'
+    })
+
+    return response
+
+  } catch (error) {
+    console.error('🔥 Login Crash:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "projectName": "saanify-workspace",
+  "version": "1.0.0",
+  "backup": {
+    "include": [
+      "src/**/*",
+      "public/**/*",
+      "package.json",
+      "package-lock.json",
+      "tailwind.config.js",
+      "next.config.js",
+      "tsconfig.json",
+      ".eslintrc.json",
+      "prisma/**/*",
+      "db/**/*",
+      "server.ts",
+      "README.md",
+      ".env.example",
+      ".env",
+      "backup-system/**/*"
+    ],
+    "exclude": [
+      "node_modules/**/*",
+      ".next/**/*",
+      "dist/**/*",
+      ".git/**/*",
+      "*.log",
+      ".DS_Store",
+      "Thumbs.db",
+      ".env.local",
+      ".env.*.local",
+      ".github/**/*",
+      ".gitignore",
+      "coverage/**/*",
+      ".nyc_output/**/*",
+      ".vscode/**/*",
+      ".idea/**/*",
+      "*.tmp",
+      "*.temp",
+      "temp/**/*",
+      "tmp/**/*"
+    ],
+    "encrypt": [
+      ".env"
+    ],
+    "specialHandling": {
+      "githubRoutes": {
+        "include": [
+          "src/app/api/**/*",
+          "src/lib/**/*"
+        ],
+        "excludeCredentials": true
+      }
+    }
+  },
+  "compression": {
+    "enabled": true,
+    "format": "tar.gz",
+    "level": 6
+  },
+  "restore": {
+    "autoInstall": true,
+    "autoMigrate": true,
+    "autoStart": true,
+    "requireUserInput": [
+      "GITHUB_TOKEN"
+    ]
+  },
+  "storage": {
+    "local": {
+      "enabled": true,
+      "path": "./backups",
+      "maxBackups": 10
+    },
+    "cloud": {
+      "enabled": false,
+      "provider": "aws-s3",
+      "config": {
+        "bucket": "",
+        "region": "",
+        "accessKey": "",
+        "secretKey": ""
+      }
+    }
+  }
+}

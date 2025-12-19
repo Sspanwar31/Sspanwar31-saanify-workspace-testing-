@@ -1,0 +1,535 @@
+src
+|-- app
+|   |-- New\ Text\ Document.txt
+|   |-- admin
+|   |   |-- clients
+|   |   |   `-- [id]
+|   |   |       `-- page.tsx
+|   |   |-- dashboard
+|   |   |   `-- page.tsx
+|   |   |-- layout.tsx
+|   |   |-- layout.tsx.backup
+|   |   |-- page.tsx
+|   |   |-- subscription-plans
+|   |   |   `-- page.tsx
+|   |   `-- subscriptions
+|   |       `-- verify
+|   |           |-- page.tsx
+|   |           |-- page.tsx.bak3
+|   |           `-- page.tsx.bak4
+|   |-- analytics
+|   |   `-- page.tsx
+|   |-- api
+|   |   |-- admin
+|   |   |   |-- analytics
+|   |   |   |   `-- route.ts
+|   |   |   |-- automation
+|   |   |   |   |-- backup
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- connection-test
+|   |   |   |   |   `-- route.ts.bak
+|   |   |   |   |-- health-check
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- log-rotation
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- restore
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- route.ts
+|   |   |   |   |-- run
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- schema-sync
+|   |   |   |   |   `-- route.ts.bak
+|   |   |   |   |-- security-scan
+|   |   |   |   |   `-- route.ts
+|   |   |   |   `-- status
+|   |   |   |       `-- route.ts
+|   |   |   |-- client-subscriptions
+|   |   |   |   `-- route.ts
+|   |   |   |-- clients
+|   |   |   |   |-- [id]
+|   |   |   |   |   |-- renew
+|   |   |   |   |   |   `-- route.ts
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- check-email
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- create-demo
+|   |   |   |   |   `-- route.ts
+|   |   |   |   `-- route.ts
+|   |   |   |-- subscription-plans
+|   |   |   |   `-- route.ts
+|   |   |   |-- subscriptions
+|   |   |   |   |-- expiry
+|   |   |   |   |   `-- route.ts
+|   |   |   |   |-- payment-proofs
+|   |   |   |   |   `-- route.ts
+|   |   |   |   `-- route.ts
+|   |   |   `-- users
+|   |   |       `-- route.ts
+|   |   |-- ai
+|   |   |   `-- chat
+|   |   |       `-- route.ts
+|   |   |-- auth
+|   |   |   |-- check-session
+|   |   |   |   `-- route.ts
+|   |   |   |-- create-demo-users
+|   |   |   |   `-- route.ts
+|   |   |   |-- forgot-password
+|   |   |   |   `-- route.ts
+|   |   |   |-- login
+|   |   |   |   `-- route.ts
+|   |   |   |-- logout
+|   |   |   |   `-- route.ts
+|   |   |   |-- refresh
+|   |   |   |   `-- route.ts
+|   |   |   |-- signin
+|   |   |   |   `-- route.ts
+|   |   |   |-- signup
+|   |   |   |   `-- route.ts
+|   |   |   |-- supabase-signin
+|   |   |   |   `-- route.ts
+|   |   |   |-- supabase-signup
+|   |   |   |   `-- route.ts
+|   |   |   `-- unified-login
+|   |   |       `-- route.ts
+|   |   |-- backup
+|   |   |   `-- route.ts
+|   |   |-- check-and-create-admin
+|   |   |   `-- route.ts
+|   |   |-- check-supabase
+|   |   |   `-- route.ts
+|   |   |-- check-users
+|   |   |   `-- route.ts
+|   |   |-- client
+|   |   |   |-- financial
+|   |   |   |   `-- route.ts
+|   |   |   |-- profile
+|   |   |   |   `-- route.ts
+|   |   |   `-- user-info
+|   |   |       `-- route.ts
+|   |   |-- clients
+|   |   |   |-- [id]
+|   |   |   |   `-- route.ts
+|   |   |   |-- check-email
+|   |   |   |   `-- route.ts
+|   |   |   `-- route.ts
+|   |   |-- create-admin-user
+|   |   |   `-- route.ts
+|   |   |-- create-demo-client
+|   |   |   `-- route.ts
+|   |   |-- create-demo-clients
+|   |   |   `-- route.ts
+|   |   |-- customers
+|   |   |   `-- export
+|   |   |       `-- route.ts
+|   |   |-- dashboard
+|   |   |   `-- client
+|   |   |       |-- financial
+|   |   |       |   `-- route.ts
+|   |   |       |-- profile
+|   |   |       |   `-- route.ts
+|   |   |       `-- user-info
+|   |   |           `-- route.ts
+|   |   |-- database
+|   |   |   |-- sync-schema
+|   |   |   |   `-- route.ts
+|   |   |   `-- tables
+|   |   |       `-- route.ts
+|   |   |-- debug
+|   |   |   `-- git-status
+|   |   |       `-- route.ts
+|   |   |-- debug-users
+|   |   |   `-- route.ts
+|   |   |-- fix-client-role
+|   |   |   `-- route.ts
+|   |   |-- fix-test-user
+|   |   |   `-- route.ts
+|   |   |-- force-create-user
+|   |   |   `-- route.ts
+|   |   |-- github
+|   |   |   |-- actions
+|   |   |   |   `-- route.ts
+|   |   |   |-- analytics
+|   |   |   |   `-- route.ts
+|   |   |   |-- backup
+|   |   |   |   `-- route.ts
+|   |   |   |-- files
+|   |   |   |   `-- route.ts
+|   |   |   |-- history
+|   |   |   |   `-- route.ts
+|   |   |   |-- issues
+|   |   |   |   `-- route.ts
+|   |   |   |-- push
+|   |   |   |   `-- route.ts
+|   |   |   |-- repos
+|   |   |   |   `-- route.ts
+|   |   |   |-- restore
+|   |   |   |   `-- route.ts
+|   |   |   |-- validate
+|   |   |   |   `-- route.ts
+|   |   |   `-- webhook
+|   |   |       `-- route.ts
+|   |   |-- github-integration-component
+|   |   |   `-- route.ts
+|   |   |-- glm
+|   |   |   |-- deploy
+|   |   |   |   `-- route.ts
+|   |   |   |-- env-sync
+|   |   |   |   `-- route.ts
+|   |   |   |-- logs
+|   |   |   |   `-- route.ts
+|   |   |   |-- master
+|   |   |   |   `-- route.ts
+|   |   |   |-- migrate
+|   |   |   |   `-- route.ts
+|   |   |   |-- recovery
+|   |   |   |   `-- route.ts
+|   |   |   `-- ui-check
+|   |   |       `-- route.ts
+|   |   |-- health
+|   |   |   `-- route.ts
+|   |   |-- integrations
+|   |   |   |-- github
+|   |   |   |   `-- connect
+|   |   |   |       `-- route.ts
+|   |   |   `-- supabase
+|   |   |       |-- callback
+|   |   |       |   `-- route.ts
+|   |   |       |-- clear-tokens
+|   |   |       |   `-- route.ts
+|   |   |       |-- connect
+|   |   |       |   `-- route.ts
+|   |   |       |-- disconnect
+|   |   |       |   `-- route.ts
+|   |   |       |-- enable-local
+|   |   |       |   `-- route.ts
+|   |   |       |-- oauth
+|   |   |       |   `-- callback
+|   |   |       |       `-- route.ts
+|   |   |       |-- save
+|   |   |       |   `-- route.ts
+|   |   |       |-- setup
+|   |   |       |   `-- route.ts
+|   |   |       |-- status
+|   |   |       |   `-- route.ts
+|   |   |       `-- validate
+|   |   |           `-- route.ts
+|   |   |-- notifications
+|   |   |   |-- [id]
+|   |   |   |   `-- route.ts
+|   |   |   `-- route.ts
+|   |   |-- route.ts
+|   |   |-- run-migrations
+|   |   |   `-- route.ts
+|   |   |-- security-test
+|   |   |   `-- route.ts
+|   |   |-- setup
+|   |   |   `-- route.ts
+|   |   |-- simple-fix-client
+|   |   |   `-- route.ts
+|   |   |-- socket
+|   |   |   `-- route.ts
+|   |   |-- subscribe
+|   |   |   `-- request
+|   |   |       `-- route.ts
+|   |   |-- subscription
+|   |   |   `-- submit-payment
+|   |   |       `-- route.ts
+|   |   |-- supabase
+|   |   |   |-- auto-sync
+|   |   |   |   `-- route.ts
+|   |   |   `-- configure
+|   |   |       `-- route.ts
+|   |   |-- test-admin
+|   |   |   `-- route.ts
+|   |   |-- test-client-login
+|   |   |   `-- route.ts
+|   |   |-- test-security
+|   |   |   `-- route.ts
+|   |   |-- test-simple
+|   |   |   `-- route.ts
+|   |   `-- users
+|   |       |-- create-demo
+|   |       |   `-- route.ts
+|   |       |-- list
+|   |       |   `-- route.ts
+|   |       `-- signup-stats
+|   |           `-- route.ts
+|   |-- client
+|   |   |-- admin-fund
+|   |   |   `-- page.tsx
+|   |   |-- dashboard
+|   |   |   `-- page.tsx
+|   |   |-- expenses
+|   |   |   `-- page.tsx
+|   |   |-- layout.tsx
+|   |   |-- loans
+|   |   |   `-- page.tsx
+|   |   |-- maturity
+|   |   |   `-- page.tsx
+|   |   |-- members
+|   |   |   `-- page.tsx
+|   |   |-- passbook
+|   |   |   `-- page.tsx
+|   |   |-- reports
+|   |   |   `-- page.tsx
+|   |   `-- user-management
+|   |       `-- page.tsx
+|   |-- dashboard
+|   |   |-- admin
+|   |   |   `-- page.tsx
+|   |   |-- client
+|   |   |   |-- admin-fund
+|   |   |   |   `-- page.tsx
+|   |   |   |-- expenses
+|   |   |   |   `-- page.tsx
+|   |   |   |-- layout.tsx
+|   |   |   |-- loans
+|   |   |   |   `-- page.tsx
+|   |   |   |-- maturity
+|   |   |   |   `-- page.tsx
+|   |   |   |-- members
+|   |   |   |   `-- page.tsx
+|   |   |   |-- page.tsx
+|   |   |   |-- passbook
+|   |   |   |   `-- page.tsx
+|   |   |   |-- reports
+|   |   |   |   `-- page.tsx
+|   |   |   `-- user-management
+|   |   |       `-- page.tsx
+|   |   `-- page.tsx
+|   |-- error.tsx
+|   |-- favicon.ico
+|   |-- global-error.tsx
+|   |-- globals.css
+|   |-- layout.tsx
+|   |-- loading.tsx
+|   |-- loans
+|   |   `-- page.tsx
+|   |-- login
+|   |   |-- page.tsx
+|   |   `-- page.tsx.backup
+|   |-- login-unified
+|   |   `-- page.tsx
+|   |-- not-authorized
+|   |   `-- page.tsx
+|   |-- not-found.tsx
+|   |-- page.tsx
+|   |-- providers
+|   |   `-- SupabaseProvider.tsx
+|   |-- providers.tsx
+|   |-- setup
+|   |   `-- page.tsx
+|   |-- signup
+|   |   `-- page.tsx
+|   |-- subscription
+|   |   |-- middleware.ts.bak
+|   |   |-- page.tsx
+|   |   `-- page.tsx.bak2
+|   |-- support
+|   |   `-- page.tsx
+|   |-- test
+|   |   `-- page.tsx
+|   |-- test-auth
+|   |   `-- page.tsx
+|   |-- test-js
+|   |   `-- page.tsx
+|   `-- test-login
+|       `-- page.tsx
+|-- components
+|   |-- ErrorBoundary.tsx
+|   |-- IntegrationCard
+|   |   |-- GitHubCard.tsx
+|   |   `-- SupabaseCard.tsx
+|   |-- QuickBackup.tsx
+|   |-- SupabaseAutoSync.tsx
+|   |-- SupabaseToggle.tsx
+|   |-- activity-monitor.tsx
+|   |-- admin
+|   |   |-- ActionsDropdown.tsx
+|   |   |-- AddClientModal.tsx
+|   |   |-- AnalyticsCharts.tsx
+|   |   |-- AnalyticsOverview.tsx
+|   |   |-- ClientStats.tsx
+|   |   |-- ClientsTable.tsx
+|   |   |-- EnhancedActionsDropdown.tsx
+|   |   |-- EnhancedClientsTable.tsx
+|   |   |-- MembersManagement.tsx
+|   |   |-- PassbookManagement.tsx
+|   |   |-- SecureRevenueToggle.tsx
+|   |   `-- UnifiedAnalytics.tsx
+|   |-- admin-settings.tsx
+|   |-- ai
+|   |   `-- AIAssistant.tsx
+|   |-- analytics
+|   |   `-- SocietyAnalytics.tsx
+|   |-- analytics-dashboard.tsx
+|   |-- auth
+|   |   |-- AuthGuard.tsx
+|   |   |-- LoginModal.tsx
+|   |   `-- SupabaseProvider.tsx
+|   |-- client
+|   |   |-- ActionsDropdown.tsx
+|   |   |-- AddClientModal.tsx
+|   |   |-- AddEntryModal.tsx
+|   |   |-- AddExpenseModal.tsx
+|   |   |-- AddLoanModal.tsx
+|   |   |-- AddMemberModal.tsx
+|   |   |-- AddTransactionModal.tsx
+|   |   |-- AddUserModal.tsx
+|   |   |-- ClientDashboardStats.tsx
+|   |   |-- ClientNavigation.tsx
+|   |   |-- ClientStats.tsx
+|   |   |-- ClientsTable.tsx
+|   |   |-- DashboardCards.tsx
+|   |   |-- EditClientModal.tsx
+|   |   |-- EnhancedActionsDropdown.tsx
+|   |   |-- EnhancedClientsTable.tsx
+|   |   |-- ExpensesTable.tsx
+|   |   |-- IncomeExpenseChart.tsx
+|   |   |-- LoanPieChart.tsx
+|   |   |-- LoansManagement.tsx
+|   |   |-- LoansManagement_backup.tsx.bak
+|   |   |-- LoansTable.tsx
+|   |   |-- MembersManagement.tsx
+|   |   |-- MembersTable.tsx
+|   |   |-- PassbookManagement.tsx
+|   |   |-- PassbookTable.tsx
+|   |   |-- RecentActivity.tsx
+|   |   |-- ReportsTable.tsx
+|   |   |-- Sidebar.tsx
+|   |   |-- Topbar.tsx
+|   |   `-- UserTable.tsx
+|   |-- data-charts.tsx
+|   |-- error-boundary-new.tsx
+|   |-- error-boundary.tsx
+|   |-- github
+|   |   |-- GitHubIntegration.tsx
+|   |   |-- GitHubQuickActions.tsx
+|   |   |-- GitHubSetupGuide.tsx
+|   |   |-- GitHubToggle.tsx
+|   |   `-- OpenSourceCollaboration.tsx
+|   |-- home
+|   |   |-- CoreTools.tsx
+|   |   |-- Counters.tsx
+|   |   |-- Demo.tsx
+|   |   |-- Features.tsx
+|   |   |-- Footer.tsx
+|   |   |-- Hero.tsx
+|   |   |-- Hero.tsx.backup
+|   |   |-- Pricing.tsx
+|   |   `-- Testimonials.tsx
+|   |-- layout
+|   |   `-- Navbar.tsx
+|   |-- real-time-notifications.tsx
+|   |-- supabase
+|   |   |-- SupabaseOAuth.tsx
+|   |   `-- SupabaseToggle.tsx
+|   |-- theme-provider.tsx
+|   |-- theme-toggle.tsx
+|   `-- ui
+|       |-- RevenueToggle.tsx
+|       |-- accordion.tsx
+|       |-- alert-dialog.tsx
+|       |-- alert.tsx
+|       |-- animated-counter.tsx
+|       |-- aspect-ratio.tsx
+|       |-- avatar.tsx
+|       |-- badge.tsx
+|       |-- breadcrumb.tsx
+|       |-- button.tsx
+|       |-- calendar.tsx
+|       |-- card.tsx
+|       |-- carousel.tsx
+|       |-- chart.tsx
+|       |-- checkbox.tsx
+|       |-- collapsible.tsx
+|       |-- command.tsx
+|       |-- context-menu.tsx
+|       |-- dialog.tsx
+|       |-- drawer.tsx
+|       |-- dropdown-menu.tsx
+|       |-- form.tsx
+|       |-- hover-card.tsx
+|       |-- input-otp.tsx
+|       |-- input.tsx
+|       |-- label.tsx
+|       |-- loading-spinner.tsx
+|       |-- menubar.tsx
+|       |-- navigation-menu.tsx
+|       |-- pagination.tsx
+|       |-- popover.tsx
+|       |-- progress.tsx
+|       |-- radio-group.tsx
+|       |-- resizable.tsx
+|       |-- scroll-area.tsx
+|       |-- select.tsx
+|       |-- separator.tsx
+|       |-- sheet.tsx
+|       |-- sidebar.tsx
+|       |-- skeleton.tsx
+|       |-- slider.tsx
+|       |-- sonner.tsx
+|       |-- switch.tsx
+|       |-- table.tsx
+|       |-- tabs.tsx
+|       |-- textarea.tsx
+|       |-- toast.tsx
+|       |-- toaster.tsx
+|       |-- toggle-group.tsx
+|       |-- toggle.tsx
+|       `-- tooltip.tsx
+|-- data
+|   |-- expensesData.ts
+|   |-- loansData.ts
+|   |-- membersData.ts
+|   |-- passbookData.ts
+|   |-- reportsData.ts
+|   |-- transactionsData.ts
+|   `-- usersData.ts
+|-- hooks
+|   |-- use-mobile.ts
+|   |-- use-performance-optimization.ts
+|   |-- use-toast.ts
+|   `-- use-websocket.ts
+|-- lib
+|   |-- activity-tracker.ts
+|   |-- auth-helpers.ts
+|   |-- auth-middleware.ts
+|   |-- auth.ts
+|   |-- auth.ts.bak
+|   |-- automation-service.ts
+|   |-- backup-restore.ts
+|   |-- cron-runner.ts
+|   |-- db.ts
+|   |-- error-handler.ts
+|   |-- error-handling.ts
+|   |-- github.ts
+|   |-- notifications.ts
+|   |-- performance.ts
+|   |-- performance.ts.bak
+|   |-- real-supabase.ts
+|   |-- socket.ts
+|   |-- storage.ts
+|   |-- storage.ts.bak
+|   |-- supabase-auto-sync.ts
+|   |-- supabase-browser.ts
+|   |-- supabase-placeholder.js
+|   |-- supabase-service.ts
+|   |-- supabase-token-manager.ts
+|   |-- supabase.ts
+|   |-- supabaseClient.ts
+|   |-- supabaseSync.ts
+|   |-- token-manager.ts
+|   |-- tokens.ts
+|   |-- utils.ts
+|   `-- utils.ts.bak
+|-- middleware
+|   `-- supabase-auth.ts
+|-- middleware.ts
+|-- providers
+|   `-- auth-provider.tsx
+`-- types
+    `-- database.ts
+/F  [error opening dir]
+
+189 directories, 343 files

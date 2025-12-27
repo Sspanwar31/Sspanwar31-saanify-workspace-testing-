@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase-simple' // Supabase Connection Added
 import { 
   Calculator, 
   TrendingUp, 
@@ -8,7 +9,6 @@ import {
   Calendar,
   DollarSign,
   Percent,
-  Settings,
   CheckCircle,
   AlertTriangle,
   Clock
@@ -19,22 +19,189 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
-import { useClientStore, type MaturityData } from '@/lib/client/store'
-import { format } from 'date-fns'
+import { format, differenceInMonths } from 'date-fns'
+
+// Define the interface locally since we removed the store
+export interface MaturityData {
+  memberId: string
+  memberName: string
+  joinDate: string
+  tenure: number
+  monthsCompleted: number
+  monthlyDeposit: number
+  currentDeposit: number
+  targetDeposit: number
+  projectedInterest: number
+  settledInterest: number
+  isOverride: boolean
+  monthlyInterestShare: number
+  currentAccruedInterest: number
+  maturityAmount: number
+  outstandingLoan: number
+  netPayable: number
+  status: 'active' | 'matured'
+}
 
 export default function MaturityPage() {
   const [isMounted, setIsMounted] = useState(false)
+  
+  // Local State for Data
+  const [maturityData, setMaturityData] = useState<MaturityData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [clientId, setClientId] = useState<string | null>(null)
+
   const [editingMember, setEditingMember] = useState<string | null>(null)
   const [tempManualInterest, setTempManualInterest] = useState<string>('')
-  const { getMaturityData, setMaturityOverride, clearMaturityOverride } = useClientStore()
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
+  // --- 1. Fetch Data & Calculate Logic (Supabase) ---
+  const fetchData = async () => {
+    setLoading(true)
+    
+    // Get Client ID
+    let cid = clientId
+    if (!cid) {
+        const { data: clients } = await supabase.from('clients').select('id').limit(1)
+        if (clients && clients.length > 0) {
+            cid = clients[0].id
+            setClientId(cid)
+        }
+    }
+
+    if (cid) {
+        // Fetch Members with all financial details
+        const { data: members } = await supabase
+            .from('members')
+            .select('*')
+            .eq('client_id', cid)
+            .order('name', { ascending: true })
+
+        if (members) {
+            // Apply Maturity Logic (Same as your original store logic)
+            const calculatedData: MaturityData[] = members.map((m: any) => {
+                const joinDate = new Date(m.join_date || new Date())
+                const now = new Date()
+                
+                // Constants & Basic Data
+                const tenure = 36 // Default Tenure (Fixed as per your logic)
+                const monthsCompleted = Math.max(0, differenceInMonths(now, joinDate))
+                
+                // Financials from DB
+                const monthlyDeposit = m.monthly_deposit_amount || 0 // Individual amount from DB
+                const currentDeposit = m.total_deposits || 0
+                const outstandingLoan = m.outstanding_loan || 0
+
+                // Calculations
+                const targetDeposit = monthlyDeposit * tenure
+                const fullProjectedInterest = targetDeposit * 0.12 // 12% Logic
+
+                // Override Logic
+                const isOverride = m.maturity_is_override || false
+                const manualAmount = m.maturity_manual_amount || 0
+                
+                // Decision: Auto vs Manual
+                const settledInterest = isOverride ? manualAmount : fullProjectedInterest
+
+                // Accrual Logic
+                const monthlyInterestShare = settledInterest / tenure
+                const currentAccruedInterest = monthlyInterestShare * monthsCompleted
+
+                // Finals
+                const maturityAmount = targetDeposit + settledInterest
+                const netPayable = maturityAmount - outstandingLoan
+                
+                const status = monthsCompleted >= tenure ? 'matured' : 'active'
+
+                return {
+                    memberId: m.id,
+                    memberName: m.name,
+                    joinDate: m.join_date,
+                    tenure,
+                    monthsCompleted,
+                    monthlyDeposit,
+                    currentDeposit,
+                    targetDeposit,
+                    projectedInterest: fullProjectedInterest,
+                    settledInterest,
+                    isOverride,
+                    monthlyInterestShare,
+                    currentAccruedInterest,
+                    maturityAmount,
+                    outstandingLoan,
+                    netPayable,
+                    status
+                }
+            })
+            setMaturityData(calculatedData)
+        }
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  // --- Handlers (Connected to Supabase) ---
+
+  const handleToggleOverride = async (memberId: string, currentValue: number, isOverride: boolean) => {
+    if (isOverride) {
+      // Clear Override (Turn OFF)
+      // Optimistic Update
+      setMaturityData(prev => prev.map(d => d.memberId === memberId ? { ...d, isOverride: false } : d))
+      setEditingMember(null)
+      setTempManualInterest('')
+      
+      // DB Update
+      await supabase.from('members').update({ 
+          maturity_is_override: false,
+          maturity_manual_amount: 0 
+      }).eq('id', memberId)
+      
+      fetchData() // Re-fetch to apply auto-calculation logic
+    } else {
+      // Turn ON Override
+      // Optimistic Update
+      setMaturityData(prev => prev.map(d => d.memberId === memberId ? { ...d, isOverride: true } : d))
+      
+      // DB Update
+      await supabase.from('members').update({ maturity_is_override: true }).eq('id', memberId)
+      
+      setEditingMember(memberId)
+      setTempManualInterest(currentValue.toString())
+    }
+  }
+
+  const handleSaveManualInterest = async (memberId: string) => {
+    const amount = parseFloat(tempManualInterest)
+    if (!isNaN(amount) && amount >= 0) {
+      // Optimistic Update
+      setMaturityData(prev => prev.map(d => 
+        d.memberId === memberId ? { ...d, settledInterest: amount } : d
+      ))
+      setEditingMember(null)
+      setTempManualInterest('')
+
+      // DB Update
+      await supabase.from('members').update({ 
+          maturity_manual_amount: amount,
+          maturity_is_override: true 
+      }).eq('id', memberId)
+      
+      fetchData() // Recalculate dependent fields
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingMember(null)
+    setTempManualInterest('')
+  }
+
   // Prevent server render to avoid hydration mismatch
-  if (!isMounted) {
+  if (!isMounted || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -45,42 +212,10 @@ export default function MaturityPage() {
     )
   }
 
-  const maturityData = getMaturityData()
-
-  const handleToggleOverride = (memberId: string, currentValue: number, isOverride: boolean) => {
-    if (isOverride) {
-      clearMaturityOverride(memberId)
-    } else {
-      setMaturityOverride(memberId, currentValue)
-      setEditingMember(memberId)
-      setTempManualInterest(currentValue.toString())
-    }
-  }
-
-  const handleSaveManualInterest = (memberId: string) => {
-    const amount = parseFloat(tempManualInterest)
-    if (!isNaN(amount) && amount >= 0) {
-      setMaturityOverride(memberId, amount)
-      setEditingMember(null)
-      setTempManualInterest('')
-    }
-  }
-
-  const handleCancelEdit = () => {
-    setEditingMember(null)
-    setTempManualInterest('')
-  }
-
   // Calculate totals for overview cards
   const totalNetPayable = maturityData.reduce((sum, data) => sum + data.netPayable, 0)
   const totalCurrentDeposit = maturityData.reduce((sum, data) => sum + data.currentDeposit, 0)
-  const totalMonthlyDeposit = maturityData.reduce((sum, data) => sum + data.monthlyDeposit, 0)
-  const totalTargetDeposit = maturityData.reduce((sum, data) => sum + data.targetDeposit, 0)
   const totalMonthlyInterestLiability = maturityData.reduce((sum, data) => sum + data.monthlyInterestShare, 0)
-  const totalCurrentAccruedInterest = maturityData.reduce((sum, data) => sum + data.currentAccruedInterest, 0)
-  const totalFullProjectedInterest = maturityData.reduce((sum, data) => sum + data.projectedInterest, 0)
-  const totalOutstandingLoan = maturityData.reduce((sum, data) => sum + data.outstandingLoan, 0)
-  const maturedMembers = maturityData.filter(data => data.status === 'matured').length
 
   return (
     <div className="space-y-6">
@@ -265,7 +400,7 @@ export default function MaturityPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>{format(new Date(data.joinDate), 'dd-MMM-yyyy')}</span>
+                          <span>{data.joinDate ? format(new Date(data.joinDate), 'dd-MMM-yyyy') : 'N/A'}</span>
                         </div>
                       </TableCell>
 
@@ -332,7 +467,7 @@ export default function MaturityPage() {
                                 onClick={() => handleSaveManualInterest(data.memberId)}
                                 className="h-8 px-2"
                               >
-                                ✓
+                                <CheckCircle className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -340,7 +475,7 @@ export default function MaturityPage() {
                                 onClick={handleCancelEdit}
                                 className="h-8 px-2"
                               >
-                                ✕
+                                X
                               </Button>
                             </div>
                           ) : (
@@ -354,27 +489,27 @@ export default function MaturityPage() {
                         </div>
                       </TableCell>
 
-                      {/* 9. Monthly Int. Share (Calculated from Col 8 / 36) */}
+                      {/* 9. Monthly Int. Share */}
                       <TableCell className="font-medium text-purple-600">
                         ₹{data.monthlyInterestShare.toFixed(2).toLocaleString()}
                       </TableCell>
 
-                      {/* 10. Current Accrued (Col 9 * Months Completed) */}
+                      {/* 10. Current Accrued */}
                       <TableCell className="font-medium text-purple-600">
                         ₹{data.currentAccruedInterest.toFixed(2).toLocaleString()}
                       </TableCell>
 
-                      {/* 11. Maturity Amount (Target + Settled) */}
+                      {/* 11. Maturity Amount */}
                       <TableCell className="font-medium text-orange-600">
                         ₹{data.maturityAmount.toLocaleString()}
                       </TableCell>
 
-                      {/* 12. Outstanding Loan (Red) */}
+                      {/* 12. Outstanding Loan */}
                       <TableCell className="font-medium text-red-600">
                         ₹{data.outstandingLoan.toLocaleString()}
                       </TableCell>
 
-                      {/* 13. Net Payable (Green Bold) */}
+                      {/* 13. Net Payable */}
                       <TableCell className="font-bold text-green-600">
                         ₹{data.netPayable.toLocaleString()}
                       </TableCell>
